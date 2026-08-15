@@ -1,0 +1,9 @@
+{
+  "required": false,
+  "package": "com.mahghuuuls.jawmsintegrations.mixin",
+  "refmap": "mixins.jawmsintegrations.refmap.json",
+  "compatibilityLevel": "JAVA_8",
+  "mixins": [],
+  "client": [],
+  "server": []
+}
