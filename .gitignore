@@ -26,4 +26,3 @@ run
 
 # Verified local development-only mod artifacts
 dev/mods/*.jar
-dev/contracts/*.jar

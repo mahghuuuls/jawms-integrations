@@ -1,3 +1,5 @@
+import org.gradle.api.attributes.Attribute
+
 apply from: 'gradle/scripts/helpers.gradle'
 
 repositories {
@@ -41,6 +43,11 @@ configurations {
         canBeResolved = true
         transitive = false
     }
+    ancientSpellcraftRuntimeMods {
+        canBeConsumed = false
+        canBeResolved = true
+        transitive = false
+    }
 }
 
 def integrationRuntimeProfile = propertyString('integration_runtime_profile').toLowerCase(Locale.ROOT)
@@ -52,8 +59,6 @@ if (!supportedIntegrationRuntimeProfiles.contains(integrationRuntimeProfile)) {
 
 def qualityToolsRuntimeEnabled = integrationRuntimeProfile in ['qualitytools', 'both']
 def ancientSpellcraftRuntimeEnabled = integrationRuntimeProfile in ['ancientspellcraft', 'both']
-def qualityToolsContractJar = file(propertyString('quality_tools_contract_path'))
-def ancientSpellcraftContractJar = file(propertyString('ancient_spellcraft_contract_path'))
 
 dependencies {
     // Include StripLatestForgeRequirements by default for the dev env, saves everyone a hassle
@@ -68,17 +73,20 @@ dependencies {
 
     // Optional integrations compile against exact targets but enter only their selected dev runtime.
     compileOnly rfg.deobf('curse.maven:quality-tools-264756:2732994')
-    qualityToolsContract files(qualityToolsContractJar)
+    qualityToolsContract 'curse.maven:quality-tools-264756:2732994'
     if (qualityToolsRuntimeEnabled) {
         runtimeOnly rfg.deobf('curse.maven:quality-tools-264756:2732994')
         runtimeOnly rfg.deobf('curse.maven:potion-core-242872:2905184')
     }
 
     compileOnly rfg.deobf('curse.maven:ancient-spellcraft-358124:8555709')
-    ancientSpellcraftContract files(ancientSpellcraftContractJar)
+    ancientSpellcraftContract 'curse.maven:ancient-spellcraft-358124:8555709'
     if (ancientSpellcraftRuntimeEnabled) {
-        runtimeOnly rfg.deobf('curse.maven:ancient-spellcraft-358124:8555709')
-        runtimeOnly rfg.deobf('curse.maven:wizardryutils-608287:7158305')
+        // Ancient Spellcraft declares both TweakClass and FMLCorePlugin. Keeping its
+        // deobfuscated JAR out of the launch classpath lets MixinBooter load that
+        // packaged-mod topology without creating a second Mixin classloader.
+        ancientSpellcraftRuntimeMods rfg.deobf('curse.maven:ancient-spellcraft-358124:8555709')
+        ancientSpellcraftRuntimeMods rfg.deobf('curse.maven:wizardryutils-608287:7158305')
     }
 
     testImplementation 'org.ow2.asm:asm:5.2'
@@ -87,6 +95,13 @@ dependencies {
         def toolkitJar = file(propertyString('agent_test_toolkit_path'))
         if (!toolkitJar.isFile()) {
             throw new GradleException("Agent Test Toolkit JAR not found: ${toolkitJar.absolutePath}")
+        }
+        def actualToolkitSha256 = java.security.MessageDigest.getInstance('SHA-256')
+                .digest(toolkitJar.bytes).encodeHex().toString().toUpperCase(Locale.ROOT)
+        def expectedToolkitSha256 = propertyString('agent_test_toolkit_sha256').toUpperCase(Locale.ROOT)
+        if (actualToolkitSha256 != expectedToolkitSha256) {
+            throw new GradleException("Agent Test Toolkit SHA-256 mismatch: expected "
+                    + "${expectedToolkitSha256}, found ${actualToolkitSha256}")
         }
         runtimeOnly rfg.deobf(files(toolkitJar))
     }
@@ -129,6 +144,23 @@ dependencies {
     // }
 }
 
+def obfuscationAttribute = configurations.qualityToolsContract.attributes.keySet().find {
+    it.name == 'com.gtnewhorizons.retrofuturagradle.obfuscation'
+}
+def transformedAttribute = Attribute.of('rfgDeobfuscatorTransformed', Boolean)
+if (obfuscationAttribute == null) {
+    throw new GradleException('RetroFuturaGradle obfuscation attribute is unavailable for raw contract resolution')
+}
+// RFG requests MCP-transformed artifacts for normal development configurations.
+// Contract tests instead hash and inspect the exact released bytes from CurseMaven.
+[configurations.qualityToolsContract, configurations.ancientSpellcraftContract].each { configuration ->
+    configuration.attributes {
+        attribute obfuscationAttribute,
+                objects.named(obfuscationAttribute.type, 'no-minecraft')
+        attribute transformedAttribute, false
+    }
+}
+
 tasks.register('prepareAgentTestToolkitRuntime', Sync) {
     group = 'jawms integrations verification'
     description = 'Installs project-owned Agent Test Toolkit configuration and bundles into run/.'
@@ -137,27 +169,72 @@ tasks.register('prepareAgentTestToolkitRuntime', Sync) {
     into layout.projectDirectory.dir('run/config/devtool')
 }
 
+tasks.register('prepareIntegrationRuntimeMods') {
+    group = 'jawms integrations verification'
+    description = 'Installs the selected classloader-sensitive optional mods into run/mods.'
+    outputs.upToDateWhen { false }
+    doLast {
+        def runtimeModsDirectory = layout.projectDirectory.dir('run/mods').asFile
+        def managedAncientSpellcraftJar = new File(runtimeModsDirectory,
+                'jawmsintegrations-managed-ancientspellcraft.jar')
+        def managedWizardryUtilsJar = new File(runtimeModsDirectory,
+                'jawmsintegrations-managed-wizardryutils.jar')
+        runtimeModsDirectory.mkdirs()
+        delete managedAncientSpellcraftJar, managedWizardryUtilsJar
+        if (ancientSpellcraftRuntimeEnabled) {
+            configurations.ancientSpellcraftRuntimeMods.files.each { sourceJar ->
+                def destinationName = sourceJar.name.toLowerCase(Locale.ROOT).contains('wizardryutils')
+                        ? managedWizardryUtilsJar.name
+                        : managedAncientSpellcraftJar.name
+                copy {
+                    from sourceJar
+                    into runtimeModsDirectory
+                    rename { destinationName }
+                }
+            }
+        }
+    }
+}
+
 tasks.register('verifyDevelopmentRuntimeProfile') {
     group = 'jawms integrations verification'
     description = 'Verifies that the selected optional integration runtime contains exactly its intended mods.'
     inputs.property 'integrationRuntimeProfile', integrationRuntimeProfile
     inputs.property 'enableAgentTestToolkit', propertyBool('enable_agent_test_toolkit')
+    dependsOn tasks.named('prepareIntegrationRuntimeMods')
     doLast {
-        def runtimeNames = configurations.runtimeClasspath.files.collect { it.name.toLowerCase(Locale.ROOT) }
-        def hasQualityTools = runtimeNames.any { it.contains('qualitytools') || it.contains('quality-tools') }
-        def hasPotionCore = runtimeNames.any { it.contains('potioncore') || it.contains('potion-core') }
-        def hasAncientSpellcraft = runtimeNames.any { it.contains('ancientspellcraft') || it.contains('ancient-spellcraft') }
-        def hasWizardryUtils = runtimeNames.any { it.contains('wizardryutils') }
-        def hasToolkit = runtimeNames.any { it.contains('agenttesttoolkit') }
-        def hasJawms = runtimeNames.any { it.contains('jawms') || it.contains('just-another-wizardry') }
+        def runtimeFiles = new LinkedHashSet<File>(configurations.runtimeClasspath.files)
+        runtimeFiles.addAll(fileTree(layout.projectDirectory.dir('run/mods')) {
+            include '**/*.jar'
+        }.files)
+        def runtimeNames = runtimeFiles.collect { it.name.toLowerCase(Locale.ROOT) }
+        def countMatches = { Closure<Boolean> predicate -> runtimeNames.count(predicate) }
+        def qualityToolsCount = countMatches { it.contains('qualitytools') || it.contains('quality-tools') }
+        def potionCoreCount = countMatches { it.contains('potioncore') || it.contains('potion-core') }
+        def ancientSpellcraftCount = countMatches {
+            it.contains('ancientspellcraft') || it.contains('ancient-spellcraft')
+        }
+        def wizardryUtilsCount = countMatches { it.contains('wizardryutils') }
+        def toolkitCount = countMatches { it.contains('agenttesttoolkit') }
+        def jawmsCount = countMatches { it.contains('just-another-wizardry') }
 
         def mismatches = []
-        if (!hasJawms) mismatches << 'JAWMS is missing'
-        if (hasQualityTools != qualityToolsRuntimeEnabled) mismatches << "Quality Tools presence=${hasQualityTools}"
-        if (hasPotionCore != qualityToolsRuntimeEnabled) mismatches << "Potion Core presence=${hasPotionCore}"
-        if (hasAncientSpellcraft != ancientSpellcraftRuntimeEnabled) mismatches << "Ancient Spellcraft presence=${hasAncientSpellcraft}"
-        if (hasWizardryUtils != ancientSpellcraftRuntimeEnabled) mismatches << "WizardryUtils presence=${hasWizardryUtils}"
-        if (hasToolkit != propertyBool('enable_agent_test_toolkit')) mismatches << "Agent Test Toolkit presence=${hasToolkit}"
+        if (jawmsCount != 1) mismatches << "JAWMS count=${jawmsCount}"
+        if (qualityToolsCount != (qualityToolsRuntimeEnabled ? 1 : 0)) {
+            mismatches << "Quality Tools count=${qualityToolsCount}"
+        }
+        if (potionCoreCount != (qualityToolsRuntimeEnabled ? 1 : 0)) {
+            mismatches << "Potion Core count=${potionCoreCount}"
+        }
+        if (ancientSpellcraftCount != (ancientSpellcraftRuntimeEnabled ? 1 : 0)) {
+            mismatches << "Ancient Spellcraft count=${ancientSpellcraftCount}"
+        }
+        if (wizardryUtilsCount != (ancientSpellcraftRuntimeEnabled ? 1 : 0)) {
+            mismatches << "WizardryUtils count=${wizardryUtilsCount}"
+        }
+        if (toolkitCount != (propertyBool('enable_agent_test_toolkit') ? 1 : 0)) {
+            mismatches << "Agent Test Toolkit count=${toolkitCount}"
+        }
         if (!mismatches.empty) {
             throw new GradleException("Development runtime profile '${integrationRuntimeProfile}' is invalid: "
                     + mismatches.join('; '))
