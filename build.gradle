@@ -46,6 +46,9 @@ setDefaultProperty 'extra_tweak_classes', false, ''
 setDefaultProperty 'change_minecraft_sources', false, false
 setDefaultProperty 'publish_to_curseforge', true, false
 setDefaultProperty 'mixin_connector_class', false, ''
+setDefaultProperty 'integration_runtime_profile', false, 'both'
+setDefaultProperty 'enable_agent_test_toolkit', false, false
+setDefaultProperty 'agent_test_toolkit_path', false, 'dev/mods/agenttesttoolkit-1.0.1.jar'
 
 version = propertyString('mod_version')
 group = propertyString('root_package')
@@ -160,6 +163,14 @@ dependencies {
 }
 
 apply from: 'gradle/scripts/dependencies.gradle'
+
+if (propertyBool('enable_agent_test_toolkit')) {
+    ['runClient', 'runServer', 'runObfClient', 'runObfServer'].each { taskName ->
+        tasks.named(taskName).configure {
+            dependsOn tasks.named('prepareAgentTestToolkitRuntime')
+        }
+    }
+}
 
 if (propertyBool('use_mixins')) {
     ['runClient', 'runServer', 'runObfClient', 'runObfServer'].each { taskName ->
@@ -305,6 +316,12 @@ test {
         testLogging {
             showStandardStreams = true
         }
+    }
+    doFirst {
+        systemProperty 'jawmsintegrations.contract.qualityToolsJar',
+                configurations.qualityToolsContract.singleFile.absolutePath
+        systemProperty 'jawmsintegrations.contract.ancientSpellcraftJar',
+                configurations.ancientSpellcraftContract.singleFile.absolutePath
     }
 }
 

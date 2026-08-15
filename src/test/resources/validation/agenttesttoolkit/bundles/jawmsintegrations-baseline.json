@@ -1,0 +1,26 @@
+{
+  "jawmsintegrations_baseline": {
+    "description": "Apply safe disposable-world defaults and record the live development environment",
+    "stopOnFailure": true,
+    "commands": [
+      "devtool session start jawmsintegrations_baseline",
+      "gamemode creative",
+      "gamerule keepInventory true",
+      "gamerule doMobSpawning false",
+      "devtool capabilities",
+      "devtool environment",
+      "devtool mods",
+      "devtool inspect player",
+      "devtool log status",
+      { "command": "devtool mark BASELINE_READY", "delayTicks": 20 }
+    ]
+  },
+  "jawmsintegrations_baseline_teardown": {
+    "description": "Disable toolkit event logging and end the baseline diagnostic session",
+    "stopOnFailure": false,
+    "commands": [
+      "devtool log all off",
+      "devtool session stop"
+    ]
+  }
+}

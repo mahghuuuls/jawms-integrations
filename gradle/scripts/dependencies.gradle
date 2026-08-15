@@ -31,7 +31,29 @@ repositories {
 configurations {
     shade
     implementation.extendsFrom shade
+    qualityToolsContract {
+        canBeConsumed = false
+        canBeResolved = true
+        transitive = false
+    }
+    ancientSpellcraftContract {
+        canBeConsumed = false
+        canBeResolved = true
+        transitive = false
+    }
 }
+
+def integrationRuntimeProfile = propertyString('integration_runtime_profile').toLowerCase(Locale.ROOT)
+def supportedIntegrationRuntimeProfiles = ['none', 'qualitytools', 'ancientspellcraft', 'both']
+if (!supportedIntegrationRuntimeProfiles.contains(integrationRuntimeProfile)) {
+    throw new GradleException("Unsupported integration_runtime_profile '${integrationRuntimeProfile}'. "
+            + "Expected one of: ${supportedIntegrationRuntimeProfiles.join(', ')}")
+}
+
+def qualityToolsRuntimeEnabled = integrationRuntimeProfile in ['qualitytools', 'both']
+def ancientSpellcraftRuntimeEnabled = integrationRuntimeProfile in ['ancientspellcraft', 'both']
+def qualityToolsContractJar = file(propertyString('quality_tools_contract_path'))
+def ancientSpellcraftContractJar = file(propertyString('ancient_spellcraft_contract_path'))
 
 dependencies {
     // Include StripLatestForgeRequirements by default for the dev env, saves everyone a hassle
@@ -44,14 +66,30 @@ dependencies {
     implementation rfg.deobf('curse.maven:electroblobs-wizardry-265642:8320066')
     implementation rfg.deobf('curse.maven:baubles-227083:2518667')
 
-    // Optional integrations are available in development but are not product requirements.
+    // Optional integrations compile against exact targets but enter only their selected dev runtime.
     compileOnly rfg.deobf('curse.maven:quality-tools-264756:2732994')
-    runtimeOnly rfg.deobf('curse.maven:quality-tools-264756:2732994')
-    runtimeOnly rfg.deobf('curse.maven:potion-core-242872:2905184')
+    qualityToolsContract files(qualityToolsContractJar)
+    if (qualityToolsRuntimeEnabled) {
+        runtimeOnly rfg.deobf('curse.maven:quality-tools-264756:2732994')
+        runtimeOnly rfg.deobf('curse.maven:potion-core-242872:2905184')
+    }
 
     compileOnly rfg.deobf('curse.maven:ancient-spellcraft-358124:8555709')
-    runtimeOnly rfg.deobf('curse.maven:ancient-spellcraft-358124:8555709')
-    runtimeOnly rfg.deobf('curse.maven:wizardryutils-608287:7158305')
+    ancientSpellcraftContract files(ancientSpellcraftContractJar)
+    if (ancientSpellcraftRuntimeEnabled) {
+        runtimeOnly rfg.deobf('curse.maven:ancient-spellcraft-358124:8555709')
+        runtimeOnly rfg.deobf('curse.maven:wizardryutils-608287:7158305')
+    }
+
+    testImplementation 'org.ow2.asm:asm:5.2'
+
+    if (propertyBool('enable_agent_test_toolkit')) {
+        def toolkitJar = file(propertyString('agent_test_toolkit_path'))
+        if (!toolkitJar.isFile()) {
+            throw new GradleException("Agent Test Toolkit JAR not found: ${toolkitJar.absolutePath}")
+        }
+        runtimeOnly rfg.deobf(files(toolkitJar))
+    }
 
     // Example - Dependency descriptor:
     // 'com.google.code.gson:gson:2.8.6' << group: com.google.code.gson, name:gson, version:2.8.6
@@ -89,6 +127,44 @@ dependencies {
     // implementation ('com.google.code.gson:gson:2.8.6') {
     //     transitive = false
     // }
+}
+
+tasks.register('prepareAgentTestToolkitRuntime', Sync) {
+    group = 'jawms integrations verification'
+    description = 'Installs project-owned Agent Test Toolkit configuration and bundles into run/.'
+    onlyIf { propertyBool('enable_agent_test_toolkit') }
+    from layout.projectDirectory.dir('src/test/resources/validation/agenttesttoolkit')
+    into layout.projectDirectory.dir('run/config/devtool')
+}
+
+tasks.register('verifyDevelopmentRuntimeProfile') {
+    group = 'jawms integrations verification'
+    description = 'Verifies that the selected optional integration runtime contains exactly its intended mods.'
+    inputs.property 'integrationRuntimeProfile', integrationRuntimeProfile
+    inputs.property 'enableAgentTestToolkit', propertyBool('enable_agent_test_toolkit')
+    doLast {
+        def runtimeNames = configurations.runtimeClasspath.files.collect { it.name.toLowerCase(Locale.ROOT) }
+        def hasQualityTools = runtimeNames.any { it.contains('qualitytools') || it.contains('quality-tools') }
+        def hasPotionCore = runtimeNames.any { it.contains('potioncore') || it.contains('potion-core') }
+        def hasAncientSpellcraft = runtimeNames.any { it.contains('ancientspellcraft') || it.contains('ancient-spellcraft') }
+        def hasWizardryUtils = runtimeNames.any { it.contains('wizardryutils') }
+        def hasToolkit = runtimeNames.any { it.contains('agenttesttoolkit') }
+        def hasJawms = runtimeNames.any { it.contains('jawms') || it.contains('just-another-wizardry') }
+
+        def mismatches = []
+        if (!hasJawms) mismatches << 'JAWMS is missing'
+        if (hasQualityTools != qualityToolsRuntimeEnabled) mismatches << "Quality Tools presence=${hasQualityTools}"
+        if (hasPotionCore != qualityToolsRuntimeEnabled) mismatches << "Potion Core presence=${hasPotionCore}"
+        if (hasAncientSpellcraft != ancientSpellcraftRuntimeEnabled) mismatches << "Ancient Spellcraft presence=${hasAncientSpellcraft}"
+        if (hasWizardryUtils != ancientSpellcraftRuntimeEnabled) mismatches << "WizardryUtils presence=${hasWizardryUtils}"
+        if (hasToolkit != propertyBool('enable_agent_test_toolkit')) mismatches << "Agent Test Toolkit presence=${hasToolkit}"
+        if (!mismatches.empty) {
+            throw new GradleException("Development runtime profile '${integrationRuntimeProfile}' is invalid: "
+                    + mismatches.join('; '))
+        }
+        logger.lifecycle("Verified development runtime profile '${integrationRuntimeProfile}' "
+                + "(toolkit=${propertyBool('enable_agent_test_toolkit')})")
+    }
 }
 
 // Need reobfJar to use uber jars, so dependencies that are shaded in are present
