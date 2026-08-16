@@ -1,9 +1,11 @@
 package com.mahghuuuls.jawmsintegrations.diagnostic;
 
+import com.mahghuuuls.jawms.api.ManaContribution;
 import com.mahghuuuls.jawmsintegrations.config.IntegrationConfigSnapshot;
 import com.mahghuuuls.jawmsintegrations.integration.IntegrationCoordinator;
 import com.mahghuuuls.jawmsintegrations.integration.JawmsCompatibility;
 import com.mahghuuuls.jawmsintegrations.integration.OptionalMixinGateRegistry;
+import electroblob.wizardry.constants.Element;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -37,6 +39,28 @@ class IntegrationDiagnosticsServiceTest {
         assertTrue(overall.get(1).contains("Quality Tools: ABSENT"));
         assertTrue(overall.get(2).contains("Ancient Spellcraft: ABSENT"));
         assertTrue(overall.get(3).contains("startup diagnostics=disabled"));
+    }
+
+    @Test
+    void contributionFormattingReportsNumericFieldsInsteadOfObjectIdentity() {
+        ManaContribution contribution = ManaContribution.builder()
+                .flatMaximumMana(8)
+                .maximumManaIncrease(10.0D)
+                .flatRegeneration(1.5D)
+                .regenerationIncrease(20.0D)
+                .flatLockoutSeconds(-1.25D)
+                .lockoutReduction(30.0D)
+                .globalSpellEfficiency(25.0D)
+                .elementSpellEfficiency(Element.FIRE, 5.0D)
+                .build();
+
+        String formatted = IntegrationDiagnosticsService.formatContribution(contribution);
+
+        assertEquals("{flatMaximumMana=8, maximumManaIncrease=10.0, flatRegeneration=1.5, "
+                        + "regenerationIncrease=20.0, flatLockoutSeconds=-1.25, lockoutReduction=30.0, "
+                        + "spellEfficiency=25.0, elementSpellEfficiency={FIRE=5.0}}",
+                formatted);
+        assertTrue(!formatted.contains("@"));
     }
 
     public static final class CompatibleApi {

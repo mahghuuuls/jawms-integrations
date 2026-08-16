@@ -169,6 +169,16 @@ tasks.register('prepareAgentTestToolkitRuntime', Sync) {
     into layout.projectDirectory.dir('run/config/devtool')
 }
 
+tasks.register('prepareQualityToolsValidationFixtures', Copy) {
+    group = 'jawms integrations verification'
+    description = 'Installs development-only Quality Tools validation JSON into run/config.'
+    onlyIf {
+        propertyBool('enable_agent_test_toolkit') && qualityToolsRuntimeEnabled
+    }
+    from layout.projectDirectory.dir('src/test/resources/validation/qualitytools')
+    into layout.projectDirectory.dir('run/config/qualitytools')
+}
+
 tasks.register('prepareIntegrationRuntimeMods') {
     group = 'jawms integrations verification'
     description = 'Installs the selected classloader-sensitive optional mods into run/mods.'

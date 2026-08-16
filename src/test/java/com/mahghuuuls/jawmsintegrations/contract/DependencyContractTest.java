@@ -35,6 +35,17 @@ final class DependencyContractTest {
                 "com/tmtravlr/qualitytools/config/QualityType",
                 "qualities",
                 "[Lcom/tmtravlr/qualitytools/config/QualityEntry;");
+        JarContract.assertMethod(jar,
+                "com/tmtravlr/qualitytools/CommonEventHandler",
+                "onLivingUpdate",
+                "(Lnet/minecraftforge/event/entity/living/LivingEvent$LivingUpdateEvent;)V");
+        JarContract.assertMethodInvocation(jar,
+                "com/tmtravlr/qualitytools/CommonEventHandler",
+                "onLivingUpdate",
+                "(Lnet/minecraftforge/event/entity/living/LivingEvent$LivingUpdateEvent;)V",
+                "net/minecraft/entity/ai/attributes/AbstractAttributeMap",
+                "func_111148_a",
+                "(Lcom/google/common/collect/Multimap;)V");
     }
 
     @Test

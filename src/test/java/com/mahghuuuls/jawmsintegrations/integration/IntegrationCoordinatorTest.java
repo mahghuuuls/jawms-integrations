@@ -154,6 +154,27 @@ class IntegrationCoordinatorTest {
                 unconfirmed.getStatus(IntegrationId.ANCIENT_SPELLCRAFT).getDetail());
     }
 
+    @Test
+    void activationFailureReclassifiesOnlyTheAffectedIntegration() {
+        IntegrationCoordinator coordinator = initialize(
+                IntegrationConfigSnapshot.defaults(),
+                supportedVersions(),
+                gates(
+                        OptionalMixinGateRegistry.Evidence.supported(
+                                IntegrationId.QUALITY_TOOLS.getSupportedMetadataVersion()),
+                        OptionalMixinGateRegistry.Evidence.supported(
+                                IntegrationId.ANCIENT_SPELLCRAFT.getSupportedMetadataVersion())
+                )
+        ).withFailure(IntegrationId.QUALITY_TOOLS, "provider registration failed");
+
+        assertEquals(IntegrationState.FAILED,
+                coordinator.getStatus(IntegrationId.QUALITY_TOOLS).getState());
+        assertEquals("provider registration failed",
+                coordinator.getStatus(IntegrationId.QUALITY_TOOLS).getDetail());
+        assertEquals(IntegrationState.ACTIVE,
+                coordinator.getStatus(IntegrationId.ANCIENT_SPELLCRAFT).getState());
+    }
+
     private static IntegrationCoordinator initialize(IntegrationConfigSnapshot config,
                                                      Map<String, String> versions,
                                                      Map<IntegrationId, OptionalMixinGateRegistry.Evidence> gates) {

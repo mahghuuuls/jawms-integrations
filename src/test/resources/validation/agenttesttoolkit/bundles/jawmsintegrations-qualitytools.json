@@ -1,0 +1,82 @@
+{
+  "qualitytools_setup": {
+    "description": "Reset armor and record the Quality Tools integration baseline",
+    "stopOnFailure": true,
+    "commands": [
+      "devtool session start qualitytools_campaign",
+      "gamemode creative",
+      "gamerule keepInventory true",
+      "gamerule doMobSpawning false",
+      "replaceitem entity @s slot.armor.head minecraft:air",
+      "replaceitem entity @s slot.armor.chest minecraft:air",
+      "replaceitem entity @s slot.armor.legs minecraft:air",
+      "replaceitem entity @s slot.armor.feet minecraft:air",
+      { "command": "devtool capabilities", "delayTicks": 20 },
+      "devtool environment",
+      "devtool mods",
+      "devtool inspect player",
+      "jawmsintegrations status",
+      "jawmsintegrations status @s",
+      { "command": "devtool mark QUALITY_BASELINE_READY", "delayTicks": 20 }
+    ]
+  },
+  "qualitytools_all_attributes": {
+    "description": "Equip two deterministic Quality Tools items carrying all fifteen supported numeric attributes",
+    "stopOnFailure": true,
+    "commands": [
+      "replaceitem entity @s slot.armor.head minecraft:iron_helmet 1 0 {Quality:{Name:\"JAWMS Validation Core\",Color:\"light_purple\",Slots:[\"head\"],AttributeModifiers:[{AttributeName:\"jawmsintegrations.max_mana_flat\",Name:\"qualitytools\",Amount:8.0d,Operation:0,UUIDMost:10L,UUIDLeast:10L},{AttributeName:\"jawmsintegrations.max_mana_percent\",Name:\"qualitytools\",Amount:10.0d,Operation:0,UUIDMost:11L,UUIDLeast:11L},{AttributeName:\"jawmsintegrations.mana_regen_flat\",Name:\"qualitytools\",Amount:1.5d,Operation:0,UUIDMost:12L,UUIDLeast:12L},{AttributeName:\"jawmsintegrations.mana_regen_percent\",Name:\"qualitytools\",Amount:20.0d,Operation:0,UUIDMost:13L,UUIDLeast:13L},{AttributeName:\"jawmsintegrations.spell_efficiency\",Name:\"qualitytools\",Amount:25.0d,Operation:0,UUIDMost:14L,UUIDLeast:14L},{AttributeName:\"jawmsintegrations.mana_regen_delay_reduction_flat\",Name:\"qualitytools\",Amount:1.25d,Operation:0,UUIDMost:15L,UUIDLeast:15L},{AttributeName:\"jawmsintegrations.mana_regen_delay_reduction_percent\",Name:\"qualitytools\",Amount:30.0d,Operation:0,UUIDMost:16L,UUIDLeast:16L}]}}",
+      "replaceitem entity @s slot.armor.chest minecraft:iron_chestplate 1 0 {Quality:{Name:\"JAWMS Validation Schools\",Color:\"aqua\",Slots:[\"chest\"],AttributeModifiers:[{AttributeName:\"jawmsintegrations.spell_efficiency_magic\",Name:\"qualitytools\",Amount:1.0d,Operation:0,UUIDMost:20L,UUIDLeast:20L},{AttributeName:\"jawmsintegrations.spell_efficiency_fire\",Name:\"qualitytools\",Amount:2.0d,Operation:0,UUIDMost:21L,UUIDLeast:21L},{AttributeName:\"jawmsintegrations.spell_efficiency_ice\",Name:\"qualitytools\",Amount:3.0d,Operation:0,UUIDMost:22L,UUIDLeast:22L},{AttributeName:\"jawmsintegrations.spell_efficiency_lightning\",Name:\"qualitytools\",Amount:4.0d,Operation:0,UUIDMost:23L,UUIDLeast:23L},{AttributeName:\"jawmsintegrations.spell_efficiency_necromancy\",Name:\"qualitytools\",Amount:5.0d,Operation:0,UUIDMost:24L,UUIDLeast:24L},{AttributeName:\"jawmsintegrations.spell_efficiency_earth\",Name:\"qualitytools\",Amount:6.0d,Operation:0,UUIDMost:25L,UUIDLeast:25L},{AttributeName:\"jawmsintegrations.spell_efficiency_sorcery\",Name:\"qualitytools\",Amount:7.0d,Operation:0,UUIDMost:26L,UUIDLeast:26L},{AttributeName:\"jawmsintegrations.spell_efficiency_healing\",Name:\"qualitytools\",Amount:8.0d,Operation:0,UUIDMost:27L,UUIDLeast:27L}]}}",
+      { "command": "jawmsintegrations status @s", "delayTicks": 20 },
+      "devtool inspect player",
+      "devtool mark QUALITY_ALL_ATTRIBUTES_APPLIED"
+    ]
+  },
+  "qualitytools_maximum_mana_stack": {
+    "description": "Equip two operation-0 maximum-mana modifiers whose final supported total is 10",
+    "stopOnFailure": true,
+    "commands": [
+      "replaceitem entity @s slot.armor.head minecraft:iron_helmet 1 0 {Quality:{Name:\"JAWMS Max Five A\",Color:\"blue\",Slots:[\"head\"],AttributeModifiers:[{AttributeName:\"jawmsintegrations.max_mana_percent\",Name:\"qualitytools\",Amount:5.0d,Operation:0,UUIDMost:2L,UUIDLeast:2L}]}}",
+      "replaceitem entity @s slot.armor.chest minecraft:iron_chestplate 1 0 {Quality:{Name:\"JAWMS Max Five B\",Color:\"blue\",Slots:[\"chest\"],AttributeModifiers:[{AttributeName:\"jawmsintegrations.max_mana_percent\",Name:\"qualitytools\",Amount:5.0d,Operation:0,UUIDMost:3L,UUIDLeast:3L}]}}",
+      { "command": "jawmsintegrations status @s", "delayTicks": 20 },
+      "devtool inspect player",
+      "devtool mark QUALITY_MAXIMUM_STACK_TEN"
+    ]
+  },
+  "qualitytools_invalid_values": {
+    "description": "Prove unsupported operation and unsafe signed values contribute nothing",
+    "stopOnFailure": true,
+    "commands": [
+      "replaceitem entity @s slot.armor.head minecraft:iron_helmet 1 0 {Quality:{Name:\"JAWMS Invalid\",Color:\"red\",Slots:[\"head\"],AttributeModifiers:[{AttributeName:\"jawmsintegrations.max_mana_percent\",Name:\"qualitytools\",Amount:50.0d,Operation:1,UUIDMost:7L,UUIDLeast:7L},{AttributeName:\"jawmsintegrations.max_mana_percent\",Name:\"qualitytools\",Amount:-101.0d,Operation:0,UUIDMost:8L,UUIDLeast:8L},{AttributeName:\"jawmsintegrations.spell_efficiency_fire\",Name:\"qualitytools\",Amount:-25.0d,Operation:0,UUIDMost:9L,UUIDLeast:9L},{AttributeName:\"jawmsintegrations.max_mana_flat\",Name:\"qualitytools\",Amount:0.5d,Operation:0,UUIDMost:30L,UUIDLeast:30L},{AttributeName:\"jawmsintegrations.mana_regen_delay_reduction_percent\",Name:\"qualitytools\",Amount:101.0d,Operation:0,UUIDMost:31L,UUIDLeast:31L}]}}",
+      "replaceitem entity @s slot.armor.chest minecraft:air",
+      { "command": "jawmsintegrations status @s", "delayTicks": 20 },
+      "devtool inspect player",
+      "devtool mark QUALITY_INVALID_VALUES_REJECTED"
+    ]
+  },
+  "qualitytools_valid_penalties": {
+    "description": "Equip valid negative mana, regeneration, and delay-reduction modifiers to verify penalty projection and red tooltip presentation",
+    "stopOnFailure": true,
+    "commands": [
+      "replaceitem entity @s slot.armor.head minecraft:iron_helmet 1 0 {Quality:{Name:\"JAWMS Validation Penalties\",Color:\"red\",Slots:[\"head\"],AttributeModifiers:[{AttributeName:\"jawmsintegrations.max_mana_flat\",Name:\"qualitytools\",Amount:-8.0d,Operation:0,UUIDMost:40L,UUIDLeast:40L},{AttributeName:\"jawmsintegrations.max_mana_percent\",Name:\"qualitytools\",Amount:-10.0d,Operation:0,UUIDMost:41L,UUIDLeast:41L},{AttributeName:\"jawmsintegrations.mana_regen_flat\",Name:\"qualitytools\",Amount:-1.5d,Operation:0,UUIDMost:42L,UUIDLeast:42L},{AttributeName:\"jawmsintegrations.mana_regen_percent\",Name:\"qualitytools\",Amount:-20.0d,Operation:0,UUIDMost:43L,UUIDLeast:43L},{AttributeName:\"jawmsintegrations.mana_regen_delay_reduction_flat\",Name:\"qualitytools\",Amount:-1.25d,Operation:0,UUIDMost:44L,UUIDLeast:44L},{AttributeName:\"jawmsintegrations.mana_regen_delay_reduction_percent\",Name:\"qualitytools\",Amount:-30.0d,Operation:0,UUIDMost:45L,UUIDLeast:45L}]}}",
+      "replaceitem entity @s slot.armor.chest minecraft:air",
+      { "command": "jawmsintegrations status @s", "delayTicks": 20 },
+      "devtool inspect player",
+      "devtool mark QUALITY_VALID_PENALTIES_APPLIED"
+    ]
+  },
+  "qualitytools_cleanup": {
+    "description": "Remove validation equipment and close the diagnostic session",
+    "stopOnFailure": false,
+    "commands": [
+      "replaceitem entity @s slot.armor.head minecraft:air",
+      "replaceitem entity @s slot.armor.chest minecraft:air",
+      "replaceitem entity @s slot.armor.legs minecraft:air",
+      "replaceitem entity @s slot.armor.feet minecraft:air",
+      { "command": "jawmsintegrations status @s", "delayTicks": 20 },
+      "devtool inspect player",
+      "devtool mark QUALITY_CLEANUP_COMPLETE",
+      "devtool log all off",
+      "devtool session stop"
+    ]
+  }
+}

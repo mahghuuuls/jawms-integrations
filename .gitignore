@@ -23,6 +23,7 @@ build
 # other
 eclipse
 run
+logs
 
 # Verified local development-only mod artifacts
 dev/mods/*.jar

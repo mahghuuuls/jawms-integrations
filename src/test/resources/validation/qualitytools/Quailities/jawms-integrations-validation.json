@@ -1,0 +1,47 @@
+{
+  "comment": "Development-only fixtures for the complete JAWMS Integrations attribute contract.",
+  "slot": [
+    "head",
+    "chest",
+    "legs",
+    "feet"
+  ],
+  "whitelist": [
+    { "slot": "head" },
+    { "slot": "chest" },
+    { "slot": "legs" },
+    { "slot": "feet" }
+  ],
+  "blacklist": [],
+  "qualities": [
+    {
+      "name": "JAWMS Validation Core",
+      "color": "light_purple",
+      "weight": 1,
+      "attributes": [
+        { "name": "jawmsintegrations.max_mana_flat", "amount": 8, "operation": 0 },
+        { "name": "jawmsintegrations.max_mana_percent", "amount": 10, "operation": 0 },
+        { "name": "jawmsintegrations.mana_regen_flat", "amount": 1.5, "operation": 0 },
+        { "name": "jawmsintegrations.mana_regen_percent", "amount": 20, "operation": 0 },
+        { "name": "jawmsintegrations.spell_efficiency", "amount": 25, "operation": 0 },
+        { "name": "jawmsintegrations.mana_regen_delay_reduction_flat", "amount": 1.25, "operation": 0 },
+        { "name": "jawmsintegrations.mana_regen_delay_reduction_percent", "amount": 30, "operation": 0 }
+      ]
+    },
+    {
+      "name": "JAWMS Validation Schools",
+      "color": "aqua",
+      "weight": 1,
+      "attributes": [
+        { "name": "jawmsintegrations.spell_efficiency_magic", "amount": 1, "operation": 0 },
+        { "name": "jawmsintegrations.spell_efficiency_fire", "amount": 2, "operation": 0 },
+        { "name": "jawmsintegrations.spell_efficiency_ice", "amount": 3, "operation": 0 },
+        { "name": "jawmsintegrations.spell_efficiency_lightning", "amount": 4, "operation": 0 },
+        { "name": "jawmsintegrations.spell_efficiency_necromancy", "amount": 5, "operation": 0 },
+        { "name": "jawmsintegrations.spell_efficiency_earth", "amount": 6, "operation": 0 },
+        { "name": "jawmsintegrations.spell_efficiency_sorcery", "amount": 7, "operation": 0 },
+        { "name": "jawmsintegrations.spell_efficiency_healing", "amount": 8, "operation": 0 }
+      ]
+    }
+  ]
+}

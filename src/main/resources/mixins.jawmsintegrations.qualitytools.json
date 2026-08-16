@@ -4,7 +4,9 @@
   "plugin": "com.mahghuuuls.jawmsintegrations.mixin.OptionalIntegrationMixinPlugin",
   "refmap": "mixins.jawmsintegrations.refmap.json",
   "compatibilityLevel": "JAVA_8",
-  "mixins": [],
+  "mixins": [
+    "MixinQualityToolsCommonEventHandler"
+  ],
   "client": [],
   "server": []
 }

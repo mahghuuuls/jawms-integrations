@@ -1,6 +1,7 @@
 package com.mahghuuuls.jawmsintegrations.diagnostic;
 
 import com.mahghuuuls.jawms.api.ManaApi;
+import com.mahghuuuls.jawms.api.ManaContribution;
 import com.mahghuuuls.jawms.api.ManaContributionExplanation;
 import com.mahghuuuls.jawms.api.ManaProfileExplanation;
 import com.mahghuuuls.jawmsintegrations.Tags;
@@ -91,7 +92,8 @@ public final class IntegrationDiagnosticsService {
                         .append('[').append(contribution.getSlotIndex()).append(']');
             }
             if (contribution.hasAcceptedContribution()) {
-                line.append(", contribution=").append(contribution.getAcceptedContribution());
+                line.append(", contribution=")
+                        .append(formatContribution(contribution.getAcceptedContribution()));
             } else if (contribution.getFailure() != null) {
                 line.append(", failure=").append(contribution.getFailure());
             }
@@ -105,5 +107,48 @@ public final class IntegrationDiagnosticsService {
 
     private static String enabled(boolean value) {
         return value ? "enabled" : "disabled";
+    }
+
+    static String formatContribution(ManaContribution contribution) {
+        if (contribution == null || contribution.isEmpty()) {
+            return "{}";
+        }
+        List<String> fields = new ArrayList<>();
+        add(fields, "flatMaximumMana", contribution.getFlatMaximumMana(), 0);
+        add(fields, "maximumManaIncrease", contribution.getMaximumManaIncrease(), 0.0D);
+        add(fields, "maximumManaReduction", contribution.getMaximumManaReduction(), 0.0D);
+        add(fields, "flatRegeneration", contribution.getFlatRegeneration(), 0.0D);
+        add(fields, "regenerationIncrease", contribution.getRegenerationIncrease(), 0.0D);
+        add(fields, "regenerationReduction", contribution.getRegenerationReduction(), 0.0D);
+        add(fields, "flatLockoutSeconds", contribution.getFlatLockoutSeconds(), 0.0D);
+        add(fields, "lockoutIncrease", contribution.getLockoutIncrease(), 0.0D);
+        add(fields, "lockoutReduction", contribution.getLockoutReduction(), 0.0D);
+        add(fields, "spellEfficiency", contribution.getGlobalSpellEfficiency(), 0.0D);
+        if (!contribution.getElementSpellEfficiency().isEmpty()) {
+            fields.add("elementSpellEfficiency=" + contribution.getElementSpellEfficiency());
+        }
+        add(fields, "spellCostMultiplier", contribution.getGlobalSpellCostMultiplier(), 1.0D);
+        if (!contribution.getElementSpellCostMultipliers().isEmpty()) {
+            fields.add("elementSpellCostMultipliers=" + contribution.getElementSpellCostMultipliers());
+        }
+        if (contribution.canRegenerateDuringPostCastLockout()) {
+            fields.add("regenerateDuringPostCastLockout=true");
+        }
+        if (contribution.canRegenerateDuringContinuousCasting()) {
+            fields.add("regenerateDuringContinuousCasting=true");
+        }
+        return "{" + String.join(", ", fields) + "}";
+    }
+
+    private static void add(List<String> fields, String name, int value, int neutral) {
+        if (value != neutral) {
+            fields.add(name + "=" + value);
+        }
+    }
+
+    private static void add(List<String> fields, String name, double value, double neutral) {
+        if (Double.compare(value, neutral) != 0) {
+            fields.add(name + "=" + value);
+        }
     }
 }

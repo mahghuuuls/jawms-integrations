@@ -1,0 +1,15 @@
+attribute.name.jawmsintegrations.max_mana_flat=Maximum Mana
+attribute.name.jawmsintegrations.max_mana_percent=Maximum Mana
+attribute.name.jawmsintegrations.mana_regen_flat=Mana Regeneration
+attribute.name.jawmsintegrations.mana_regen_percent=Mana Regeneration
+attribute.name.jawmsintegrations.spell_efficiency=Spell Efficiency
+attribute.name.jawmsintegrations.spell_efficiency_magic=Magic Spell Efficiency
+attribute.name.jawmsintegrations.spell_efficiency_fire=Fire Spell Efficiency
+attribute.name.jawmsintegrations.spell_efficiency_ice=Ice Spell Efficiency
+attribute.name.jawmsintegrations.spell_efficiency_lightning=Lightning Spell Efficiency
+attribute.name.jawmsintegrations.spell_efficiency_necromancy=Necromancy Spell Efficiency
+attribute.name.jawmsintegrations.spell_efficiency_earth=Earth Spell Efficiency
+attribute.name.jawmsintegrations.spell_efficiency_sorcery=Sorcery Spell Efficiency
+attribute.name.jawmsintegrations.spell_efficiency_healing=Healing Spell Efficiency
+attribute.name.jawmsintegrations.mana_regen_delay_reduction_flat=s Post-Cast Mana Regen Delay
+attribute.name.jawmsintegrations.mana_regen_delay_reduction_percent=Post-Cast Mana Regen Delay

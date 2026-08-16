@@ -28,6 +28,48 @@ final class JarContract {
         assertMember(jarPath, internalClassName, fieldName, descriptor, false);
     }
 
+    static void assertMethodInvocation(Path jarPath,
+                                       String internalClassName,
+                                       String methodName,
+                                       String descriptor,
+                                       String invokedOwner,
+                                       String invokedName,
+                                       String invokedDescriptor) throws IOException {
+        String entryName = internalClassName + ".class";
+        AtomicBoolean found = new AtomicBoolean(false);
+        try (JarFile jar = new JarFile(jarPath.toFile())) {
+            JarEntry entry = jar.getJarEntry(entryName);
+            if (entry == null) {
+                throw new AssertionError("Missing class " + internalClassName + " in " + jarPath);
+            }
+            try (InputStream input = jar.getInputStream(entry)) {
+                new ClassReader(input).accept(new ClassVisitor(Opcodes.ASM5) {
+                    @Override
+                    public MethodVisitor visitMethod(int access, String name, String methodDescriptor,
+                                                     String signature, String[] exceptions) {
+                        if (!methodName.equals(name) || !descriptor.equals(methodDescriptor)) {
+                            return null;
+                        }
+                        return new MethodVisitor(Opcodes.ASM5) {
+                            @Override
+                            public void visitMethodInsn(int opcode, String owner, String name,
+                                                        String descriptor, boolean isInterface) {
+                                if (invokedOwner.equals(owner) && invokedName.equals(name)
+                                        && invokedDescriptor.equals(descriptor)) {
+                                    found.set(true);
+                                }
+                            }
+                        };
+                    }
+                }, ClassReader.SKIP_DEBUG | ClassReader.SKIP_FRAMES);
+            }
+        }
+        if (!found.get()) {
+            throw new AssertionError("Missing invocation " + invokedOwner + "." + invokedName
+                    + invokedDescriptor + " in " + internalClassName + "." + methodName + descriptor);
+        }
+    }
+
     private static void assertMember(Path jarPath, String internalClassName,
                                      String memberName, String descriptor, boolean method) throws IOException {
         String entryName = internalClassName + ".class";

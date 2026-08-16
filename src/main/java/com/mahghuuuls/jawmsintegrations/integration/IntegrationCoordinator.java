@@ -120,6 +120,17 @@ public final class IntegrationCoordinator {
         return Collections.unmodifiableList(new ArrayList<>(statuses.values()));
     }
 
+    public IntegrationCoordinator withFailure(IntegrationId integration, String detail) {
+        if (integration == null || detail == null || detail.trim().isEmpty()) {
+            throw new IllegalArgumentException("Failure integration and detail must be provided");
+        }
+        Map<IntegrationId, IntegrationStatusView> failed = new EnumMap<>(statuses);
+        IntegrationStatusView current = getStatus(integration);
+        failed.put(integration, new IntegrationStatusView(integration, IntegrationState.FAILED,
+                current.getDetectedVersion(), detail));
+        return new IntegrationCoordinator(failed);
+    }
+
     @FunctionalInterface
     public interface ModVersionSource {
         /** Returns the raw Forge metadata version, or null when the mod is absent. */
