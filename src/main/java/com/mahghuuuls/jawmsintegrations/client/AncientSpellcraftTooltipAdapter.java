@@ -14,7 +14,6 @@ import net.minecraftforge.event.entity.player.ItemTooltipEvent;
 import net.minecraftforge.fml.common.eventhandler.EventPriority;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 
-import java.util.Iterator;
 import java.util.List;
 
 /** Replaces misleading native descriptions with server-authored JAWMS contribution text. */
@@ -29,10 +28,6 @@ public final class AncientSpellcraftTooltipAdapter {
                 ClientAncientPresentationCache.entry(registryName);
         if (replacement == null || entry == null || !entry.isEnabled()) {
             return;
-        }
-        if (replacement == AncientReplacement.CRYSTAL_RING) {
-            removeExactLine(event.getToolTip(), I18n.format(
-                    "item.ancientspellcraft:ring_mana_cost.desc"));
         }
         if (replacement == AncientReplacement.EVERFULL_MANA_FLASK) {
             int stored = new EverfullManaState().peek(stack);
@@ -49,8 +44,6 @@ public final class AncientSpellcraftTooltipAdapter {
             return;
         }
         if (replacement == AncientReplacement.RING_OF_DAGORIM) {
-            removeExactLine(event.getToolTip(), I18n.format(
-                    "item.ancientspellcraft:ring_mana_transfer.desc"));
             event.getToolTip().add(TextFormatting.GRAY + I18n.format(
                     "tooltip.jawmsintegrations.dagorim.behavior",
                     format(entry.getTertiaryValue()), (int) entry.getValue(),
@@ -70,22 +63,15 @@ public final class AncientSpellcraftTooltipAdapter {
             return ManaContribution.builder()
                     .globalSpellEfficiency(entry.getValue()).build();
         }
+        if (replacement == AncientReplacement.MAJESTIC_MANA_CHARM) {
+            return ManaContribution.builder()
+                    .maximumManaIncrease(entry.getValue()).build();
+        }
         if (AncientReplacementPolicy.isStorage(replacement)) {
             return ManaContribution.builder()
                     .flatMaximumMana((int) entry.getValue()).build();
         }
         return ManaContribution.EMPTY;
-    }
-
-    static void removeExactLine(List<String> tooltip, String translated) {
-        String expected = TextFormatting.getTextWithoutFormattingCodes(translated);
-        Iterator<String> iterator = tooltip.iterator();
-        while (iterator.hasNext()) {
-            String plain = TextFormatting.getTextWithoutFormattingCodes(iterator.next());
-            if (expected != null && expected.equals(plain)) {
-                iterator.remove();
-            }
-        }
     }
 
     private static String format(double value) {

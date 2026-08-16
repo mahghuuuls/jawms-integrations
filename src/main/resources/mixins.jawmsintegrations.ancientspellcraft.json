@@ -11,6 +11,7 @@
     "MixinItemRingManaTransfer"
   ],
   "client": [
+    "MixinItemArtefactClient",
     "MixinItemManaArtefactClient",
     "MixinItemEverfullManaFlaskClient",
     "MixinRenderItem"

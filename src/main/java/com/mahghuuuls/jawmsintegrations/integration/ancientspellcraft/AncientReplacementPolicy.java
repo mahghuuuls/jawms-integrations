@@ -56,7 +56,7 @@ public final class AncientReplacementPolicy {
                 return ManaContribution.builder().flatMaximumMana(
                         config.getGreaterManaRing().getValue()).build();
             case MAJESTIC_MANA_CHARM:
-                return ManaContribution.builder().flatMaximumMana(
+                return ManaContribution.builder().maximumManaIncrease(
                         config.getMajesticManaCharm().getValue()).build();
             case CRYSTAL_RING:
                 return ManaContribution.builder().globalSpellEfficiency(

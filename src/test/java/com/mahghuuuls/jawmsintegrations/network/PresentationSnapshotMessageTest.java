@@ -23,7 +23,7 @@ class PresentationSnapshotMessageTest {
                         true,
                         new IntegrationConfigSnapshot.ToggleIntConfig(false, 9),
                         new IntegrationConfigSnapshot.ToggleIntConfig(true, 13),
-                        new IntegrationConfigSnapshot.ToggleIntConfig(true, 19),
+                        new IntegrationConfigSnapshot.ToggleDoubleConfig(true, 19.5D),
                         new IntegrationConfigSnapshot.ToggleDoubleConfig(true, 27.5D));
         IntegrationPresentationSnapshot original = IntegrationPresentationSnapshot.from(
                 new AncientReplacementPolicy(true, config));
@@ -41,7 +41,7 @@ class PresentationSnapshotMessageTest {
                     AncientReplacement.LESSER_MANA_RING).getValue());
             assertEquals(13.0D, incoming.getSnapshot().get(
                     AncientReplacement.GREATER_MANA_RING).getValue());
-            assertEquals(19.0D, incoming.getSnapshot().get(
+            assertEquals(19.5D, incoming.getSnapshot().get(
                     AncientReplacement.MAJESTIC_MANA_CHARM).getValue());
             assertEquals(27.5D, incoming.getSnapshot().get(
                     AncientReplacement.CRYSTAL_RING).getValue());

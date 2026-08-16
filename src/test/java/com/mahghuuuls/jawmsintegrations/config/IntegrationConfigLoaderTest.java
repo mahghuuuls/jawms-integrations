@@ -34,7 +34,7 @@ class IntegrationConfigLoaderTest {
         assertTrue(snapshot.getAncientSpellcraft().getGreaterManaRing().isEnabled());
         assertEquals(12, snapshot.getAncientSpellcraft().getGreaterManaRing().getValue());
         assertTrue(snapshot.getAncientSpellcraft().getMajesticManaCharm().isEnabled());
-        assertEquals(18, snapshot.getAncientSpellcraft().getMajesticManaCharm().getValue());
+        assertEquals(15.0D, snapshot.getAncientSpellcraft().getMajesticManaCharm().getValue());
         assertTrue(snapshot.getAncientSpellcraft().getCrystalRing().isEnabled());
         assertEquals(25.0D, snapshot.getAncientSpellcraft().getCrystalRing().getValue());
         assertTrue(snapshot.getAncientSpellcraft().getEverfullManaFlask().isEnabled());
@@ -101,17 +101,18 @@ class IntegrationConfigLoaderTest {
         assertEquals(12, IntegrationConfigLoader.validatePositiveInt(
                 "ancient_spellcraft.replacements.greater_mana_ring",
                 "flatMaximumMana", "10001", 12, warnings));
-        assertEquals(18, IntegrationConfigLoader.validatePositiveInt(
+        assertEquals(15.0D, IntegrationConfigLoader.validatePositiveDouble(
                 "ancient_spellcraft.replacements.majestic_mana_charm",
-                "flatMaximumMana", "18", 18, warnings));
+                "percentMaximumMana", "0", 15.0D, warnings));
         assertEquals(25.0D, IntegrationConfigLoader.validatePositiveDouble(
                 "ancient_spellcraft.replacements.crystal_ring",
                 "spellEfficiency", "-25", 25.0D, warnings));
 
-        assertEquals(3, warnings.size());
+        assertEquals(4, warnings.size());
         assertTrue(warnings.get(0).contains("lesser_mana_ring.flatMaximumMana"));
         assertTrue(warnings.get(1).contains("greater_mana_ring.flatMaximumMana"));
-        assertTrue(warnings.get(2).contains("crystal_ring.spellEfficiency"));
+        assertTrue(warnings.get(2).contains("majestic_mana_charm.percentMaximumMana"));
+        assertTrue(warnings.get(3).contains("crystal_ring.spellEfficiency"));
     }
 
     @Test

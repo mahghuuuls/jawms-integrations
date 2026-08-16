@@ -198,7 +198,7 @@ public final class IntegrationConfigSnapshot {
         private final boolean integrationEnabled;
         private final ToggleIntConfig lesserManaRing;
         private final ToggleIntConfig greaterManaRing;
-        private final ToggleIntConfig majesticManaCharm;
+        private final ToggleDoubleConfig majesticManaCharm;
         private final ToggleDoubleConfig crystalRing;
         private final EverfullManaFlaskConfig everfullManaFlask;
         private final RingOfDagorimConfig ringOfDagorim;
@@ -207,7 +207,7 @@ public final class IntegrationConfigSnapshot {
             this(integrationEnabled,
                     new ToggleIntConfig(true, 8),
                     new ToggleIntConfig(true, 12),
-                    new ToggleIntConfig(true, 18),
+                    new ToggleDoubleConfig(true, 15.0D),
                     new ToggleDoubleConfig(true, 25.0D),
                     new EverfullManaFlaskConfig(true, 1, 12, 10),
                     new RingOfDagorimConfig(true, 5, 20, 20.0D));
@@ -216,7 +216,7 @@ public final class IntegrationConfigSnapshot {
         public AncientSpellcraftConfig(boolean integrationEnabled,
                                        ToggleIntConfig lesserManaRing,
                                        ToggleIntConfig greaterManaRing,
-                                       ToggleIntConfig majesticManaCharm,
+                                       ToggleDoubleConfig majesticManaCharm,
                                        ToggleDoubleConfig crystalRing) {
             this(integrationEnabled, lesserManaRing, greaterManaRing, majesticManaCharm,
                     crystalRing, new EverfullManaFlaskConfig(true, 1, 12, 10),
@@ -226,7 +226,7 @@ public final class IntegrationConfigSnapshot {
         public AncientSpellcraftConfig(boolean integrationEnabled,
                                        ToggleIntConfig lesserManaRing,
                                        ToggleIntConfig greaterManaRing,
-                                       ToggleIntConfig majesticManaCharm,
+                                       ToggleDoubleConfig majesticManaCharm,
                                        ToggleDoubleConfig crystalRing,
                                        EverfullManaFlaskConfig everfullManaFlask) {
             this(integrationEnabled, lesserManaRing, greaterManaRing, majesticManaCharm,
@@ -237,7 +237,7 @@ public final class IntegrationConfigSnapshot {
         public AncientSpellcraftConfig(boolean integrationEnabled,
                                        ToggleIntConfig lesserManaRing,
                                        ToggleIntConfig greaterManaRing,
-                                       ToggleIntConfig majesticManaCharm,
+                                       ToggleDoubleConfig majesticManaCharm,
                                        ToggleDoubleConfig crystalRing,
                                        EverfullManaFlaskConfig everfullManaFlask,
                                        RingOfDagorimConfig ringOfDagorim) {
@@ -271,7 +271,7 @@ public final class IntegrationConfigSnapshot {
             return greaterManaRing;
         }
 
-        public ToggleIntConfig getMajesticManaCharm() {
+        public ToggleDoubleConfig getMajesticManaCharm() {
             return majesticManaCharm;
         }
 

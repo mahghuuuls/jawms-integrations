@@ -144,6 +144,40 @@ class AncientSuppressionMixinTest {
         assertEquals(1, nativeItem.calls);
     }
 
+    @Test
+    void wrappedNativeDescriptionsAreSuppressedAtSourceForCrystalAndDagorimOnly()
+            throws Exception {
+        Method tooltip = MixinItemArtefactClient.class.getDeclaredMethod(
+                "jawmsIntegrations$suppressReplacedDescription",
+                ItemStack.class, net.minecraft.world.World.class, java.util.List.class,
+                net.minecraft.client.util.ITooltipFlag.class, CallbackInfo.class);
+        tooltip.setAccessible(true);
+        ItemStack crystal = stack(AncientReplacement.CRYSTAL_RING);
+        ItemStack dagorim = stack(AncientReplacement.RING_OF_DAGORIM);
+        ItemStack unrelated = new ItemStack(new Item().setRegistryName(
+                new net.minecraft.util.ResourceLocation("ancientspellcraft", "ring_power")));
+
+        CallbackInfo beforeSnapshot = new CallbackInfo("test", true);
+        tooltip.invoke(new TestArtefactMixin(), crystal, null, new ArrayList<>(), null,
+                beforeSnapshot);
+        assertFalse(beforeSnapshot.isCancelled());
+
+        ClientAncientPresentationCache.install(
+                IntegrationPresentationSnapshot.from(enabledPolicy()));
+        CallbackInfo crystalActive = new CallbackInfo("test", true);
+        tooltip.invoke(new TestArtefactMixin(), crystal, null, new ArrayList<>(), null,
+                crystalActive);
+        assertTrue(crystalActive.isCancelled());
+        CallbackInfo dagorimActive = new CallbackInfo("test", true);
+        tooltip.invoke(new TestArtefactMixin(), dagorim, null, new ArrayList<>(), null,
+                dagorimActive);
+        assertTrue(dagorimActive.isCancelled());
+        CallbackInfo unrelatedActive = new CallbackInfo("test", true);
+        tooltip.invoke(new TestArtefactMixin(), unrelated, null, new ArrayList<>(), null,
+                unrelatedActive);
+        assertFalse(unrelatedActive.isCancelled());
+    }
+
     private static AncientReplacementPolicy enabledPolicy() {
         return new AncientReplacementPolicy(true,
                 IntegrationConfigSnapshot.defaults().getAncientSpellcraft());
@@ -159,6 +193,9 @@ class AncientSuppressionMixinTest {
     }
 
     private static final class TestTooltipMixin extends MixinItemManaArtefactClient {
+    }
+
+    private static final class TestArtefactMixin extends MixinItemArtefactClient {
     }
 
     private static final class TestRenderItemMixin extends MixinRenderItem {

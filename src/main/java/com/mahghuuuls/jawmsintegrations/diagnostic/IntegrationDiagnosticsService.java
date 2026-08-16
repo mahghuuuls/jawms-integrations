@@ -149,7 +149,7 @@ public final class IntegrationDiagnosticsService {
         return "enabled(" + enabledCount + "/6"
                 + ", lesser=" + ancient.getLesserManaRing().getValue()
                 + ", greater=" + ancient.getGreaterManaRing().getValue()
-                + ", majestic=" + ancient.getMajesticManaCharm().getValue()
+                + ", majestic=" + ancient.getMajesticManaCharm().getValue() + "%"
                 + ", crystal=" + ancient.getCrystalRing().getValue()
                 + ", everfull=capacity100/regen"
                 + ancient.getEverfullManaFlask().getRegenerationAmount()

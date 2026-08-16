@@ -55,8 +55,8 @@ public final class IntegrationConfigLoader {
                 configuration, "lesser_mana_ring", "flatMaximumMana", 8, warnings);
         IntegrationConfigSnapshot.ToggleIntConfig greaterManaRing = readToggleInt(
                 configuration, "greater_mana_ring", "flatMaximumMana", 12, warnings);
-        IntegrationConfigSnapshot.ToggleIntConfig majesticManaCharm = readToggleInt(
-                configuration, "majestic_mana_charm", "flatMaximumMana", 18, warnings);
+        IntegrationConfigSnapshot.ToggleDoubleConfig majesticManaCharm = readToggleDouble(
+                configuration, "majestic_mana_charm", "percentMaximumMana", 15.0D, warnings);
         IntegrationConfigSnapshot.ToggleDoubleConfig crystalRing = readToggleDouble(
                 configuration, "crystal_ring", "spellEfficiency", 25.0D, warnings);
         String everfullCategory = ANCIENT_SPELLCRAFT + ".replacements.everfull_mana_flask";

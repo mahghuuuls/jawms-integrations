@@ -10,7 +10,7 @@ import java.util.Map;
 /** Versioned, server-authored facts used only for client presentation. */
 public final class IntegrationPresentationSnapshot {
 
-    public static final int PROTOCOL_VERSION = 3;
+    public static final int PROTOCOL_VERSION = 4;
     private final Map<AncientReplacement, Entry> ancientStatic;
 
     public IntegrationPresentationSnapshot(Map<AncientReplacement, Entry> ancientStatic) {
@@ -74,6 +74,7 @@ public final class IntegrationPresentationSnapshot {
             return;
         }
         if (replacement != AncientReplacement.CRYSTAL_RING
+                && replacement != AncientReplacement.MAJESTIC_MANA_CHARM
                 && (value != Math.rint(value) || value > Integer.MAX_VALUE)) {
             throw new IllegalArgumentException(
                     "Flat-mana presentation value must be an integer for " + replacement);

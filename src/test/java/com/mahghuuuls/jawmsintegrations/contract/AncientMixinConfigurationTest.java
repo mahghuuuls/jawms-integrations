@@ -23,11 +23,12 @@ class AncientMixinConfigurationTest {
         assertEquals(1, occurrences(json, "MixinASEventHandler"));
         assertEquals(1, occurrences(json, "MixinItemManaArtefact\""));
         assertEquals(1, occurrences(json, "MixinItemManaArtefactClient"));
+        assertEquals(1, occurrences(json, "MixinItemArtefactClient"));
         assertEquals(1, occurrences(json, "MixinRenderItem"));
         assertEquals(1, occurrences(json, "MixinItemEverfullManaFlask\""));
         assertEquals(1, occurrences(json, "MixinItemEverfullManaFlaskClient"));
         assertEquals(1, occurrences(json, "MixinItemRingManaTransfer"));
-        assertEquals(7, occurrences(json, "\"Mixin"));
+        assertEquals(8, occurrences(json, "\"Mixin"));
     }
 
     private static int occurrences(String text, String needle) {

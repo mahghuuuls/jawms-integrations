@@ -45,10 +45,10 @@ class AncientReplacementPolicyTest {
     void defaultStaticContributionsApplyOnlyFromBaublesSlots() {
         AncientReplacementPolicy policy = enabledDefaults();
 
-        assertContribution(policy, AncientReplacement.LESSER_MANA_RING, 8, 0.0D);
-        assertContribution(policy, AncientReplacement.GREATER_MANA_RING, 12, 0.0D);
-        assertContribution(policy, AncientReplacement.MAJESTIC_MANA_CHARM, 18, 0.0D);
-        assertContribution(policy, AncientReplacement.CRYSTAL_RING, 0, 25.0D);
+        assertContribution(policy, AncientReplacement.LESSER_MANA_RING, 8, 0.0D, 0.0D);
+        assertContribution(policy, AncientReplacement.GREATER_MANA_RING, 12, 0.0D, 0.0D);
+        assertContribution(policy, AncientReplacement.MAJESTIC_MANA_CHARM, 0, 15.0D, 0.0D);
+        assertContribution(policy, AncientReplacement.CRYSTAL_RING, 0, 0.0D, 25.0D);
 
         ItemStack lesser = stack(AncientReplacement.LESSER_MANA_RING);
         ManaContribution ignored = policy.contribution(
@@ -63,16 +63,16 @@ class AncientReplacementPolicyTest {
                         true,
                         new IntegrationConfigSnapshot.ToggleIntConfig(false, 8),
                         new IntegrationConfigSnapshot.ToggleIntConfig(true, 14),
-                        new IntegrationConfigSnapshot.ToggleIntConfig(true, 20),
+                        new IntegrationConfigSnapshot.ToggleDoubleConfig(true, 20.0D),
                         new IntegrationConfigSnapshot.ToggleDoubleConfig(true, 30.0D));
         AncientReplacementPolicy policy = new AncientReplacementPolicy(true, config);
 
         ItemStack lesser = stack(AncientReplacement.LESSER_MANA_RING);
         assertTrue(policy.contribution(context(lesser)).isEmpty());
         assertFalse(policy.isStorageReplacement(lesser));
-        assertContribution(policy, AncientReplacement.GREATER_MANA_RING, 14, 0.0D);
-        assertContribution(policy, AncientReplacement.MAJESTIC_MANA_CHARM, 20, 0.0D);
-        assertContribution(policy, AncientReplacement.CRYSTAL_RING, 0, 30.0D);
+        assertContribution(policy, AncientReplacement.GREATER_MANA_RING, 14, 0.0D, 0.0D);
+        assertContribution(policy, AncientReplacement.MAJESTIC_MANA_CHARM, 0, 20.0D, 0.0D);
+        assertContribution(policy, AncientReplacement.CRYSTAL_RING, 0, 0.0D, 30.0D);
     }
 
     @Test
@@ -129,9 +129,11 @@ class AncientReplacementPolicyTest {
     private static void assertContribution(AncientReplacementPolicy policy,
                                            AncientReplacement replacement,
                                            int flatMaximumMana,
+                                           double maximumManaIncrease,
                                            double spellEfficiency) {
         ManaContribution contribution = policy.contribution(context(stack(replacement)));
         assertEquals(flatMaximumMana, contribution.getFlatMaximumMana());
+        assertEquals(maximumManaIncrease, contribution.getMaximumManaIncrease());
         assertEquals(spellEfficiency, contribution.getGlobalSpellEfficiency());
     }
 
