@@ -1,5 +1,7 @@
 package com.mahghuuuls.jawmsintegrations.client;
 
+import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.nbt.NBTTagList;
 import net.minecraft.util.text.TextFormatting;
 import org.junit.jupiter.api.Test;
 
@@ -73,5 +75,80 @@ class QualityToolsTooltipAdapterTest {
                 tooltip, "Post-Cast Mana Regen Delay");
 
         assertEquals(TextFormatting.BLUE + " -1.25 s Post-Cast Mana Regen Delay", tooltip.get(0));
+    }
+
+    @Test
+    void qualityBlockMovesBelowLaterJawmsItemStatsAsOneUnit() {
+        List<String> tooltip = new ArrayList<>(Arrays.asList(
+                "Ice Battlemage Leggings",
+                "When on legs:",
+                " +6 Armor",
+                "",
+                "Quality: Efficient Casting",
+                "When on legs:",
+                " +5 Spell Efficiency",
+                "+10 Mana",
+                "+0.4 Mana regen",
+                "+5 Ice spell efficiency"));
+
+        QualityToolsTooltipAdapter.moveQualityBlockToEnd(
+                tooltip, "Quality:", 1, 1);
+
+        assertEquals(Arrays.asList(
+                "Ice Battlemage Leggings",
+                "When on legs:",
+                " +6 Armor",
+                "+10 Mana",
+                "+0.4 Mana regen",
+                "+5 Ice spell efficiency",
+                "",
+                "Quality: Efficient Casting",
+                "When on legs:",
+                " +5 Spell Efficiency"), tooltip);
+    }
+
+    @Test
+    void qualityBlockAlreadyAtEndRemainsStable() {
+        List<String> tooltip = new ArrayList<>(Arrays.asList(
+                "Wizard Hat",
+                "+10 Mana",
+                "",
+                "Quality: Manawoven",
+                "When on head:",
+                " +5 Maximum Mana"));
+
+        QualityToolsTooltipAdapter.moveQualityBlockToEnd(
+                tooltip, "Quality:", 1, 1);
+
+        assertEquals(Arrays.asList(
+                "Wizard Hat",
+                "+10 Mana",
+                "",
+                "Quality: Manawoven",
+                "When on head:",
+                " +5 Maximum Mana"), tooltip);
+    }
+
+    @Test
+    void zeroAmountModifierIsNotCountedAsAVisibleQualityLine() {
+        NBTTagList modifiers = new NBTTagList();
+        NBTTagCompound zero = new NBTTagCompound();
+        zero.setDouble("Amount", 0.0D);
+        modifiers.appendTag(zero);
+        NBTTagCompound visible = new NBTTagCompound();
+        visible.setDouble("Amount", 5.0D);
+        modifiers.appendTag(visible);
+
+        assertEquals(1, QualityToolsTooltipAdapter.countDisplayedModifiers(modifiers));
+    }
+
+    @Test
+    void negativeZeroModifierMatchesQualityToolsAndIsNotCountedAsVisible() {
+        NBTTagList modifiers = new NBTTagList();
+        NBTTagCompound negativeZero = new NBTTagCompound();
+        negativeZero.setDouble("Amount", -0.0D);
+        modifiers.appendTag(negativeZero);
+
+        assertEquals(0, QualityToolsTooltipAdapter.countDisplayedModifiers(modifiers));
     }
 }

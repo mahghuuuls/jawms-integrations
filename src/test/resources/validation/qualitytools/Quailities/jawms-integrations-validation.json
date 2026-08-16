@@ -7,10 +7,8 @@
     "feet"
   ],
   "whitelist": [
-    { "slot": "head" },
-    { "slot": "chest" },
-    { "slot": "legs" },
-    { "slot": "feet" }
+    { "item": "minecraft:iron_helmet" },
+    { "item": "minecraft:iron_chestplate" }
   ],
   "blacklist": [],
   "qualities": [
