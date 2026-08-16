@@ -325,6 +325,8 @@ test {
         }
     }
     doFirst {
+        systemProperty 'jawmsintegrations.mainClassesDir',
+                sourceSets.main.output.classesDirs.singleFile.absolutePath
         systemProperty 'jawmsintegrations.contract.qualityToolsJar',
                 configurations.qualityToolsContract.singleFile.absolutePath
         systemProperty 'jawmsintegrations.contract.ancientSpellcraftJar',

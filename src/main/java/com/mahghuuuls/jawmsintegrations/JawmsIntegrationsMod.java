@@ -1,7 +1,19 @@
 package com.mahghuuuls.jawmsintegrations;
 
+import com.mahghuuuls.jawmsintegrations.command.IntegrationStatusCommand;
+import com.mahghuuuls.jawmsintegrations.config.IntegrationConfigLoader;
+import com.mahghuuuls.jawmsintegrations.config.IntegrationConfigSnapshot;
+import com.mahghuuuls.jawmsintegrations.diagnostic.IntegrationDiagnosticsService;
+import com.mahghuuuls.jawmsintegrations.integration.IntegrationCoordinator;
+import com.mahghuuuls.jawmsintegrations.integration.IntegrationState;
+import com.mahghuuuls.jawmsintegrations.integration.IntegrationStatusView;
+import com.mahghuuuls.jawmsintegrations.integration.JawmsCompatibility;
 import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.fml.common.ModContainer;
+import net.minecraftforge.fml.common.Loader;
+import net.minecraftforge.fml.common.event.FMLPostInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
+import net.minecraftforge.fml.common.event.FMLServerStartingEvent;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -17,8 +29,44 @@ public final class JawmsIntegrationsMod {
     public static final String CONFIG_FILENAME = "jawmsintegrations.cfg";
     public static final Logger LOGGER = LogManager.getLogger(Tags.MOD_NAME);
 
+    private IntegrationConfigSnapshot config;
+    private IntegrationCoordinator coordinator;
+    private IntegrationDiagnosticsService diagnostics;
+
     @Mod.EventHandler
     public void preInit(FMLPreInitializationEvent event) {
-        LOGGER.info("Initializing {}", Tags.MOD_NAME);
+        IntegrationConfigLoader.LoadResult loaded = IntegrationConfigLoader.load(
+                event.getSuggestedConfigurationFile()
+        );
+        config = loaded.getSnapshot();
+        for (String warning : loaded.getWarnings()) {
+            LOGGER.warn(warning);
+        }
+
+        ModContainer jawmsContainer = Loader.instance().getIndexedModList().get("jawms");
+        String jawmsVersion = jawmsContainer == null ? null : jawmsContainer.getVersion();
+        JawmsCompatibility.Status jawms = JawmsCompatibility.verifyInstalled(jawmsVersion);
+
+        coordinator = IntegrationCoordinator.initialize(config);
+        for (IntegrationStatusView status : coordinator.getStatuses()) {
+            if (status.getState() == IntegrationState.UNSUPPORTED
+                    || status.getState() == IntegrationState.FAILED) {
+                LOGGER.warn("{} integration {}: {}", status.getIntegration().getDisplayName(),
+                        status.getState(), status.getDetail());
+            }
+        }
+        diagnostics = new IntegrationDiagnosticsService(jawms, config, coordinator);
+    }
+
+    @Mod.EventHandler
+    public void postInit(FMLPostInitializationEvent event) {
+        if (config.getDiagnostics().isEnabled()) {
+            LOGGER.info(diagnostics.startupSummary());
+        }
+    }
+
+    @Mod.EventHandler
+    public void serverStarting(FMLServerStartingEvent event) {
+        event.registerServerCommand(new IntegrationStatusCommand(diagnostics));
     }
 }
