@@ -11,6 +11,7 @@ import com.mahghuuuls.jawmsintegrations.integration.IntegrationId;
 import com.mahghuuuls.jawmsintegrations.integration.IntegrationState;
 import com.mahghuuuls.jawmsintegrations.integration.IntegrationStatusView;
 import com.mahghuuuls.jawmsintegrations.integration.JawmsCompatibility;
+import com.mahghuuuls.jawmsintegrations.integration.ancientspellcraft.DagorimFlaskService;
 import net.minecraft.entity.player.EntityPlayer;
 
 import java.util.ArrayList;
@@ -48,8 +49,7 @@ public final class IntegrationDiagnosticsService {
         result.append("; built-in qualities=")
                 .append(builtInSummary())
                 .append("; Ancient replacements=")
-                .append(coordinator.getStatus(IntegrationId.ANCIENT_SPELLCRAFT).getState()
-                        == IntegrationState.ACTIVE ? "eligible" : "inactive");
+                .append(ancientReplacementSummary());
         return result.toString();
     }
 
@@ -66,7 +66,12 @@ public final class IntegrationDiagnosticsService {
         lines.add("Configuration: Quality Tools=" + enabled(config.getQualityTools().isIntegrationEnabled())
                 + ", built-in qualities=" + builtInSummary()
                 + ", Ancient Spellcraft=" + enabled(config.getAncientSpellcraft().isIntegrationEnabled())
+                + ", Ancient replacements=" + ancientReplacementSummary()
                 + ", startup diagnostics=" + enabled(config.getDiagnostics().isEnabled()));
+        if (config.getDiagnostics().isEnabled()) {
+            lines.add("Latest Ring of Dagorim activation: "
+                    + DagorimFlaskService.active().latestActivationSummary());
+        }
         return lines;
     }
 
@@ -126,6 +131,33 @@ public final class IntegrationDiagnosticsService {
             }
         }
         return "enabled(" + enabled + "/" + total + ")";
+    }
+
+    private String ancientReplacementSummary() {
+        IntegrationState state = coordinator.getStatus(IntegrationId.ANCIENT_SPELLCRAFT).getState();
+        if (state != IntegrationState.ACTIVE) {
+            return "inactive(state=" + state + ")";
+        }
+        IntegrationConfigSnapshot.AncientSpellcraftConfig ancient = config.getAncientSpellcraft();
+        int enabledCount = 0;
+        enabledCount += ancient.getLesserManaRing().isEnabled() ? 1 : 0;
+        enabledCount += ancient.getGreaterManaRing().isEnabled() ? 1 : 0;
+        enabledCount += ancient.getMajesticManaCharm().isEnabled() ? 1 : 0;
+        enabledCount += ancient.getCrystalRing().isEnabled() ? 1 : 0;
+        enabledCount += ancient.getEverfullManaFlask().isEnabled() ? 1 : 0;
+        enabledCount += ancient.getRingOfDagorim().isEnabled() ? 1 : 0;
+        return "enabled(" + enabledCount + "/6"
+                + ", lesser=" + ancient.getLesserManaRing().getValue()
+                + ", greater=" + ancient.getGreaterManaRing().getValue()
+                + ", majestic=" + ancient.getMajesticManaCharm().getValue()
+                + ", crystal=" + ancient.getCrystalRing().getValue()
+                + ", everfull=capacity100/regen"
+                + ancient.getEverfullManaFlask().getRegenerationAmount()
+                + "@" + ancient.getEverfullManaFlask().getRegenerationIntervalSeconds()
+                + "s/transfer" + ancient.getEverfullManaFlask().getTransferAmount()
+                + ", dagorim=" + ancient.getRingOfDagorim().getIntervalSeconds()
+                + "s/below" + ancient.getRingOfDagorim().getManaThreshold()
+                + "/chance" + ancient.getRingOfDagorim().getActivationChancePercent() + "%)";
     }
 
     static String formatContribution(ManaContribution contribution) {

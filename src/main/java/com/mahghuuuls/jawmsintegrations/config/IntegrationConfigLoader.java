@@ -51,6 +51,40 @@ public final class IntegrationConfigLoader {
                 "Enables all JAWMS replacement behavior owned by the Ancient Spellcraft integration. Requires restart.",
                 warnings
         );
+        IntegrationConfigSnapshot.ToggleIntConfig lesserManaRing = readToggleInt(
+                configuration, "lesser_mana_ring", "flatMaximumMana", 8, warnings);
+        IntegrationConfigSnapshot.ToggleIntConfig greaterManaRing = readToggleInt(
+                configuration, "greater_mana_ring", "flatMaximumMana", 12, warnings);
+        IntegrationConfigSnapshot.ToggleIntConfig majesticManaCharm = readToggleInt(
+                configuration, "majestic_mana_charm", "flatMaximumMana", 18, warnings);
+        IntegrationConfigSnapshot.ToggleDoubleConfig crystalRing = readToggleDouble(
+                configuration, "crystal_ring", "spellEfficiency", 25.0D, warnings);
+        String everfullCategory = ANCIENT_SPELLCRAFT + ".replacements.everfull_mana_flask";
+        IntegrationConfigSnapshot.EverfullManaFlaskConfig everfullManaFlask =
+                new IntegrationConfigSnapshot.EverfullManaFlaskConfig(
+                        readBoolean(configuration, everfullCategory, "enabled", true,
+                                "Enables the JAWMS Everfull Mana Flask replacement. Requires restart.",
+                                warnings),
+                        readPositiveInt(configuration, everfullCategory, "regenerationAmount", 1,
+                                "Stored mana regenerated at each interval. Requires restart.", warnings),
+                        readPositiveInt(configuration, everfullCategory,
+                                "regenerationIntervalSeconds", 12,
+                                "Seconds between stored-mana regeneration. Requires restart.", warnings),
+                        readPositiveInt(configuration, everfullCategory, "transferAmount", 10,
+                                "Maximum JAWMS mana restored per valid offhand use. Requires restart.",
+                                warnings));
+        String dagorimCategory = ANCIENT_SPELLCRAFT + ".replacements.ring_of_dagorim";
+        IntegrationConfigSnapshot.RingOfDagorimConfig ringOfDagorim =
+                new IntegrationConfigSnapshot.RingOfDagorimConfig(
+                        readBoolean(configuration, dagorimCategory, "enabled", true,
+                                "Enables the JAWMS Ring of Dagorim replacement. Requires restart.", warnings),
+                        readPositiveInt(configuration, dagorimCategory, "intervalSeconds", 5,
+                                "Seconds between equipped-ring checks. Requires restart.", warnings),
+                        readBoundedInt(configuration, dagorimCategory, "manaThreshold", 20, 0, 10000,
+                                "Checks only while current JAWMS mana is below this value. Requires restart.", warnings),
+                        readBoundedDouble(configuration, dagorimCategory, "activationChancePercent",
+                                20.0D, 0.0D, 100.0D,
+                                "Chance per eligible check to consume one ordinary mana flask. Requires restart.", warnings));
         boolean diagnosticsEnabled = readBoolean(
                 configuration,
                 DIAGNOSTICS,
@@ -70,10 +104,45 @@ public final class IntegrationConfigLoader {
                         builtInQualitiesEnabled,
                         builtInQualities
                 ),
-                new IntegrationConfigSnapshot.AncientSpellcraftConfig(ancientSpellcraftEnabled),
+                new IntegrationConfigSnapshot.AncientSpellcraftConfig(
+                        ancientSpellcraftEnabled,
+                        lesserManaRing,
+                        greaterManaRing,
+                        majesticManaCharm,
+                        crystalRing,
+                        everfullManaFlask,
+                        ringOfDagorim),
                 new IntegrationConfigSnapshot.DiagnosticsConfig(diagnosticsEnabled)
         );
         return new LoadResult(snapshot, warnings);
+    }
+
+    private static IntegrationConfigSnapshot.ToggleIntConfig readToggleInt(
+            Configuration configuration,
+            String replacement,
+            String valueKey,
+            int defaultValue,
+            List<String> warnings) {
+        String category = ANCIENT_SPELLCRAFT + ".replacements." + replacement;
+        boolean enabled = readBoolean(configuration, category, "enabled", true,
+                "Enables this Ancient Spellcraft replacement. Requires restart.", warnings);
+        int value = readPositiveInt(configuration, category, valueKey, defaultValue,
+                "Positive JAWMS replacement value. Requires restart.", warnings);
+        return new IntegrationConfigSnapshot.ToggleIntConfig(enabled, value);
+    }
+
+    private static IntegrationConfigSnapshot.ToggleDoubleConfig readToggleDouble(
+            Configuration configuration,
+            String replacement,
+            String valueKey,
+            double defaultValue,
+            List<String> warnings) {
+        String category = ANCIENT_SPELLCRAFT + ".replacements." + replacement;
+        boolean enabled = readBoolean(configuration, category, "enabled", true,
+                "Enables this Ancient Spellcraft replacement. Requires restart.", warnings);
+        double value = readPositiveDouble(configuration, category, valueKey, defaultValue,
+                "Positive JAWMS replacement value. Requires restart.", warnings);
+        return new IntegrationConfigSnapshot.ToggleDoubleConfig(enabled, value);
     }
 
     private static Map<IntegrationConfigSnapshot.BuiltInQuality,
@@ -115,13 +184,18 @@ public final class IntegrationConfigLoader {
                 : null;
         String raw = existing == null ? null : existing.getString();
         Property property = configuration.get(category, key, defaultValue, comment);
-        return validateBoolean(
+        int warningCount = warnings.size();
+        boolean validated = validateBoolean(
                 category,
                 key,
                 raw == null ? property.getString() : raw,
                 defaultValue,
                 warnings
         );
+        if (warnings.size() != warningCount) {
+            property.set(validated);
+        }
+        return validated;
     }
 
     static boolean validateBoolean(String category,
@@ -220,6 +294,36 @@ public final class IntegrationConfigLoader {
             property.set(validated);
         }
         return validated;
+    }
+
+    private static int readBoundedInt(Configuration configuration, String category, String key,
+                                      int defaultValue, int minimum, int maximum,
+                                      String comment, List<String> warnings) {
+        Property property = configuration.get(category, key, defaultValue, comment);
+        String raw = property.getString();
+        try {
+            int value = Integer.parseInt(raw);
+            if (value >= minimum && value <= maximum) return value;
+        } catch (NumberFormatException ignored) { }
+        warnings.add(invalid(category, key, raw,
+                "an integer from " + minimum + " through " + maximum, defaultValue));
+        property.set(defaultValue);
+        return defaultValue;
+    }
+
+    private static double readBoundedDouble(Configuration configuration, String category, String key,
+                                            double defaultValue, double minimum, double maximum,
+                                            String comment, List<String> warnings) {
+        Property property = configuration.get(category, key, defaultValue, comment);
+        String raw = property.getString();
+        try {
+            double value = Double.parseDouble(raw);
+            if (Double.isFinite(value) && value >= minimum && value <= maximum) return value;
+        } catch (NumberFormatException ignored) { }
+        warnings.add(invalid(category, key, raw,
+                "a finite number from " + minimum + " through " + maximum, defaultValue));
+        property.set(defaultValue);
+        return defaultValue;
     }
 
     static int validatePositiveInt(String category,

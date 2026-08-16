@@ -7,8 +7,10 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class IntegrationConfigLoaderTest {
+
 
     @Test
     void exposesApprovedCoreDefaults() {
@@ -27,6 +29,26 @@ class IntegrationConfigLoaderTest {
             assertEquals(quality.getDefaultWeight(), configured.getWeight());
         }
         assertTrue(snapshot.getAncientSpellcraft().isIntegrationEnabled());
+        assertTrue(snapshot.getAncientSpellcraft().getLesserManaRing().isEnabled());
+        assertEquals(8, snapshot.getAncientSpellcraft().getLesserManaRing().getValue());
+        assertTrue(snapshot.getAncientSpellcraft().getGreaterManaRing().isEnabled());
+        assertEquals(12, snapshot.getAncientSpellcraft().getGreaterManaRing().getValue());
+        assertTrue(snapshot.getAncientSpellcraft().getMajesticManaCharm().isEnabled());
+        assertEquals(18, snapshot.getAncientSpellcraft().getMajesticManaCharm().getValue());
+        assertTrue(snapshot.getAncientSpellcraft().getCrystalRing().isEnabled());
+        assertEquals(25.0D, snapshot.getAncientSpellcraft().getCrystalRing().getValue());
+        assertTrue(snapshot.getAncientSpellcraft().getEverfullManaFlask().isEnabled());
+        assertEquals(1, snapshot.getAncientSpellcraft().getEverfullManaFlask()
+                .getRegenerationAmount());
+        assertEquals(12, snapshot.getAncientSpellcraft().getEverfullManaFlask()
+                .getRegenerationIntervalSeconds());
+        assertEquals(10, snapshot.getAncientSpellcraft().getEverfullManaFlask()
+                .getTransferAmount());
+        assertTrue(snapshot.getAncientSpellcraft().getRingOfDagorim().isEnabled());
+        assertEquals(5, snapshot.getAncientSpellcraft().getRingOfDagorim().getIntervalSeconds());
+        assertEquals(20, snapshot.getAncientSpellcraft().getRingOfDagorim().getManaThreshold());
+        assertEquals(20.0D, snapshot.getAncientSpellcraft().getRingOfDagorim()
+                .getActivationChancePercent());
         assertFalse(snapshot.getDiagnostics().isEnabled());
     }
 
@@ -67,6 +89,45 @@ class IntegrationConfigLoaderTest {
         assertTrue(warnings.get(0).contains("displayName"));
         assertTrue(warnings.get(1).contains("amount"));
         assertTrue(warnings.get(2).contains("weight"));
+    }
+
+    @Test
+    void invalidAncientReplacementValuesFallBackIndependently() {
+        List<String> warnings = new ArrayList<>();
+
+        assertEquals(8, IntegrationConfigLoader.validatePositiveInt(
+                "ancient_spellcraft.replacements.lesser_mana_ring",
+                "flatMaximumMana", "0", 8, warnings));
+        assertEquals(12, IntegrationConfigLoader.validatePositiveInt(
+                "ancient_spellcraft.replacements.greater_mana_ring",
+                "flatMaximumMana", "10001", 12, warnings));
+        assertEquals(18, IntegrationConfigLoader.validatePositiveInt(
+                "ancient_spellcraft.replacements.majestic_mana_charm",
+                "flatMaximumMana", "18", 18, warnings));
+        assertEquals(25.0D, IntegrationConfigLoader.validatePositiveDouble(
+                "ancient_spellcraft.replacements.crystal_ring",
+                "spellEfficiency", "-25", 25.0D, warnings));
+
+        assertEquals(3, warnings.size());
+        assertTrue(warnings.get(0).contains("lesser_mana_ring.flatMaximumMana"));
+        assertTrue(warnings.get(1).contains("greater_mana_ring.flatMaximumMana"));
+        assertTrue(warnings.get(2).contains("crystal_ring.spellEfficiency"));
+    }
+
+    @Test
+    void dagorimValueObjectEnforcesAllApprovedBounds() {
+        assertThrows(IllegalArgumentException.class,
+                () -> new IntegrationConfigSnapshot.RingOfDagorimConfig(true, 0, 20, 20.0D));
+        assertThrows(IllegalArgumentException.class,
+                () -> new IntegrationConfigSnapshot.RingOfDagorimConfig(true, 5, -1, 20.0D));
+        assertThrows(IllegalArgumentException.class,
+                () -> new IntegrationConfigSnapshot.RingOfDagorimConfig(true, 5, 20, 100.1D));
+        IntegrationConfigSnapshot.RingOfDagorimConfig boundary =
+                new IntegrationConfigSnapshot.RingOfDagorimConfig(false, 1, 0, 100.0D);
+        assertFalse(boundary.isEnabled());
+        assertEquals(1, boundary.getIntervalSeconds());
+        assertEquals(0, boundary.getManaThreshold());
+        assertEquals(100.0D, boundary.getActivationChancePercent());
     }
 
 }

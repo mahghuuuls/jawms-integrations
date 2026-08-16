@@ -77,15 +77,52 @@ final class DependencyContractTest {
                 "com/windanesz/ancientspellcraft/item/ItemManaArtefact",
                 "getMana",
                 "(Lnet/minecraft/item/ItemStack;)I");
+        JarContract.assertMethodInvocationCount(jar,
+                "com/windanesz/ancientspellcraft/handler/ASEventHandler",
+                "onSpellCastPreEvent",
+                "(Lelectroblob/wizardry/event/SpellCastEvent$Pre;)V",
+                "com/windanesz/ancientspellcraft/item/ItemManaArtefact",
+                "getMana",
+                "(Lnet/minecraft/item/ItemStack;)I",
+                2);
+        JarContract.assertFieldAccessCount(jar,
+                "com/windanesz/ancientspellcraft/handler/ASEventHandler",
+                "onSpellCastPreEvent",
+                "(Lelectroblob/wizardry/event/SpellCastEvent$Pre;)V",
+                "com/windanesz/ancientspellcraft/registry/ASItems",
+                "ring_mana_cost",
+                "Lnet/minecraft/item/Item;",
+                1);
+        JarContract.assertMethod(jar,
+                "com/windanesz/ancientspellcraft/item/ItemManaArtefact",
+                "onApplyButtonPressed",
+                "(Lnet/minecraft/entity/player/EntityPlayer;Lnet/minecraft/inventory/Slot;"
+                        + "Lnet/minecraft/inventory/Slot;Lnet/minecraft/inventory/Slot;"
+                        + "[Lnet/minecraft/inventory/Slot;)Z");
+        JarContract.assertMethod(jar,
+                "com/windanesz/ancientspellcraft/item/ItemManaArtefact",
+                "func_77624_a",
+                "(Lnet/minecraft/item/ItemStack;Lnet/minecraft/world/World;Ljava/util/List;"
+                        + "Lnet/minecraft/client/util/ITooltipFlag;)V");
         JarContract.assertMethod(jar,
                 "com/windanesz/ancientspellcraft/item/ItemEverfullManaFlask",
                 "func_77659_a",
                 "(Lnet/minecraft/world/World;Lnet/minecraft/entity/player/EntityPlayer;"
                         + "Lnet/minecraft/util/EnumHand;)Lnet/minecraft/util/ActionResult;");
         JarContract.assertMethod(jar,
+                "com/windanesz/ancientspellcraft/item/ItemEverfullManaFlask",
+                "func_77663_a",
+                "(Lnet/minecraft/item/ItemStack;Lnet/minecraft/world/World;"
+                        + "Lnet/minecraft/entity/Entity;IZ)V");
+        JarContract.assertMethod(jar,
                 "com/windanesz/ancientspellcraft/item/ItemRingManaTransfer",
                 "onWornTick",
                 "(Lnet/minecraft/item/ItemStack;Lnet/minecraft/entity/EntityLivingBase;)V");
+        JarContract.assertFieldAccessCount(jar,
+                "com/windanesz/ancientspellcraft/item/ItemRingManaTransfer",
+                "onWornTick",
+                "(Lnet/minecraft/item/ItemStack;Lnet/minecraft/entity/EntityLivingBase;)V",
+                "net/minecraft/world/World", "field_72995_K", "Z", 1);
     }
 
     @Test

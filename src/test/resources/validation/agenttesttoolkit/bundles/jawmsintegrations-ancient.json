@@ -1,0 +1,143 @@
+{
+  "ancient_static_setup": {
+    "description": "Prepare charged static Ancient Spellcraft fixtures and record the unequipped baseline",
+    "stopOnFailure": true,
+    "commands": [
+      "devtool session start ancient_campaign",
+      "gamemode creative",
+      "gamerule keepInventory true",
+      "gamerule doMobSpawning false",
+      "replaceitem entity @s slot.hotbar.0 ancientspellcraft:ring_mana_lesser 1 100",
+      "replaceitem entity @s slot.hotbar.1 ancientspellcraft:ring_mana_greater 1 200",
+      "replaceitem entity @s slot.hotbar.2 ancientspellcraft:charm_majestic_mana 1 300",
+      "replaceitem entity @s slot.hotbar.3 ancientspellcraft:ring_mana_cost",
+      { "command": "devtool capabilities", "delayTicks": 20 },
+      "devtool environment",
+      "devtool mods",
+      "devtool inspect player",
+      "jawmsintegrations status",
+      "jawmsintegrations status @s",
+      { "command": "devtool mark ANCIENT_STATIC_BASELINE_READY", "delayTicks": 20 }
+    ]
+  },
+  "ancient_static_observe": {
+    "description": "Record the current equipped static-bauble contribution state after the owner changes Baubles slots",
+    "stopOnFailure": true,
+    "commands": [
+      { "command": "jawmsintegrations status @s", "delayTicks": 20 },
+      "devtool inspect player",
+      "devtool mark ANCIENT_STATIC_EQUIPMENT_OBSERVED"
+    ]
+  },
+  "ancient_static_legacy_check": {
+    "description": "Mark the owner-controlled cast, recharge, charge-bar, tooltip, and preserved-charge check",
+    "stopOnFailure": true,
+    "commands": [
+      "jawmsintegrations status @s",
+      "devtool inspect player",
+      "devtool mark ANCIENT_STATIC_LEGACY_CHECK_COMPLETE"
+    ]
+  },
+  "ancient_static_cleanup": {
+    "description": "Clear static Ancient Spellcraft fixtures and close the diagnostic session",
+    "stopOnFailure": false,
+    "commands": [
+      "replaceitem entity @s slot.hotbar.0 minecraft:air",
+      "replaceitem entity @s slot.hotbar.1 minecraft:air",
+      "replaceitem entity @s slot.hotbar.2 minecraft:air",
+      "replaceitem entity @s slot.hotbar.3 minecraft:air",
+      { "command": "jawmsintegrations status @s", "delayTicks": 20 },
+      "devtool inspect player",
+      "devtool mark ANCIENT_STATIC_CLEANUP_COMPLETE",
+      "devtool log all off",
+      "devtool session stop"
+    ]
+  },
+  "ancient_everfull_setup": {
+    "description": "Prepare a half-charged legacy Everfull Flask in the offhand and record the pre-use state",
+    "stopOnFailure": true,
+    "commands": [
+      "devtool session start ancient_everfull",
+      "gamemode creative",
+      "gamerule keepInventory true",
+      "replaceitem entity @s slot.weapon.offhand ancientspellcraft:charm_mana_flask 1 700",
+      { "command": "jawmsintegrations status @s", "delayTicks": 20 },
+      "devtool inspect player",
+      "devtool mark ANCIENT_EVERFULL_SETUP_READY"
+    ]
+  },
+  "ancient_everfull_observe": {
+    "description": "Record charge and player state after owner-controlled use or regeneration",
+    "stopOnFailure": true,
+    "commands": [
+      "jawmsintegrations status @s",
+      "devtool inspect player",
+      "devtool mark ANCIENT_EVERFULL_STATE_OBSERVED"
+    ]
+  },
+  "ancient_everfull_persistence": {
+    "description": "Record the retained state after the owner completes the save/reload or disable/re-enable boundary",
+    "stopOnFailure": true,
+    "commands": [
+      "jawmsintegrations status @s",
+      "devtool inspect player",
+      "devtool mark ANCIENT_EVERFULL_PERSISTENCE_OBSERVED"
+    ]
+  },
+  "ancient_everfull_cleanup": {
+    "description": "Clear the Everfull fixture and close its diagnostic session",
+    "stopOnFailure": false,
+    "commands": [
+      "replaceitem entity @s slot.weapon.offhand minecraft:air",
+      "devtool inspect player",
+      "devtool mark ANCIENT_EVERFULL_CLEANUP_COMPLETE",
+      "devtool log all off",
+      "devtool session stop"
+    ]
+  },
+  "ancient_dagorim_setup": {
+    "description": "Prepare Ring of Dagorim and all three ordinary flasks for owner-controlled activation",
+    "stopOnFailure": true,
+    "commands": [
+      "devtool session start ancient_dagorim",
+      "gamemode survival",
+      "gamerule keepInventory true",
+      "give @s ancientspellcraft:ring_mana_transfer 1",
+      "give @s ebwizardry:small_mana_flask 2",
+      "give @s ebwizardry:medium_mana_flask 2",
+      "give @s ebwizardry:large_mana_flask 2",
+      { "command": "jawmsintegrations status", "delayTicks": 20 },
+      "devtool inspect player",
+      "devtool mark ANCIENT_DAGORIM_SETUP_READY"
+    ]
+  },
+  "ancient_dagorim_observe": {
+    "description": "Record wearer mana and flask inventory after an organic Ring of Dagorim check window",
+    "stopOnFailure": true,
+    "commands": [
+      "jawmsintegrations status",
+      "devtool inspect player",
+      "devtool mark ANCIENT_DAGORIM_ACTIVATION_OBSERVED"
+    ]
+  },
+  "ancient_dagorim_noop": {
+    "description": "Record the above-threshold or no-flask no-op state",
+    "stopOnFailure": true,
+    "commands": [
+      "jawmsintegrations status",
+      "devtool inspect player",
+      "devtool mark ANCIENT_DAGORIM_NOOP_OBSERVED"
+    ]
+  },
+  "ancient_dagorim_cleanup": {
+    "description": "Record final state and close the Ring of Dagorim diagnostic session",
+    "stopOnFailure": false,
+    "commands": [
+      "jawmsintegrations status",
+      "devtool inspect player",
+      "devtool mark ANCIENT_DAGORIM_CLEANUP_COMPLETE",
+      "devtool log all off",
+      "devtool session stop"
+    ]
+  }
+}

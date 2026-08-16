@@ -1,0 +1,176 @@
+package com.mahghuuuls.jawmsintegrations.mixin.ancientspellcraft;
+
+import com.mahghuuuls.jawmsintegrations.client.ClientAncientPresentationCache;
+import com.mahghuuuls.jawmsintegrations.config.IntegrationConfigSnapshot;
+import com.mahghuuuls.jawmsintegrations.integration.ancientspellcraft.AncientReplacement;
+import com.mahghuuuls.jawmsintegrations.integration.ancientspellcraft.AncientReplacementPolicy;
+import com.mahghuuuls.jawmsintegrations.network.IntegrationPresentationSnapshot;
+import net.minecraft.init.Bootstrap;
+import net.minecraft.init.Items;
+import net.minecraft.inventory.InventoryBasic;
+import net.minecraft.inventory.Slot;
+import net.minecraft.item.Item;
+import net.minecraft.item.ItemStack;
+import net.minecraft.nbt.NBTTagCompound;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+
+import java.lang.reflect.Method;
+import java.util.ArrayList;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+class AncientSuppressionMixinTest {
+
+    @BeforeAll
+    static void bootstrapMinecraft() {
+        Bootstrap.register();
+    }
+
+    @AfterEach
+    void resetAuthority() {
+        AncientReplacementPolicy.install(AncientReplacementPolicy.disabled());
+        ClientAncientPresentationCache.clear();
+    }
+
+    @Test
+    void spellCastRedirectSuppressesStoragePaymentAndCrystalCostField() throws Exception {
+        AncientReplacementPolicy.install(enabledPolicy());
+        ItemStack lesser = stack(AncientReplacement.LESSER_MANA_RING);
+
+        Method payment = MixinASEventHandler.class.getDeclaredMethod(
+                "jawmsIntegrations$suppressStoragePayment",
+                com.windanesz.ancientspellcraft.item.ItemManaArtefact.class,
+                ItemStack.class);
+        payment.setAccessible(true);
+        assertEquals(-1, payment.invoke(null, null, lesser));
+
+        Method crystal = MixinASEventHandler.class.getDeclaredMethod(
+                "jawmsIntegrations$suppressCrystalCostModifier");
+        crystal.setAccessible(true);
+        assertSame(Items.AIR, crystal.invoke(null));
+    }
+
+    @Test
+    void storageSentinelCannotEnterAncientZeroCostPaymentBranchOrMutateLegacyData()
+            throws Exception {
+        AncientReplacementPolicy.install(enabledPolicy());
+        ItemStack lesser = stack(AncientReplacement.LESSER_MANA_RING);
+        NBTTagCompound legacy = new NBTTagCompound();
+        legacy.setInteger("LegacyCharge", 400);
+        lesser.setTagCompound(legacy);
+        NBTTagCompound before = lesser.serializeNBT().copy();
+        Method payment = MixinASEventHandler.class.getDeclaredMethod(
+                "jawmsIntegrations$suppressStoragePayment",
+                com.windanesz.ancientspellcraft.item.ItemManaArtefact.class,
+                ItemStack.class);
+        payment.setAccessible(true);
+
+        int redirectedMana = (Integer) payment.invoke(null, null, lesser);
+        int zeroCost = 0;
+        boolean ancientSetManaReached = false;
+        if (redirectedMana >= zeroCost) {
+            ancientSetManaReached = true;
+            lesser.getTagCompound().setInteger("LegacyCharge", redirectedMana - zeroCost);
+        }
+
+        assertFalse(ancientSetManaReached);
+        assertEquals(before, lesser.serializeNBT());
+    }
+
+    @Test
+    void rechargeHookCancelsOnlyAnActiveStorageReplacement() throws Exception {
+        ItemStack lesser = stack(AncientReplacement.LESSER_MANA_RING);
+        InventoryBasic inventory = new InventoryBasic("test", false, 1);
+        inventory.setInventorySlotContents(0, lesser);
+        Slot itemSlot = new Slot(inventory, 0, 0, 0);
+        Method recharge = MixinItemManaArtefact.class.getDeclaredMethod(
+                "jawmsIntegrations$suppressRecharge",
+                net.minecraft.entity.player.EntityPlayer.class,
+                Slot.class, Slot.class, Slot.class, Slot[].class,
+                CallbackInfoReturnable.class);
+        recharge.setAccessible(true);
+
+        AncientReplacementPolicy.install(enabledPolicy());
+        CallbackInfoReturnable<Boolean> active =
+                new CallbackInfoReturnable<>("test", true);
+        recharge.invoke(new TestManaArtefactMixin(), null, itemSlot, null, null,
+                new Slot[0], active);
+        assertTrue(active.isCancelled());
+        assertFalse(active.getReturnValue());
+
+        AncientReplacementPolicy.install(AncientReplacementPolicy.disabled());
+        CallbackInfoReturnable<Boolean> disabled =
+                new CallbackInfoReturnable<>("test", true);
+        recharge.invoke(new TestManaArtefactMixin(), null, itemSlot, null, null,
+                new Slot[0], disabled);
+        assertFalse(disabled.isCancelled());
+    }
+
+    @Test
+    void clientHooksSuppressLegacyTooltipAndBarOnlyFromAcceptedSnapshot() throws Exception {
+        ItemStack lesser = stack(AncientReplacement.LESSER_MANA_RING);
+        Method tooltip = MixinItemManaArtefactClient.class.getDeclaredMethod(
+                "jawmsIntegrations$suppressLegacyTooltip",
+                ItemStack.class, net.minecraft.world.World.class, java.util.List.class,
+                net.minecraft.client.util.ITooltipFlag.class, CallbackInfo.class);
+        tooltip.setAccessible(true);
+        Method bar = MixinRenderItem.class.getDeclaredMethod(
+                "jawmsIntegrations$hideLegacyChargeBar", Item.class, ItemStack.class);
+        bar.setAccessible(true);
+        CountingBarItem nativeItem = new CountingBarItem();
+        nativeItem.setRegistryName(AncientReplacement.LESSER_MANA_RING.getRegistryName());
+        ItemStack nativeStack = new ItemStack(nativeItem);
+
+        CallbackInfo beforeSnapshot = new CallbackInfo("test", true);
+        tooltip.invoke(new TestTooltipMixin(), lesser, null, new ArrayList<>(), null,
+                beforeSnapshot);
+        assertFalse(beforeSnapshot.isCancelled());
+        assertTrue((Boolean) bar.invoke(new TestRenderItemMixin(), nativeItem, nativeStack));
+        assertEquals(1, nativeItem.calls);
+
+        ClientAncientPresentationCache.install(
+                IntegrationPresentationSnapshot.from(enabledPolicy()));
+        CallbackInfo active = new CallbackInfo("test", true);
+        tooltip.invoke(new TestTooltipMixin(), lesser, null, new ArrayList<>(), null, active);
+        assertTrue(active.isCancelled());
+        assertFalse((Boolean) bar.invoke(new TestRenderItemMixin(), nativeItem, nativeStack));
+        assertEquals(1, nativeItem.calls);
+    }
+
+    private static AncientReplacementPolicy enabledPolicy() {
+        return new AncientReplacementPolicy(true,
+                IntegrationConfigSnapshot.defaults().getAncientSpellcraft());
+    }
+
+    private static ItemStack stack(AncientReplacement replacement) {
+        Item item = new Item();
+        item.setRegistryName(replacement.getRegistryName());
+        return new ItemStack(item);
+    }
+
+    private static final class TestManaArtefactMixin extends MixinItemManaArtefact {
+    }
+
+    private static final class TestTooltipMixin extends MixinItemManaArtefactClient {
+    }
+
+    private static final class TestRenderItemMixin extends MixinRenderItem {
+    }
+
+    private static final class CountingBarItem extends Item {
+        private int calls;
+
+        @Override
+        public boolean showDurabilityBar(ItemStack stack) {
+            calls++;
+            return true;
+        }
+    }
+}

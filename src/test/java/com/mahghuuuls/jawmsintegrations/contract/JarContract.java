@@ -115,6 +115,50 @@ final class JarContract {
         }
     }
 
+    static void assertFieldAccessCount(Path jarPath,
+                                       String internalClassName,
+                                       String methodName,
+                                       String descriptor,
+                                       String fieldOwner,
+                                       String fieldName,
+                                       String fieldDescriptor,
+                                       int expectedCount) throws IOException {
+        String entryName = internalClassName + ".class";
+        AtomicInteger count = new AtomicInteger();
+        try (JarFile jar = new JarFile(jarPath.toFile())) {
+            JarEntry entry = jar.getJarEntry(entryName);
+            if (entry == null) {
+                throw new AssertionError("Missing class " + internalClassName + " in " + jarPath);
+            }
+            try (InputStream input = jar.getInputStream(entry)) {
+                new ClassReader(input).accept(new ClassVisitor(Opcodes.ASM5) {
+                    @Override
+                    public MethodVisitor visitMethod(int access, String name, String methodDescriptor,
+                                                     String signature, String[] exceptions) {
+                        if (!methodName.equals(name) || !descriptor.equals(methodDescriptor)) {
+                            return null;
+                        }
+                        return new MethodVisitor(Opcodes.ASM5) {
+                            @Override
+                            public void visitFieldInsn(int opcode, String owner, String name,
+                                                       String descriptor) {
+                                if (fieldOwner.equals(owner) && fieldName.equals(name)
+                                        && fieldDescriptor.equals(descriptor)) {
+                                    count.incrementAndGet();
+                                }
+                            }
+                        };
+                    }
+                }, ClassReader.SKIP_DEBUG | ClassReader.SKIP_FRAMES);
+            }
+        }
+        if (count.get() != expectedCount) {
+            throw new AssertionError("Expected " + expectedCount + " access(es) of "
+                    + fieldOwner + "." + fieldName + fieldDescriptor + " in "
+                    + internalClassName + "." + methodName + descriptor + " but found " + count.get());
+        }
+    }
+
     private static void assertMember(Path jarPath, String internalClassName,
                                      String memberName, String descriptor, boolean method) throws IOException {
         String entryName = internalClassName + ".class";

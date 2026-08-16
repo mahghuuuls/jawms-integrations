@@ -81,6 +81,7 @@ dependencies {
     }
 
     compileOnly rfg.deobf('curse.maven:ancient-spellcraft-358124:8555709')
+    testImplementation rfg.deobf('curse.maven:ancient-spellcraft-358124:8555709')
     ancientSpellcraftContract 'curse.maven:ancient-spellcraft-358124:8555709'
     if (ancientSpellcraftRuntimeEnabled) {
         // Ancient Spellcraft declares both TweakClass and FMLCorePlugin. Keeping its

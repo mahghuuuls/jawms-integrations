@@ -4,7 +4,16 @@
   "plugin": "com.mahghuuuls.jawmsintegrations.mixin.OptionalIntegrationMixinPlugin",
   "refmap": "mixins.jawmsintegrations.refmap.json",
   "compatibilityLevel": "JAVA_8",
-  "mixins": [],
-  "client": [],
+  "mixins": [
+    "MixinASEventHandler",
+    "MixinItemManaArtefact",
+    "MixinItemEverfullManaFlask",
+    "MixinItemRingManaTransfer"
+  ],
+  "client": [
+    "MixinItemManaArtefactClient",
+    "MixinItemEverfullManaFlaskClient",
+    "MixinRenderItem"
+  ],
   "server": []
 }

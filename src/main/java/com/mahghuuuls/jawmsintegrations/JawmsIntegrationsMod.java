@@ -10,12 +10,20 @@ import com.mahghuuuls.jawmsintegrations.integration.IntegrationStatusView;
 import com.mahghuuuls.jawmsintegrations.integration.JawmsCompatibility;
 import com.mahghuuuls.jawmsintegrations.integration.IntegrationId;
 import com.mahghuuuls.jawmsintegrations.integration.qualitytools.QualityToolsIntegration;
+import com.mahghuuuls.jawmsintegrations.integration.ancientspellcraft.AncientSpellcraftIntegration;
+import com.mahghuuuls.jawmsintegrations.integration.ancientspellcraft.AncientReplacementPolicy;
+import com.mahghuuuls.jawmsintegrations.integration.ancientspellcraft.EverfullManaService;
+import com.mahghuuuls.jawmsintegrations.integration.ancientspellcraft.DagorimFlaskService;
+import com.mahghuuuls.jawmsintegrations.network.AncientPresentationSync;
+import com.mahghuuuls.jawmsintegrations.network.IntegrationNetwork;
 import com.mahghuuuls.jawmsintegrations.proxy.CommonProxy;
 import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.fml.common.FMLCommonHandler;
 import net.minecraftforge.fml.common.ModContainer;
 import net.minecraftforge.fml.common.Loader;
 import net.minecraftforge.fml.common.SidedProxy;
 import net.minecraftforge.fml.common.event.FMLPostInitializationEvent;
+import net.minecraftforge.fml.common.event.FMLInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLServerStartingEvent;
 import org.apache.logging.log4j.LogManager;
@@ -42,6 +50,7 @@ public final class JawmsIntegrationsMod {
     private IntegrationConfigSnapshot config;
     private IntegrationCoordinator coordinator;
     private IntegrationDiagnosticsService diagnostics;
+    private JawmsCompatibility.Status jawms;
 
     @Mod.EventHandler
     public void preInit(FMLPreInitializationEvent event) {
@@ -55,7 +64,9 @@ public final class JawmsIntegrationsMod {
 
         ModContainer jawmsContainer = Loader.instance().getIndexedModList().get("jawms");
         String jawmsVersion = jawmsContainer == null ? null : jawmsContainer.getVersion();
-        JawmsCompatibility.Status jawms = JawmsCompatibility.verifyInstalled(jawmsVersion);
+        jawms = JawmsCompatibility.verifyInstalled(jawmsVersion);
+
+        IntegrationNetwork.initialize();
 
         coordinator = IntegrationCoordinator.initialize(config);
         diagnostics = new IntegrationDiagnosticsService(jawms, config, coordinator);
@@ -75,6 +86,32 @@ public final class JawmsIntegrationsMod {
                 LOGGER.warn("{} integration {}: {}", status.getIntegration().getDisplayName(),
                         status.getState(), status.getDetail());
             }
+        }
+        diagnostics = new IntegrationDiagnosticsService(jawms, config, coordinator);
+    }
+
+    @Mod.EventHandler
+    public void init(FMLInitializationEvent event) {
+        IntegrationState ancientState = coordinator.getStatus(
+                IntegrationId.ANCIENT_SPELLCRAFT).getState();
+        if (ancientState == IntegrationState.ACTIVE) {
+            try {
+                AncientSpellcraftIntegration.activate(config.getAncientSpellcraft());
+                FMLCommonHandler.instance().bus().register(new AncientPresentationSync());
+            } catch (RuntimeException exception) {
+                AncientReplacementPolicy.install(AncientReplacementPolicy.disabled());
+                EverfullManaService.install(EverfullManaService.disabled());
+                DagorimFlaskService.install(DagorimFlaskService.disabled());
+                coordinator = coordinator.withFailure(IntegrationId.ANCIENT_SPELLCRAFT,
+                        "Activation failed: " + exception.getMessage());
+                LOGGER.error("Ancient Spellcraft integration activation failed", exception);
+                LOGGER.warn("Ancient Spellcraft integration FAILED: {}",
+                        coordinator.getStatus(IntegrationId.ANCIENT_SPELLCRAFT).getDetail());
+            }
+        }
+        ancientState = coordinator.getStatus(IntegrationId.ANCIENT_SPELLCRAFT).getState();
+        if (ancientState == IntegrationState.ACTIVE || ancientState == IntegrationState.DISABLED) {
+            PROXY.activateAncientSpellcraftClient();
         }
         diagnostics = new IntegrationDiagnosticsService(jawms, config, coordinator);
     }

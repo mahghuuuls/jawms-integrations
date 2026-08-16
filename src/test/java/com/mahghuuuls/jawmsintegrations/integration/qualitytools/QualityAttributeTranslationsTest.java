@@ -26,7 +26,8 @@ class QualityAttributeTranslationsTest {
             assertTrue(translations.containsKey(key), "Missing translation for " + key);
             assertTrue(!translations.getProperty(key).contains("jawmsintegrations."));
         }
-        assertEquals(15, translations.size());
+        assertEquals(15, translations.stringPropertyNames().stream()
+                .filter(key -> key.startsWith("attribute.name.")).count());
         assertEquals("Maximum Mana",
                 translations.getProperty("attribute.name.jawmsintegrations.max_mana_percent"));
     }

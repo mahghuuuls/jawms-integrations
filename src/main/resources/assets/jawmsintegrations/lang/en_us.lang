@@ -13,3 +13,7 @@ attribute.name.jawmsintegrations.spell_efficiency_sorcery=Sorcery Spell Efficien
 attribute.name.jawmsintegrations.spell_efficiency_healing=Healing Spell Efficiency
 attribute.name.jawmsintegrations.mana_regen_delay_reduction_flat=s Post-Cast Mana Regen Delay
 attribute.name.jawmsintegrations.mana_regen_delay_reduction_percent=Post-Cast Mana Regen Delay
+tooltip.jawmsintegrations.everfull.charge=Stored JAWMS Mana: %s / %s
+tooltip.jawmsintegrations.everfull.syncing=Stored JAWMS Mana: awaiting server state
+tooltip.jawmsintegrations.everfull.behavior=Regenerates while carried; use from the offhand to restore mana.
+tooltip.jawmsintegrations.dagorim.behavior=%s%% chance every %ss below %s mana to consume the largest available mana flask.

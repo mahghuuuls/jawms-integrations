@@ -25,7 +25,7 @@ public final class IntegrationConfigSnapshot {
     public static IntegrationConfigSnapshot defaults() {
         return new IntegrationConfigSnapshot(
                 new QualityToolsConfig(true, true),
-                new AncientSpellcraftConfig(true),
+                AncientSpellcraftConfig.defaults(),
                 new DiagnosticsConfig(false)
         );
     }
@@ -196,13 +196,210 @@ public final class IntegrationConfigSnapshot {
 
     public static final class AncientSpellcraftConfig {
         private final boolean integrationEnabled;
+        private final ToggleIntConfig lesserManaRing;
+        private final ToggleIntConfig greaterManaRing;
+        private final ToggleIntConfig majesticManaCharm;
+        private final ToggleDoubleConfig crystalRing;
+        private final EverfullManaFlaskConfig everfullManaFlask;
+        private final RingOfDagorimConfig ringOfDagorim;
 
         public AncientSpellcraftConfig(boolean integrationEnabled) {
+            this(integrationEnabled,
+                    new ToggleIntConfig(true, 8),
+                    new ToggleIntConfig(true, 12),
+                    new ToggleIntConfig(true, 18),
+                    new ToggleDoubleConfig(true, 25.0D),
+                    new EverfullManaFlaskConfig(true, 1, 12, 10),
+                    new RingOfDagorimConfig(true, 5, 20, 20.0D));
+        }
+
+        public AncientSpellcraftConfig(boolean integrationEnabled,
+                                       ToggleIntConfig lesserManaRing,
+                                       ToggleIntConfig greaterManaRing,
+                                       ToggleIntConfig majesticManaCharm,
+                                       ToggleDoubleConfig crystalRing) {
+            this(integrationEnabled, lesserManaRing, greaterManaRing, majesticManaCharm,
+                    crystalRing, new EverfullManaFlaskConfig(true, 1, 12, 10),
+                    new RingOfDagorimConfig(true, 5, 20, 20.0D));
+        }
+
+        public AncientSpellcraftConfig(boolean integrationEnabled,
+                                       ToggleIntConfig lesserManaRing,
+                                       ToggleIntConfig greaterManaRing,
+                                       ToggleIntConfig majesticManaCharm,
+                                       ToggleDoubleConfig crystalRing,
+                                       EverfullManaFlaskConfig everfullManaFlask) {
+            this(integrationEnabled, lesserManaRing, greaterManaRing, majesticManaCharm,
+                    crystalRing, everfullManaFlask,
+                    new RingOfDagorimConfig(true, 5, 20, 20.0D));
+        }
+
+        public AncientSpellcraftConfig(boolean integrationEnabled,
+                                       ToggleIntConfig lesserManaRing,
+                                       ToggleIntConfig greaterManaRing,
+                                       ToggleIntConfig majesticManaCharm,
+                                       ToggleDoubleConfig crystalRing,
+                                       EverfullManaFlaskConfig everfullManaFlask,
+                                       RingOfDagorimConfig ringOfDagorim) {
+            if (lesserManaRing == null || greaterManaRing == null
+                    || majesticManaCharm == null || crystalRing == null
+                    || everfullManaFlask == null || ringOfDagorim == null) {
+                throw new IllegalArgumentException("Ancient replacement configuration must not be null");
+            }
             this.integrationEnabled = integrationEnabled;
+            this.lesserManaRing = lesserManaRing;
+            this.greaterManaRing = greaterManaRing;
+            this.majesticManaCharm = majesticManaCharm;
+            this.crystalRing = crystalRing;
+            this.everfullManaFlask = everfullManaFlask;
+            this.ringOfDagorim = ringOfDagorim;
+        }
+
+        static AncientSpellcraftConfig defaults() {
+            return new AncientSpellcraftConfig(true);
         }
 
         public boolean isIntegrationEnabled() {
             return integrationEnabled;
+        }
+
+        public ToggleIntConfig getLesserManaRing() {
+            return lesserManaRing;
+        }
+
+        public ToggleIntConfig getGreaterManaRing() {
+            return greaterManaRing;
+        }
+
+        public ToggleIntConfig getMajesticManaCharm() {
+            return majesticManaCharm;
+        }
+
+        public ToggleDoubleConfig getCrystalRing() {
+            return crystalRing;
+        }
+
+        public EverfullManaFlaskConfig getEverfullManaFlask() {
+            return everfullManaFlask;
+        }
+
+        public RingOfDagorimConfig getRingOfDagorim() {
+            return ringOfDagorim;
+        }
+    }
+
+    public static final class RingOfDagorimConfig {
+        private final boolean enabled;
+        private final int intervalSeconds;
+        private final int manaThreshold;
+        private final double activationChancePercent;
+
+        public RingOfDagorimConfig(boolean enabled, int intervalSeconds,
+                                  int manaThreshold, double activationChancePercent) {
+            if (intervalSeconds <= 0 || intervalSeconds > 10000) {
+                throw new IllegalArgumentException("Dagorim interval must be from 1 through 10000");
+            }
+            if (manaThreshold < 0 || manaThreshold > 10000) {
+                throw new IllegalArgumentException("Dagorim mana threshold must be from 0 through 10000");
+            }
+            if (!Double.isFinite(activationChancePercent)
+                    || activationChancePercent < 0.0D || activationChancePercent > 100.0D) {
+                throw new IllegalArgumentException("Dagorim activation chance must be from 0 through 100");
+            }
+            this.enabled = enabled;
+            this.intervalSeconds = intervalSeconds;
+            this.manaThreshold = manaThreshold;
+            this.activationChancePercent = activationChancePercent;
+        }
+
+        public boolean isEnabled() { return enabled; }
+        public int getIntervalSeconds() { return intervalSeconds; }
+        public int getManaThreshold() { return manaThreshold; }
+        public double getActivationChancePercent() { return activationChancePercent; }
+    }
+
+    public static final class EverfullManaFlaskConfig {
+        private final boolean enabled;
+        private final int regenerationAmount;
+        private final int regenerationIntervalSeconds;
+        private final int transferAmount;
+
+        public EverfullManaFlaskConfig(boolean enabled,
+                                       int regenerationAmount,
+                                       int regenerationIntervalSeconds,
+                                       int transferAmount) {
+            requirePositive(regenerationAmount, "Everfull regeneration amount");
+            requirePositive(regenerationIntervalSeconds, "Everfull regeneration interval");
+            requirePositive(transferAmount, "Everfull transfer amount");
+            this.enabled = enabled;
+            this.regenerationAmount = regenerationAmount;
+            this.regenerationIntervalSeconds = regenerationIntervalSeconds;
+            this.transferAmount = transferAmount;
+        }
+
+        private static void requirePositive(int value, String name) {
+            if (value <= 0 || value > 10000) {
+                throw new IllegalArgumentException(name + " must be from 1 through 10000");
+            }
+        }
+
+        public boolean isEnabled() {
+            return enabled;
+        }
+
+        public int getRegenerationAmount() {
+            return regenerationAmount;
+        }
+
+        public int getRegenerationIntervalSeconds() {
+            return regenerationIntervalSeconds;
+        }
+
+        public int getTransferAmount() {
+            return transferAmount;
+        }
+    }
+
+    public static final class ToggleIntConfig {
+        private final boolean enabled;
+        private final int value;
+
+        public ToggleIntConfig(boolean enabled, int value) {
+            if (value <= 0 || value > 10000) {
+                throw new IllegalArgumentException(
+                        "Replacement value must be from 1 through 10000");
+            }
+            this.enabled = enabled;
+            this.value = value;
+        }
+
+        public boolean isEnabled() {
+            return enabled;
+        }
+
+        public int getValue() {
+            return value;
+        }
+    }
+
+    public static final class ToggleDoubleConfig {
+        private final boolean enabled;
+        private final double value;
+
+        public ToggleDoubleConfig(boolean enabled, double value) {
+            if (!Double.isFinite(value) || value <= 0.0D) {
+                throw new IllegalArgumentException("Replacement value must be finite and positive");
+            }
+            this.enabled = enabled;
+            this.value = value;
+        }
+
+        public boolean isEnabled() {
+            return enabled;
+        }
+
+        public double getValue() {
+            return value;
         }
     }
 
