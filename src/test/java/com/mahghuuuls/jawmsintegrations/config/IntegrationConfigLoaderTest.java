@@ -16,6 +16,16 @@ class IntegrationConfigLoaderTest {
 
         assertTrue(snapshot.getQualityTools().isIntegrationEnabled());
         assertTrue(snapshot.getQualityTools().areBuiltInQualitiesEnabled());
+        assertEquals(12, snapshot.getQualityTools().getBuiltInQualities().size());
+        for (IntegrationConfigSnapshot.BuiltInQuality quality
+                : IntegrationConfigSnapshot.BuiltInQuality.values()) {
+            IntegrationConfigSnapshot.BuiltInQualityConfig configured =
+                    snapshot.getQualityTools().getBuiltInQuality(quality);
+            assertTrue(configured.isEnabled());
+            assertEquals(quality.getDefaultDisplayName(), configured.getDisplayName());
+            assertEquals(quality.getDefaultAmount(), configured.getAmount());
+            assertEquals(quality.getDefaultWeight(), configured.getWeight());
+        }
         assertTrue(snapshot.getAncientSpellcraft().isIntegrationEnabled());
         assertFalse(snapshot.getDiagnostics().isEnabled());
     }
@@ -35,4 +45,28 @@ class IntegrationConfigLoaderTest {
         assertTrue(warnings.get(0).contains("quality_tools.enabled"));
         assertTrue(warnings.get(0).contains("using default true"));
     }
+
+    @Test
+    void invalidBuiltInFieldsFallBackIndependently() {
+        List<String> warnings = new ArrayList<>();
+
+        assertEquals("Manawoven", IntegrationConfigLoader.validateNonBlankString(
+                "quality_tools.built_in_qualities.manawoven", "displayName", "  ",
+                "Manawoven", warnings));
+        assertEquals(5.0D, IntegrationConfigLoader.validatePositiveDouble(
+                "quality_tools.built_in_qualities.manawoven", "amount", "NaN",
+                5.0D, warnings));
+        assertEquals(5, IntegrationConfigLoader.validatePositiveInt(
+                "quality_tools.built_in_qualities.manawoven", "weight", "0",
+                5, warnings));
+        assertEquals(7.5D, IntegrationConfigLoader.validatePositiveDouble(
+                "quality_tools.built_in_qualities.manawoven", "amount", "7.5",
+                5.0D, warnings));
+
+        assertEquals(3, warnings.size());
+        assertTrue(warnings.get(0).contains("displayName"));
+        assertTrue(warnings.get(1).contains("amount"));
+        assertTrue(warnings.get(2).contains("weight"));
+    }
+
 }

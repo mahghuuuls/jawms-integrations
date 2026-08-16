@@ -58,9 +58,10 @@ public final class JawmsIntegrationsMod {
         JawmsCompatibility.Status jawms = JawmsCompatibility.verifyInstalled(jawmsVersion);
 
         coordinator = IntegrationCoordinator.initialize(config);
+        diagnostics = new IntegrationDiagnosticsService(jawms, config, coordinator);
         if (coordinator.getStatus(IntegrationId.QUALITY_TOOLS).getState() == IntegrationState.ACTIVE) {
             try {
-                QualityToolsIntegration.activate();
+                QualityToolsIntegration.activate(config.getQualityTools(), this::emitQualityToolsReloadSummary);
                 PROXY.activateQualityToolsClient();
             } catch (RuntimeException exception) {
                 coordinator = coordinator.withFailure(IntegrationId.QUALITY_TOOLS,
@@ -88,5 +89,11 @@ public final class JawmsIntegrationsMod {
     @Mod.EventHandler
     public void serverStarting(FMLServerStartingEvent event) {
         event.registerServerCommand(new IntegrationStatusCommand(diagnostics));
+    }
+
+    private void emitQualityToolsReloadSummary() {
+        if (config.getDiagnostics().isEnabled()) {
+            LOGGER.info(diagnostics.qualityToolsReloadSummary());
+        }
     }
 }

@@ -35,10 +35,26 @@ final class DependencyContractTest {
                 "com/tmtravlr/qualitytools/config/QualityType",
                 "qualities",
                 "[Lcom/tmtravlr/qualitytools/config/QualityEntry;");
+        JarContract.assertMethodInvocationCount(jar,
+                "com/tmtravlr/qualitytools/config/QualityType",
+                "generateQualityTag",
+                "(Lnet/minecraft/item/ItemStack;Z)V",
+                "com/tmtravlr/qualitytools/config/QualityType",
+                "chooseQualityEntry",
+                "(Z)Lcom/tmtravlr/qualitytools/config/QualityEntry;",
+                1);
         JarContract.assertMethod(jar,
                 "com/tmtravlr/qualitytools/CommonEventHandler",
                 "onLivingUpdate",
                 "(Lnet/minecraftforge/event/entity/living/LivingEvent$LivingUpdateEvent;)V");
+        JarContract.assertMethodInvocationCount(jar,
+                "com/tmtravlr/qualitytools/config/CommandQualityToolsReload",
+                "func_184881_a",
+                "(Lnet/minecraft/server/MinecraftServer;Lnet/minecraft/command/ICommandSender;[Ljava/lang/String;)V",
+                "com/tmtravlr/qualitytools/config/ConfigLoader",
+                "reloadConfigs",
+                "()V",
+                1);
         JarContract.assertMethodInvocation(jar,
                 "com/tmtravlr/qualitytools/CommonEventHandler",
                 "onLivingUpdate",

@@ -45,8 +45,8 @@ public final class IntegrationDiagnosticsService {
                 result.append('(').append(status.getDetectedVersion()).append(')');
             }
         }
-        result.append("; built-in qualities=configured-")
-                .append(config.getQualityTools().areBuiltInQualitiesEnabled() ? "enabled" : "disabled")
+        result.append("; built-in qualities=")
+                .append(builtInSummary())
                 .append("; Ancient replacements=")
                 .append(coordinator.getStatus(IntegrationId.ANCIENT_SPELLCRAFT).getState()
                         == IntegrationState.ACTIVE ? "eligible" : "inactive");
@@ -64,10 +64,14 @@ public final class IntegrationDiagnosticsService {
                     + ", reason=" + status.getDetail());
         }
         lines.add("Configuration: Quality Tools=" + enabled(config.getQualityTools().isIntegrationEnabled())
-                + ", built-in qualities=" + enabled(config.getQualityTools().areBuiltInQualitiesEnabled())
+                + ", built-in qualities=" + builtInSummary()
                 + ", Ancient Spellcraft=" + enabled(config.getAncientSpellcraft().isIntegrationEnabled())
                 + ", startup diagnostics=" + enabled(config.getDiagnostics().isEnabled()));
         return lines;
+    }
+
+    public String qualityToolsReloadSummary() {
+        return "Quality Tools reload summary: built-in qualities=" + builtInSummary();
     }
 
     public List<String> playerStatus(EntityPlayer player) {
@@ -107,6 +111,21 @@ public final class IntegrationDiagnosticsService {
 
     private static String enabled(boolean value) {
         return value ? "enabled" : "disabled";
+    }
+
+    private String builtInSummary() {
+        int total = config.getQualityTools().getBuiltInQualities().size();
+        if (!config.getQualityTools().areBuiltInQualitiesEnabled()) {
+            return "disabled(0/" + total + ")";
+        }
+        int enabled = 0;
+        for (IntegrationConfigSnapshot.BuiltInQualityConfig quality
+                : config.getQualityTools().getBuiltInQualities().values()) {
+            if (quality.isEnabled()) {
+                enabled++;
+            }
+        }
+        return "enabled(" + enabled + "/" + total + ")";
     }
 
     static String formatContribution(ManaContribution contribution) {

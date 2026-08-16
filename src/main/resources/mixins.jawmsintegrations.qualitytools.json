@@ -5,7 +5,9 @@
   "refmap": "mixins.jawmsintegrations.refmap.json",
   "compatibilityLevel": "JAVA_8",
   "mixins": [
-    "MixinQualityToolsCommonEventHandler"
+    "MixinCommandQualityToolsReload",
+    "MixinQualityToolsCommonEventHandler",
+    "MixinQualityToolsQualityType"
   ],
   "client": [],
   "server": []

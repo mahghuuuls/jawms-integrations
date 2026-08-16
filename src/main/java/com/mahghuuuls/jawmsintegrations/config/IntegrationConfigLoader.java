@@ -6,8 +6,10 @@ import net.minecraftforge.common.config.Property;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.EnumMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 /** Owns Forge configuration I/O, validation, defaults, and warning text. */
 public final class IntegrationConfigLoader {
@@ -36,9 +38,11 @@ public final class IntegrationConfigLoader {
                 QUALITY_TOOLS,
                 "builtInQualitiesEnabled",
                 true,
-                "Offers the built-in Manawoven and Meditative armor qualities. User-defined JAWMS attributes remain available when this is false. Requires restart.",
+                "Offers JAWMS built-in qualities on official Electroblob Wizardry mage armor. User-defined JAWMS attributes remain available when this is false. Requires restart.",
                 warnings
         );
+        Map<IntegrationConfigSnapshot.BuiltInQuality, IntegrationConfigSnapshot.BuiltInQualityConfig>
+                builtInQualities = readBuiltInQualities(configuration, warnings);
         boolean ancientSpellcraftEnabled = readBoolean(
                 configuration,
                 ANCIENT_SPELLCRAFT,
@@ -63,12 +67,41 @@ public final class IntegrationConfigLoader {
         IntegrationConfigSnapshot snapshot = new IntegrationConfigSnapshot(
                 new IntegrationConfigSnapshot.QualityToolsConfig(
                         qualityToolsEnabled,
-                        builtInQualitiesEnabled
+                        builtInQualitiesEnabled,
+                        builtInQualities
                 ),
                 new IntegrationConfigSnapshot.AncientSpellcraftConfig(ancientSpellcraftEnabled),
                 new IntegrationConfigSnapshot.DiagnosticsConfig(diagnosticsEnabled)
         );
         return new LoadResult(snapshot, warnings);
+    }
+
+    private static Map<IntegrationConfigSnapshot.BuiltInQuality,
+            IntegrationConfigSnapshot.BuiltInQualityConfig> readBuiltInQualities(
+            Configuration configuration,
+            List<String> warnings) {
+        EnumMap<IntegrationConfigSnapshot.BuiltInQuality,
+                IntegrationConfigSnapshot.BuiltInQualityConfig> result =
+                new EnumMap<>(IntegrationConfigSnapshot.BuiltInQuality.class);
+        for (IntegrationConfigSnapshot.BuiltInQuality quality
+                : IntegrationConfigSnapshot.BuiltInQuality.values()) {
+            String category = QUALITY_TOOLS + ".built_in_qualities." + quality.getConfigKey();
+            boolean enabled = readBoolean(configuration, category, "enabled", true,
+                    "Offers this built-in quality on new or reforged eligible mage armor. Requires restart.",
+                    warnings);
+            String displayName = readNonBlankString(configuration, category, "displayName",
+                    quality.getDefaultDisplayName(),
+                    "Display name stored on newly rolled items. Requires restart.", warnings);
+            double amount = readPositiveDouble(configuration, category, "amount",
+                    quality.getDefaultAmount(),
+                    "Positive JAWMS attribute amount stored on newly rolled items. Requires restart.", warnings);
+            int weight = readPositiveInt(configuration, category, "weight",
+                    quality.getDefaultWeight(),
+                    "Positive relative Quality Tools selection weight. Requires restart.", warnings);
+            result.put(quality, new IntegrationConfigSnapshot.BuiltInQualityConfig(
+                    enabled, displayName, amount, weight));
+        }
+        return result;
     }
 
     private static boolean readBoolean(Configuration configuration,
@@ -108,6 +141,115 @@ public final class IntegrationConfigLoader {
                 + "'; using default " + defaultValue
                 + ". Forge will write that fallback to the file.");
         return defaultValue;
+    }
+
+    private static String readNonBlankString(Configuration configuration,
+                                             String category,
+                                             String key,
+                                             String defaultValue,
+                                             String comment,
+                                             List<String> warnings) {
+        Property property = configuration.get(category, key, defaultValue, comment);
+        String value = property.getString();
+        int warningCount = warnings.size();
+        String validated = validateNonBlankString(category, key, value, defaultValue, warnings);
+        if (warnings.size() != warningCount) {
+            property.set(validated);
+        }
+        return validated;
+    }
+
+    private static double readPositiveDouble(Configuration configuration,
+                                             String category,
+                                             String key,
+                                             double defaultValue,
+                                             String comment,
+                                             List<String> warnings) {
+        Property property = configuration.get(category, key, defaultValue, comment);
+        String raw = property.getString();
+        int warningCount = warnings.size();
+        double validated = validatePositiveDouble(category, key, raw, defaultValue, warnings);
+        if (warnings.size() != warningCount) {
+            property.set(validated);
+        }
+        return validated;
+    }
+
+    static String validateNonBlankString(String category,
+                                         String key,
+                                         String raw,
+                                         String defaultValue,
+                                         List<String> warnings) {
+        if (raw != null && !raw.trim().isEmpty()) {
+            return raw.trim();
+        }
+        warnings.add(invalid(category, key, raw, "a non-blank string", defaultValue));
+        return defaultValue;
+    }
+
+    static double validatePositiveDouble(String category,
+                                         String key,
+                                         String raw,
+                                         double defaultValue,
+                                         List<String> warnings) {
+        if (raw != null) {
+            try {
+                double value = Double.parseDouble(raw);
+                if (Double.isFinite(value) && value > 0.0D) {
+                    return value;
+                }
+            } catch (NumberFormatException ignored) {
+                // Report one bounded field warning below.
+            }
+        }
+        warnings.add(invalid(category, key, raw, "a finite number greater than zero", defaultValue));
+        return defaultValue;
+    }
+
+    private static int readPositiveInt(Configuration configuration,
+                                       String category,
+                                       String key,
+                                       int defaultValue,
+                                       String comment,
+                                       List<String> warnings) {
+        Property property = configuration.get(category, key, defaultValue, comment);
+        String raw = property.getString();
+        int warningCount = warnings.size();
+        int validated = validatePositiveInt(category, key, raw, defaultValue, warnings);
+        if (warnings.size() != warningCount) {
+            property.set(validated);
+        }
+        return validated;
+    }
+
+    static int validatePositiveInt(String category,
+                                   String key,
+                                   String raw,
+                                   int defaultValue,
+                                   List<String> warnings) {
+        if (raw != null) {
+            try {
+                int value = Integer.parseInt(raw);
+                if (value > 0 && value <= 10000) {
+                    return value;
+                }
+            } catch (NumberFormatException ignored) {
+                // Report one bounded field warning below.
+            }
+        }
+        warnings.add(invalid(category, key, raw, "an integer from 1 through 10000", defaultValue));
+        return defaultValue;
+    }
+
+    private static String invalid(String category,
+                                  String key,
+                                  Object raw,
+                                  String expected,
+                                  Object defaultValue) {
+        return "Invalid configuration value for '" + category + "." + key
+                + "': expected " + expected + " but found '" + raw
+                + "'; using default " + defaultValue
+                + ". Forge will write that fallback to the file.";
     }
 
     public static final class LoadResult {

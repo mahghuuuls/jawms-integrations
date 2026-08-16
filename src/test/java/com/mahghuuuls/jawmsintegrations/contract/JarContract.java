@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
@@ -67,6 +68,50 @@ final class JarContract {
         if (!found.get()) {
             throw new AssertionError("Missing invocation " + invokedOwner + "." + invokedName
                     + invokedDescriptor + " in " + internalClassName + "." + methodName + descriptor);
+        }
+    }
+
+    static void assertMethodInvocationCount(Path jarPath,
+                                            String internalClassName,
+                                            String methodName,
+                                            String descriptor,
+                                            String invokedOwner,
+                                            String invokedName,
+                                            String invokedDescriptor,
+                                            int expectedCount) throws IOException {
+        String entryName = internalClassName + ".class";
+        AtomicInteger count = new AtomicInteger();
+        try (JarFile jar = new JarFile(jarPath.toFile())) {
+            JarEntry entry = jar.getJarEntry(entryName);
+            if (entry == null) {
+                throw new AssertionError("Missing class " + internalClassName + " in " + jarPath);
+            }
+            try (InputStream input = jar.getInputStream(entry)) {
+                new ClassReader(input).accept(new ClassVisitor(Opcodes.ASM5) {
+                    @Override
+                    public MethodVisitor visitMethod(int access, String name, String methodDescriptor,
+                                                     String signature, String[] exceptions) {
+                        if (!methodName.equals(name) || !descriptor.equals(methodDescriptor)) {
+                            return null;
+                        }
+                        return new MethodVisitor(Opcodes.ASM5) {
+                            @Override
+                            public void visitMethodInsn(int opcode, String owner, String name,
+                                                        String descriptor, boolean isInterface) {
+                                if (invokedOwner.equals(owner) && invokedName.equals(name)
+                                        && invokedDescriptor.equals(descriptor)) {
+                                    count.incrementAndGet();
+                                }
+                            }
+                        };
+                    }
+                }, ClassReader.SKIP_DEBUG | ClassReader.SKIP_FRAMES);
+            }
+        }
+        if (count.get() != expectedCount) {
+            throw new AssertionError("Expected " + expectedCount + " invocation(s) of "
+                    + invokedOwner + "." + invokedName + invokedDescriptor + " in "
+                    + internalClassName + "." + methodName + descriptor + " but found " + count.get());
         }
     }
 

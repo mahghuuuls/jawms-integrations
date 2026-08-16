@@ -35,10 +35,14 @@ class IntegrationDiagnosticsServiceTest {
         assertTrue(startup.contains("JAWMS 0.4.0/API 1.4"));
         assertTrue(startup.contains("Quality Tools=ABSENT"));
         assertTrue(startup.contains("Ancient Spellcraft=ABSENT"));
+        assertTrue(startup.contains("built-in qualities=enabled(12/12)"));
         assertEquals(4, overall.size());
         assertTrue(overall.get(1).contains("Quality Tools: ABSENT"));
         assertTrue(overall.get(2).contains("Ancient Spellcraft: ABSENT"));
         assertTrue(overall.get(3).contains("startup diagnostics=disabled"));
+        assertTrue(overall.get(3).contains("built-in qualities=enabled(12/12)"));
+        assertEquals("Quality Tools reload summary: built-in qualities=enabled(12/12)",
+                diagnostics.qualityToolsReloadSummary());
     }
 
     @Test

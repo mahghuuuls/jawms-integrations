@@ -73,6 +73,7 @@ dependencies {
 
     // Optional integrations compile against exact targets but enter only their selected dev runtime.
     compileOnly rfg.deobf('curse.maven:quality-tools-264756:2732994')
+    testImplementation rfg.deobf('curse.maven:quality-tools-264756:2732994')
     qualityToolsContract 'curse.maven:quality-tools-264756:2732994'
     if (qualityToolsRuntimeEnabled) {
         runtimeOnly rfg.deobf('curse.maven:quality-tools-264756:2732994')

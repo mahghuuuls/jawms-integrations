@@ -4,6 +4,7 @@ import com.mahghuuuls.jawms.api.ManaApi;
 import com.mahghuuuls.jawms.api.ManaContribution;
 import com.mahghuuuls.jawmsintegrations.JawmsIntegrationsMod;
 import com.mahghuuuls.jawmsintegrations.Tags;
+import com.mahghuuuls.jawmsintegrations.config.IntegrationConfigSnapshot;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.ai.attributes.AbstractAttributeMap;
 import net.minecraft.entity.ai.attributes.AttributeModifier;
@@ -27,7 +28,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
-/** Deep optional module: installs attributes, projects them, and owns refresh lifecycle. */
+/** Deep optional module: owns candidate configuration, attribute projection, and refresh lifecycle. */
 public final class QualityToolsIntegration {
 
     private static final ResourceLocation PROVIDER_ID =
@@ -38,22 +39,41 @@ public final class QualityToolsIntegration {
 
     private final QualityValueChangeTracker tracker = new QualityValueChangeTracker();
     private final BoundedWarnings warnings = new BoundedWarnings();
+    private final Runnable reloadSummary;
 
-    private QualityToolsIntegration() {
+    private QualityToolsIntegration(IntegrationConfigSnapshot.QualityToolsConfig config,
+                                    Runnable reloadSummary) {
+        QualityCandidateAugmenter.configure(config);
+        this.reloadSummary = reloadSummary;
     }
 
-    public static synchronized void activate() {
+    public static synchronized void activate(IntegrationConfigSnapshot.QualityToolsConfig config,
+                                             Runnable reloadSummary) {
         if (active != null) {
             return;
+        }
+        if (config == null) {
+            throw new IllegalArgumentException("Quality Tools configuration must not be null");
+        }
+        if (reloadSummary == null) {
+            throw new IllegalArgumentException("Quality Tools reload summary callback must not be null");
         }
         if (ManaApi.isProviderRegistrationFrozen()) {
             throw new IllegalStateException("JAWMS provider registration is already frozen");
         }
-        QualityToolsIntegration integration = new QualityToolsIntegration();
+        QualityToolsIntegration integration = new QualityToolsIntegration(config, reloadSummary);
         ManaApi.registerContextualProvider(PROVIDER_ID, integration::contributionFor);
         MinecraftForge.EVENT_BUS.register(integration);
         FMLCommonHandler.instance().bus().register(integration);
         active = integration;
+    }
+
+    /** Called by the exact-version command Mixin after Quality Tools reloads its files. */
+    public static void afterConfigReload() {
+        QualityToolsIntegration integration = active;
+        if (integration != null) {
+            integration.reloadSummary.run();
+        }
     }
 
     /** Called only by the exact-version Quality Tools Mixin after its server attribute update. */

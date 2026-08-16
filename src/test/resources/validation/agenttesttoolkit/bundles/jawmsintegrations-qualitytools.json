@@ -64,6 +64,58 @@
       "devtool mark QUALITY_VALID_PENALTIES_APPLIED"
     ]
   },
+  "qualitytools_builtins_setup": {
+    "description": "Prepare representative official Wizardry armor and excluded armor for built-in quality generation checks",
+    "stopOnFailure": true,
+    "commands": [
+      "devtool session start qualitytools_builtins_campaign",
+      "gamemode creative",
+      "gamerule keepInventory true",
+      "gamerule doMobSpawning false",
+      "replaceitem entity @s slot.hotbar.0 ebwizardry:wizard_hat",
+      "replaceitem entity @s slot.hotbar.1 ebwizardry:sage_robe_fire",
+      "replaceitem entity @s slot.hotbar.2 ebwizardry:battlemage_leggings_ice",
+      "replaceitem entity @s slot.hotbar.3 ebwizardry:warlock_boots_healing",
+      "replaceitem entity @s slot.hotbar.4 ebwizardry:spectral_helmet",
+      "replaceitem entity @s slot.hotbar.5 minecraft:diamond_helmet",
+      "replaceitem entity @s slot.hotbar.6 qualitytools:reforging_station",
+      "replaceitem entity @s slot.hotbar.7 minecraft:nether_star 64",
+      { "command": "jawmsintegrations status", "delayTicks": 20 },
+      "devtool inspect player",
+      "devtool mark QUALITY_BUILTINS_READY"
+    ]
+  },
+  "qualitytools_builtins_reload": {
+    "description": "Reload Quality Tools definitions, regenerate representative armor, and mark the post-reload candidate check",
+    "stopOnFailure": true,
+    "commands": [
+      "qualitytoolsreload",
+      { "command": "replaceitem entity @s slot.hotbar.0 ebwizardry:wizard_hat", "delayTicks": 20 },
+      "replaceitem entity @s slot.hotbar.1 ebwizardry:sage_robe_fire",
+      "replaceitem entity @s slot.hotbar.2 ebwizardry:battlemage_leggings_ice",
+      "replaceitem entity @s slot.hotbar.3 ebwizardry:warlock_boots_healing",
+      "replaceitem entity @s slot.hotbar.4 ebwizardry:spectral_helmet",
+      "replaceitem entity @s slot.hotbar.5 minecraft:diamond_helmet",
+      { "command": "devtool inspect player", "delayTicks": 20 },
+      "devtool mark QUALITY_BUILTINS_RELOAD_COMPLETE"
+    ]
+  },
+  "qualitytools_builtins_four_piece": {
+    "description": "Prepare a complete official Wizard armor set for the configured four-piece stacking check",
+    "stopOnFailure": true,
+    "commands": [
+      "replaceitem entity @s slot.hotbar.0 ebwizardry:wizard_hat",
+      "replaceitem entity @s slot.hotbar.1 ebwizardry:wizard_robe",
+      "replaceitem entity @s slot.hotbar.2 ebwizardry:wizard_leggings",
+      "replaceitem entity @s slot.hotbar.3 ebwizardry:wizard_boots",
+      "replaceitem entity @s slot.armor.head minecraft:air",
+      "replaceitem entity @s slot.armor.chest minecraft:air",
+      "replaceitem entity @s slot.armor.legs minecraft:air",
+      "replaceitem entity @s slot.armor.feet minecraft:air",
+      { "command": "devtool inspect player", "delayTicks": 20 },
+      "devtool mark QUALITY_BUILTINS_FOUR_PIECE_READY"
+    ]
+  },
   "qualitytools_cleanup": {
     "description": "Remove validation equipment and close the diagnostic session",
     "stopOnFailure": false,
@@ -72,6 +124,14 @@
       "replaceitem entity @s slot.armor.chest minecraft:air",
       "replaceitem entity @s slot.armor.legs minecraft:air",
       "replaceitem entity @s slot.armor.feet minecraft:air",
+      "replaceitem entity @s slot.hotbar.0 minecraft:air",
+      "replaceitem entity @s slot.hotbar.1 minecraft:air",
+      "replaceitem entity @s slot.hotbar.2 minecraft:air",
+      "replaceitem entity @s slot.hotbar.3 minecraft:air",
+      "replaceitem entity @s slot.hotbar.4 minecraft:air",
+      "replaceitem entity @s slot.hotbar.5 minecraft:air",
+      "replaceitem entity @s slot.hotbar.6 minecraft:air",
+      "replaceitem entity @s slot.hotbar.7 minecraft:air",
       { "command": "jawmsintegrations status @s", "delayTicks": 20 },
       "devtool inspect player",
       "devtool mark QUALITY_CLEANUP_COMPLETE",
