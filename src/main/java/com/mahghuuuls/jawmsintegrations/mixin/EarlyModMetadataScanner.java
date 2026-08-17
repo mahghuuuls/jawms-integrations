@@ -6,15 +6,20 @@ import com.google.gson.JsonParser;
 import com.mahghuuuls.jawmsintegrations.integration.IntegrationId;
 import com.mahghuuuls.jawmsintegrations.integration.OptionalMixinGateRegistry;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
+import java.lang.reflect.Field;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Enumeration;
-import java.util.List;
+import java.util.LinkedHashSet;
+import java.util.Set;
+import java.util.jar.JarEntry;
+import java.util.jar.JarFile;
 
 /** Reads mod metadata without resolving optional classes during Mixin bootstrap. */
 public final class EarlyModMetadataScanner {
@@ -24,10 +29,16 @@ public final class EarlyModMetadataScanner {
 
     public static OptionalMixinGateRegistry.Evidence scan(ClassLoader classLoader,
                                                           IntegrationId integration) {
+        return scan(classLoader, integration, findMinecraftHome(classLoader));
+    }
+
+    static OptionalMixinGateRegistry.Evidence scan(ClassLoader classLoader,
+                                                   IntegrationId integration,
+                                                   File minecraftHome) {
         if (classLoader == null) {
             return OptionalMixinGateRegistry.Evidence.error("No class loader was available to inspect mcmod.info");
         }
-        List<String> versions = new ArrayList<>();
+        Set<String> versions = new LinkedHashSet<>();
         try {
             Enumeration<URL> resources = classLoader.getResources("mcmod.info");
             while (resources.hasMoreElements()) {
@@ -38,6 +49,7 @@ public final class EarlyModMetadataScanner {
                     "Could not inspect early mod metadata: " + exception.getClass().getSimpleName()
             );
         }
+        scanModsDirectory(minecraftHome, integration.getModId(), versions);
         if (versions.isEmpty()) {
             return OptionalMixinGateRegistry.Evidence.absent();
         }
@@ -46,7 +58,7 @@ public final class EarlyModMetadataScanner {
                     "Multiple metadata entries were found for " + integration.getModId() + ": " + versions
             );
         }
-        String version = versions.get(0);
+        String version = versions.iterator().next();
         return integration.supports(version)
                 ? OptionalMixinGateRegistry.Evidence.supported(version)
                 : OptionalMixinGateRegistry.Evidence.unsupported(version);
@@ -54,9 +66,18 @@ public final class EarlyModMetadataScanner {
 
     private static void readMatchingVersions(URL resource,
                                              String targetModId,
-                                             List<String> versions) {
-        try (InputStream stream = resource.openStream();
-             Reader reader = new InputStreamReader(stream, StandardCharsets.UTF_8)) {
+                                             Set<String> versions) {
+        try (InputStream stream = resource.openStream()) {
+            readMatchingVersions(stream, targetModId, versions);
+        } catch (IOException | RuntimeException ignored) {
+            // Unrelated malformed metadata must not disable a target whose own entry can still be identified.
+        }
+    }
+
+    private static void readMatchingVersions(InputStream stream,
+                                             String targetModId,
+                                             Set<String> versions) {
+        try (Reader reader = new InputStreamReader(stream, StandardCharsets.UTF_8)) {
             JsonElement root = new JsonParser().parse(reader);
             if (!root.isJsonArray()) {
                 return;
@@ -75,6 +96,59 @@ public final class EarlyModMetadataScanner {
             }
         } catch (IOException | RuntimeException ignored) {
             // Unrelated malformed metadata must not disable a target whose own entry can still be identified.
+        }
+    }
+
+    private static void scanModsDirectory(File minecraftHome,
+                                          String targetModId,
+                                          Set<String> versions) {
+        if (minecraftHome == null) {
+            return;
+        }
+        File modsDirectory = new File(minecraftHome, "mods");
+        scanArchiveDirectory(modsDirectory, targetModId, versions);
+        scanArchiveDirectory(new File(modsDirectory, "1.12.2"), targetModId, versions);
+    }
+
+    private static void scanArchiveDirectory(File directory,
+                                             String targetModId,
+                                             Set<String> versions) {
+        File[] candidates = directory.listFiles(file -> file.isFile()
+                && (file.getName().endsWith(".jar") || file.getName().endsWith(".zip")));
+        if (candidates == null) {
+            return;
+        }
+        Arrays.sort(candidates, (left, right) -> left.getName().compareTo(right.getName()));
+        for (File candidate : candidates) {
+            try (JarFile archive = new JarFile(candidate)) {
+                JarEntry metadata = archive.getJarEntry("mcmod.info");
+                if (metadata != null) {
+                    readMatchingVersions(archive.getInputStream(metadata), targetModId, versions);
+                }
+            } catch (IOException | RuntimeException ignored) {
+                // Forge may encounter unrelated non-mod or malformed archives in the same directory.
+            }
+        }
+    }
+
+    private static File findMinecraftHome(ClassLoader classLoader) {
+        File home = findMinecraftHomeWith(classLoader);
+        return home == null
+                ? findMinecraftHomeWith(EarlyModMetadataScanner.class.getClassLoader())
+                : home;
+    }
+
+    private static File findMinecraftHomeWith(ClassLoader classLoader) {
+        if (classLoader == null) {
+            return null;
+        }
+        try {
+            Class<?> launch = Class.forName("net.minecraft.launchwrapper.Launch", false, classLoader);
+            Field field = launch.getField("minecraftHome");
+            Object value = field.get(null);
+            return value instanceof File ? (File) value : null;
+        } catch (ReflectiveOperationException | LinkageError | SecurityException ignored) {
+            return null;
         }
     }
 }

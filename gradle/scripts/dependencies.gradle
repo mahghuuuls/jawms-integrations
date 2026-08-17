@@ -48,6 +48,11 @@ configurations {
         canBeResolved = true
         transitive = false
     }
+    ancientSpellcraftPackagedRuntimeMods {
+        canBeConsumed = false
+        canBeResolved = true
+        transitive = false
+    }
 }
 
 def integrationRuntimeProfile = propertyString('integration_runtime_profile').toLowerCase(Locale.ROOT)
@@ -89,6 +94,8 @@ dependencies {
         // packaged-mod topology without creating a second Mixin classloader.
         ancientSpellcraftRuntimeMods rfg.deobf('curse.maven:ancient-spellcraft-358124:8555709')
         ancientSpellcraftRuntimeMods rfg.deobf('curse.maven:wizardryutils-608287:7158305')
+        ancientSpellcraftPackagedRuntimeMods 'curse.maven:ancient-spellcraft-358124:8555709'
+        ancientSpellcraftPackagedRuntimeMods 'curse.maven:wizardryutils-608287:7158305'
     }
 
     testImplementation 'org.ow2.asm:asm:5.2'
@@ -155,12 +162,69 @@ if (obfuscationAttribute == null) {
 }
 // RFG requests MCP-transformed artifacts for normal development configurations.
 // Contract tests instead hash and inspect the exact released bytes from CurseMaven.
-[configurations.qualityToolsContract, configurations.ancientSpellcraftContract].each { configuration ->
+[configurations.qualityToolsContract,
+ configurations.ancientSpellcraftContract,
+ configurations.ancientSpellcraftPackagedRuntimeMods].each { configuration ->
     configuration.attributes {
         attribute obfuscationAttribute,
                 objects.named(obfuscationAttribute.type, 'no-minecraft')
         attribute transformedAttribute, false
     }
+}
+
+tasks.named('prepareObfModsFolder', Copy).configure {
+    if (ancientSpellcraftRuntimeEnabled) {
+        from configurations.ancientSpellcraftPackagedRuntimeMods
+    }
+}
+
+tasks.register('verifyPackagedRuntimeProfile') {
+    group = 'jawms integrations verification'
+    description = 'Verifies the selected optional integrations in the packaged obfuscated mods folder.'
+    inputs.property 'integrationRuntimeProfile', integrationRuntimeProfile
+    dependsOn tasks.named('prepareObfModsFolder')
+    doLast {
+        def runtimeNames = fileTree(layout.projectDirectory.dir('run/obfuscated/mods')) {
+            include '**/*.jar'
+        }.files.collect { it.name.toLowerCase(Locale.ROOT) }
+        def countMatches = { Closure<Boolean> predicate -> runtimeNames.count(predicate) }
+        def qualityToolsCount = countMatches { it.contains('qualitytools') || it.contains('quality-tools') }
+        def potionCoreCount = countMatches { it.contains('potioncore') || it.contains('potion-core') }
+        def ancientSpellcraftCount = countMatches {
+            it.contains('ancientspellcraft') || it.contains('ancient-spellcraft')
+        }
+        def wizardryUtilsCount = countMatches { it.contains('wizardryutils') }
+        def mismatches = []
+        if (qualityToolsCount != (qualityToolsRuntimeEnabled ? 1 : 0)) {
+            mismatches << "Quality Tools count=${qualityToolsCount}"
+        }
+        if (potionCoreCount != (qualityToolsRuntimeEnabled ? 1 : 0)) {
+            mismatches << "Potion Core count=${potionCoreCount}"
+        }
+        if (ancientSpellcraftCount != (ancientSpellcraftRuntimeEnabled ? 1 : 0)) {
+            mismatches << "Ancient Spellcraft count=${ancientSpellcraftCount}"
+        }
+        if (wizardryUtilsCount != (ancientSpellcraftRuntimeEnabled ? 1 : 0)) {
+            mismatches << "WizardryUtils count=${wizardryUtilsCount}"
+        }
+        if (!mismatches.empty) {
+            throw new GradleException("Packaged runtime profile '${integrationRuntimeProfile}' is invalid: "
+                    + mismatches.join('; '))
+        }
+        logger.lifecycle("Verified packaged runtime profile '${integrationRuntimeProfile}'")
+    }
+}
+
+['runObfClient', 'runObfServer'].each { taskName ->
+    tasks.named(taskName).configure {
+        dependsOn tasks.named('verifyPackagedRuntimeProfile')
+    }
+}
+
+tasks.named('runObfServer', JavaExec).configure { task ->
+    // A canonical game directory prevents MixinBooter and Forge from treating the
+    // same packaged Mixin mod as distinct relative and absolute discovery paths.
+    args '--gameDir', task.workingDir.canonicalPath
 }
 
 tasks.register('prepareAgentTestToolkitRuntime', Sync) {
