@@ -38,7 +38,22 @@ configurations {
         canBeResolved = true
         transitive = false
     }
+    jawmsContract {
+        canBeConsumed = false
+        canBeResolved = true
+        transitive = false
+    }
     ancientSpellcraftContract {
+        canBeConsumed = false
+        canBeResolved = true
+        transitive = false
+    }
+    craftTweakerContract {
+        canBeConsumed = false
+        canBeResolved = true
+        transitive = false
+    }
+    arsMagicaContract {
         canBeConsumed = false
         canBeResolved = true
         transitive = false
@@ -53,17 +68,26 @@ configurations {
         canBeResolved = true
         transitive = false
     }
+    optionalPackagedRuntimeMods {
+        canBeConsumed = false
+        canBeResolved = true
+        transitive = false
+    }
 }
 
 def integrationRuntimeProfile = propertyString('integration_runtime_profile').toLowerCase(Locale.ROOT)
-def supportedIntegrationRuntimeProfiles = ['none', 'qualitytools', 'ancientspellcraft', 'both']
+def supportedIntegrationRuntimeProfiles = [
+        'none', 'qualitytools', 'ancientspellcraft', 'crafttweaker', 'arsmagica', 'both', 'all'
+]
 if (!supportedIntegrationRuntimeProfiles.contains(integrationRuntimeProfile)) {
     throw new GradleException("Unsupported integration_runtime_profile '${integrationRuntimeProfile}'. "
             + "Expected one of: ${supportedIntegrationRuntimeProfiles.join(', ')}")
 }
 
-def qualityToolsRuntimeEnabled = integrationRuntimeProfile in ['qualitytools', 'both']
-def ancientSpellcraftRuntimeEnabled = integrationRuntimeProfile in ['ancientspellcraft', 'both']
+def qualityToolsRuntimeEnabled = integrationRuntimeProfile in ['qualitytools', 'both', 'all']
+def ancientSpellcraftRuntimeEnabled = integrationRuntimeProfile in ['ancientspellcraft', 'both', 'all']
+def craftTweakerRuntimeEnabled = integrationRuntimeProfile in ['crafttweaker', 'all']
+def arsMagicaRuntimeEnabled = integrationRuntimeProfile in ['arsmagica', 'all']
 
 dependencies {
     // Include StripLatestForgeRequirements by default for the dev env, saves everyone a hassle
@@ -72,7 +96,8 @@ dependencies {
     runtimeOnly 'com.cleanroommc:osxnarratorblocker:1.0'
 
     // Required product dependencies. CurseMaven does not supply their dependency chains transitively.
-    implementation rfg.deobf('curse.maven:just-another-wizardry-mana-system-1643697:8651841')
+    implementation rfg.deobf('curse.maven:just-another-wizardry-mana-system-1643697:8695521')
+    jawmsContract 'curse.maven:just-another-wizardry-mana-system-1643697:8695521'
     implementation rfg.deobf('curse.maven:electroblobs-wizardry-265642:8320066')
     implementation rfg.deobf('curse.maven:baubles-227083:2518667')
 
@@ -96,6 +121,25 @@ dependencies {
         ancientSpellcraftRuntimeMods rfg.deobf('curse.maven:wizardryutils-608287:7158305')
         ancientSpellcraftPackagedRuntimeMods 'curse.maven:ancient-spellcraft-358124:8555709'
         ancientSpellcraftPackagedRuntimeMods 'curse.maven:wizardryutils-608287:7158305'
+    }
+
+    // These exact optional targets are linked only by their later isolated modules.
+    // CraftTweaker's released development-facing archive is already suitable for
+    // compilation and fails RFG's Minecraft deobfuscation transform.
+    compileOnly 'curse.maven:crafttweaker-239197:8051578'
+    testImplementation 'curse.maven:crafttweaker-239197:8051578'
+    craftTweakerContract 'curse.maven:crafttweaker-239197:8051578'
+    if (craftTweakerRuntimeEnabled) {
+        runtimeOnly 'curse.maven:crafttweaker-239197:8051578'
+        optionalPackagedRuntimeMods 'curse.maven:crafttweaker-239197:8051578'
+    }
+
+    compileOnly rfg.deobf('curse.maven:ars-magica-2-rekindled-1430906:8314968')
+    testImplementation rfg.deobf('curse.maven:ars-magica-2-rekindled-1430906:8314968')
+    arsMagicaContract 'curse.maven:ars-magica-2-rekindled-1430906:8314968'
+    if (arsMagicaRuntimeEnabled) {
+        runtimeOnly rfg.deobf('curse.maven:ars-magica-2-rekindled-1430906:8314968')
+        optionalPackagedRuntimeMods 'curse.maven:ars-magica-2-rekindled-1430906:8314968'
     }
 
     testImplementation 'org.ow2.asm:asm:5.2'
@@ -162,8 +206,12 @@ if (obfuscationAttribute == null) {
 }
 // RFG requests MCP-transformed artifacts for normal development configurations.
 // Contract tests instead hash and inspect the exact released bytes from CurseMaven.
-[configurations.qualityToolsContract,
+[configurations.jawmsContract,
+ configurations.qualityToolsContract,
  configurations.ancientSpellcraftContract,
+ configurations.craftTweakerContract,
+ configurations.arsMagicaContract,
+ configurations.optionalPackagedRuntimeMods,
  configurations.ancientSpellcraftPackagedRuntimeMods].each { configuration ->
     configuration.attributes {
         attribute obfuscationAttribute,
@@ -172,10 +220,88 @@ if (obfuscationAttribute == null) {
     }
 }
 
+tasks.register('cleanManagedPackagedRuntimeArtifacts') {
+    group = 'jawms integrations verification'
+    description = 'Removes generated product and known integration artifacts before preparing an isolated packaged profile.'
+    doLast {
+        def managedFiles = fileTree(layout.projectDirectory.dir('run/obfuscated/mods')) {
+            include '**/*.jar'
+        }.files.findAll { file ->
+            def name = file.name.toLowerCase(Locale.ROOT)
+            name.contains('jawms-integrations')
+                    || name.contains('just-another-wizardry')
+                    || name.contains('qualitytools') || name.contains('quality-tools')
+                    || name.contains('potioncore') || name.contains('potion-core')
+                    || name.contains('ancientspellcraft') || name.contains('ancient-spellcraft')
+                    || name.contains('wizardryutils')
+                    || name.contains('crafttweaker')
+                    || name.contains('ars-magica') || name.contains('arsmagica')
+        }
+        delete managedFiles
+    }
+}
+
+def packagedRuntimeCounts = {
+    def runtimeNames = fileTree(layout.projectDirectory.dir('run/obfuscated/mods')) {
+        include '**/*.jar'
+    }.files.collect { it.name.toLowerCase(Locale.ROOT) }
+    def countMatches = { Closure<Boolean> predicate -> runtimeNames.count(predicate) }
+    [
+            qualityTools: countMatches { it.contains('qualitytools') || it.contains('quality-tools') },
+            potionCore: countMatches { it.contains('potioncore') || it.contains('potion-core') },
+            ancientSpellcraft: countMatches {
+                it.contains('ancientspellcraft') || it.contains('ancient-spellcraft')
+            },
+            wizardryUtils: countMatches { it.contains('wizardryutils') },
+            craftTweaker: countMatches { it.contains('crafttweaker') },
+            arsMagica: countMatches { it.contains('ars-magica') || it.contains('arsmagica') },
+            jawms: countMatches { it.contains('just-another-wizardry') },
+            product: countMatches { it.contains('jawms-integrations') }
+    ]
+}
+
+def packagedRuntimeMismatches = { Map counts, boolean requireComplete ->
+    def mismatches = []
+    def check = { String label, int actual, boolean enabled ->
+        int maximum = enabled ? 1 : 0
+        if (actual > maximum || (requireComplete && actual != maximum)) {
+            mismatches << "${label} count=${actual}"
+        }
+    }
+    check('JAWMS', counts.jawms, true)
+    check('JAWMS Integrations', counts.product, true)
+    check('Quality Tools', counts.qualityTools, qualityToolsRuntimeEnabled)
+    check('Potion Core', counts.potionCore, qualityToolsRuntimeEnabled)
+    check('Ancient Spellcraft', counts.ancientSpellcraft, ancientSpellcraftRuntimeEnabled)
+    check('WizardryUtils', counts.wizardryUtils, ancientSpellcraftRuntimeEnabled)
+    check('CraftTweaker', counts.craftTweaker, craftTweakerRuntimeEnabled)
+    check('Ars Magica', counts.arsMagica, arsMagicaRuntimeEnabled)
+    mismatches
+}
+
+tasks.register('verifyNoStalePackagedRuntimeArtifacts') {
+    group = 'jawms integrations verification'
+    description = 'Fails before preparation when stale or duplicate managed packaged artifacts are present.'
+    inputs.property 'integrationRuntimeProfile', integrationRuntimeProfile
+    doLast {
+        def mismatches = packagedRuntimeMismatches(packagedRuntimeCounts(), false)
+        if (!mismatches.empty) {
+            throw new GradleException("Packaged runtime profile '${integrationRuntimeProfile}' contains stale "
+                    + "or duplicate managed artifacts before preparation: ${mismatches.join('; ')}. "
+                    + "Run cleanManagedPackagedRuntimeArtifacts explicitly to reset the profile.")
+        }
+    }
+}
+tasks.named('verifyNoStalePackagedRuntimeArtifacts').configure {
+    mustRunAfter tasks.named('cleanManagedPackagedRuntimeArtifacts')
+}
+
 tasks.named('prepareObfModsFolder', Copy).configure {
+    dependsOn tasks.named('verifyNoStalePackagedRuntimeArtifacts')
     if (ancientSpellcraftRuntimeEnabled) {
         from configurations.ancientSpellcraftPackagedRuntimeMods
     }
+    from configurations.optionalPackagedRuntimeMods
 }
 
 tasks.register('verifyPackagedRuntimeProfile') {
@@ -184,29 +310,7 @@ tasks.register('verifyPackagedRuntimeProfile') {
     inputs.property 'integrationRuntimeProfile', integrationRuntimeProfile
     dependsOn tasks.named('prepareObfModsFolder')
     doLast {
-        def runtimeNames = fileTree(layout.projectDirectory.dir('run/obfuscated/mods')) {
-            include '**/*.jar'
-        }.files.collect { it.name.toLowerCase(Locale.ROOT) }
-        def countMatches = { Closure<Boolean> predicate -> runtimeNames.count(predicate) }
-        def qualityToolsCount = countMatches { it.contains('qualitytools') || it.contains('quality-tools') }
-        def potionCoreCount = countMatches { it.contains('potioncore') || it.contains('potion-core') }
-        def ancientSpellcraftCount = countMatches {
-            it.contains('ancientspellcraft') || it.contains('ancient-spellcraft')
-        }
-        def wizardryUtilsCount = countMatches { it.contains('wizardryutils') }
-        def mismatches = []
-        if (qualityToolsCount != (qualityToolsRuntimeEnabled ? 1 : 0)) {
-            mismatches << "Quality Tools count=${qualityToolsCount}"
-        }
-        if (potionCoreCount != (qualityToolsRuntimeEnabled ? 1 : 0)) {
-            mismatches << "Potion Core count=${potionCoreCount}"
-        }
-        if (ancientSpellcraftCount != (ancientSpellcraftRuntimeEnabled ? 1 : 0)) {
-            mismatches << "Ancient Spellcraft count=${ancientSpellcraftCount}"
-        }
-        if (wizardryUtilsCount != (ancientSpellcraftRuntimeEnabled ? 1 : 0)) {
-            mismatches << "WizardryUtils count=${wizardryUtilsCount}"
-        }
+        def mismatches = packagedRuntimeMismatches(packagedRuntimeCounts(), true)
         if (!mismatches.empty) {
             throw new GradleException("Packaged runtime profile '${integrationRuntimeProfile}' is invalid: "
                     + mismatches.join('; '))
@@ -293,6 +397,8 @@ tasks.register('verifyDevelopmentRuntimeProfile') {
         def wizardryUtilsCount = countMatches { it.contains('wizardryutils') }
         def toolkitCount = countMatches { it.contains('agenttesttoolkit') }
         def jawmsCount = countMatches { it.contains('just-another-wizardry') }
+        def craftTweakerCount = countMatches { it.contains('crafttweaker') }
+        def arsMagicaCount = countMatches { it.contains('ars-magica') || it.contains('arsmagica') }
 
         def mismatches = []
         if (jawmsCount != 1) mismatches << "JAWMS count=${jawmsCount}"
@@ -307,6 +413,12 @@ tasks.register('verifyDevelopmentRuntimeProfile') {
         }
         if (wizardryUtilsCount != (ancientSpellcraftRuntimeEnabled ? 1 : 0)) {
             mismatches << "WizardryUtils count=${wizardryUtilsCount}"
+        }
+        if (craftTweakerCount != (craftTweakerRuntimeEnabled ? 1 : 0)) {
+            mismatches << "CraftTweaker count=${craftTweakerCount}"
+        }
+        if (arsMagicaCount != (arsMagicaRuntimeEnabled ? 1 : 0)) {
+            mismatches << "Ars Magica count=${arsMagicaCount}"
         }
         if (toolkitCount != (propertyBool('enable_agent_test_toolkit') ? 1 : 0)) {
             mismatches << "Agent Test Toolkit count=${toolkitCount}"

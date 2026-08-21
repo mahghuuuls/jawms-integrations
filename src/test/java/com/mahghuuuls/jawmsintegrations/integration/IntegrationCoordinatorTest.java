@@ -8,193 +8,214 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class IntegrationCoordinatorTest {
 
     @Test
-    void absentOptionalModsRemainIndependentInactiveStates() {
+    void allFourAbsentOptionalModsRemainIndependentInactiveStates() {
         IntegrationCoordinator coordinator = initialize(
-                IntegrationConfigSnapshot.defaults(),
-                new HashMap<>(),
-                gates(OptionalMixinGateRegistry.Evidence.absent(), OptionalMixinGateRegistry.Evidence.absent())
-        );
-
-        assertEquals(IntegrationState.ABSENT,
-                coordinator.getStatus(IntegrationId.QUALITY_TOOLS).getState());
-        assertEquals(IntegrationState.ABSENT,
-                coordinator.getStatus(IntegrationId.ANCIENT_SPELLCRAFT).getState());
+                IntegrationConfigSnapshot.defaults(), new HashMap<>(), allAbsent());
+        assertEquals(4, coordinator.getStatuses().size());
+        for (IntegrationId integration : IntegrationId.values()) {
+            assertEquals(IntegrationState.ABSENT, coordinator.getStatus(integration).getState());
+        }
     }
 
     @Test
-    void exactVersionsActivateUnlessTheirMasterControlIsDisabled() {
+    void minimumVersionsRespectEveryIndependentMasterControlAndRemainReadyUntilActivated() {
         IntegrationConfigSnapshot config = new IntegrationConfigSnapshot(
                 new IntegrationConfigSnapshot.QualityToolsConfig(false, true),
                 new IntegrationConfigSnapshot.AncientSpellcraftConfig(true),
-                new IntegrationConfigSnapshot.DiagnosticsConfig(false)
-        );
-        Map<String, String> versions = supportedVersions();
-        IntegrationCoordinator coordinator = initialize(
-                config,
-                versions,
-                gates(
-                        OptionalMixinGateRegistry.Evidence.supported(IntegrationId.QUALITY_TOOLS.getSupportedMetadataVersion()),
-                        OptionalMixinGateRegistry.Evidence.supported(IntegrationId.ANCIENT_SPELLCRAFT.getSupportedMetadataVersion())
-                )
-        );
-
+                new IntegrationConfigSnapshot.IntegrationToggleConfig(false),
+                new IntegrationConfigSnapshot.IntegrationToggleConfig(true),
+                new IntegrationConfigSnapshot.DiagnosticsConfig(false));
+        IntegrationCoordinator coordinator = initialize(config, supportedVersions(), allSupported());
         assertEquals(IntegrationState.DISABLED,
                 coordinator.getStatus(IntegrationId.QUALITY_TOOLS).getState());
-        assertEquals(IntegrationState.ACTIVE,
+        assertEquals(IntegrationState.READY,
                 coordinator.getStatus(IntegrationId.ANCIENT_SPELLCRAFT).getState());
+        assertEquals(IntegrationState.DISABLED,
+                coordinator.getStatus(IntegrationId.CRAFTTWEAKER).getState());
+        assertEquals(IntegrationState.READY,
+                coordinator.getStatus(IntegrationId.ARS_MAGICA).getState());
     }
 
     @Test
-    void unsupportedVersionDisablesOnlyAffectedIntegration() {
+    void unsupportedVersionDisablesOnlyAffectedIntegrationAndNamesVersions() {
         Map<String, String> versions = supportedVersions();
-        versions.put(IntegrationId.QUALITY_TOOLS.getModId(), "1.0.8");
+        versions.put(IntegrationId.CRAFTTWEAKER.getModId(), "1.12-4.1.20.714");
+        Map<IntegrationId, OptionalIntegrationEvidenceRegistry.Evidence> evidence = allSupported();
+        evidence.put(IntegrationId.CRAFTTWEAKER,
+                OptionalIntegrationEvidenceRegistry.Evidence.unsupported("1.12-4.1.20.714"));
         IntegrationCoordinator coordinator = initialize(
-                IntegrationConfigSnapshot.defaults(),
-                versions,
-                gates(
-                        OptionalMixinGateRegistry.Evidence.unsupported("1.0.8"),
-                        OptionalMixinGateRegistry.Evidence.supported(IntegrationId.ANCIENT_SPELLCRAFT.getSupportedMetadataVersion())
-                )
-        );
-
-        assertEquals(IntegrationState.UNSUPPORTED,
-                coordinator.getStatus(IntegrationId.QUALITY_TOOLS).getState());
-        assertEquals(IntegrationState.ACTIVE,
-                coordinator.getStatus(IntegrationId.ANCIENT_SPELLCRAFT).getState());
+                IntegrationConfigSnapshot.defaults(), versions, evidence);
+        IntegrationStatusView craftTweaker = coordinator.getStatus(IntegrationId.CRAFTTWEAKER);
+        assertEquals(IntegrationState.UNSUPPORTED, craftTweaker.getState());
+        assertTrue(craftTweaker.getDetail().contains("1.12-4.1.20.714"));
+        assertTrue(craftTweaker.getDetail().contains("1.12-4.1.20.715"));
+        assertEquals(IntegrationState.READY,
+                coordinator.getStatus(IntegrationId.ARS_MAGICA).getState());
     }
 
     @Test
-    void earlyGateFailureIsIsolatedAndExplained() {
+    void bootstrapFailureAndMissingEvidenceFailClosedOnlyForAffectedIntegration() {
+        Map<IntegrationId, OptionalIntegrationEvidenceRegistry.Evidence> evidence = allSupported();
+        evidence.put(IntegrationId.ARS_MAGICA,
+                OptionalIntegrationEvidenceRegistry.Evidence.error("metadata unreadable"));
+        evidence.put(IntegrationId.CRAFTTWEAKER,
+                OptionalIntegrationEvidenceRegistry.Evidence.unknown());
         IntegrationCoordinator coordinator = initialize(
-                IntegrationConfigSnapshot.defaults(),
-                supportedVersions(),
-                gates(
-                        OptionalMixinGateRegistry.Evidence.error("metadata unreadable"),
-                        OptionalMixinGateRegistry.Evidence.supported(IntegrationId.ANCIENT_SPELLCRAFT.getSupportedMetadataVersion())
-                )
-        );
-
+                IntegrationConfigSnapshot.defaults(), supportedVersions(), evidence);
         assertEquals(IntegrationState.FAILED,
-                coordinator.getStatus(IntegrationId.QUALITY_TOOLS).getState());
+                coordinator.getStatus(IntegrationId.ARS_MAGICA).getState());
         assertEquals("metadata unreadable",
-                coordinator.getStatus(IntegrationId.QUALITY_TOOLS).getDetail());
-        assertEquals(IntegrationState.ACTIVE,
-                coordinator.getStatus(IntegrationId.ANCIENT_SPELLCRAFT).getState());
-    }
-
-    @Test
-    void presentExactReleaseFailsClosedWhenEarlyGatePublishesNoEvidence() {
-        IntegrationCoordinator coordinator = initialize(
-                IntegrationConfigSnapshot.defaults(),
-                supportedVersions(),
-                gates(
-                        OptionalMixinGateRegistry.Evidence.unknown(),
-                        OptionalMixinGateRegistry.Evidence.supported(
-                                IntegrationId.ANCIENT_SPELLCRAFT.getSupportedMetadataVersion())
-                )
-        );
-
+                coordinator.getStatus(IntegrationId.ARS_MAGICA).getDetail());
         assertEquals(IntegrationState.FAILED,
+                coordinator.getStatus(IntegrationId.CRAFTTWEAKER).getState());
+        assertEquals("Bootstrap gate did not publish evidence",
+                coordinator.getStatus(IntegrationId.CRAFTTWEAKER).getDetail());
+        assertEquals(IntegrationState.READY,
                 coordinator.getStatus(IntegrationId.QUALITY_TOOLS).getState());
-        assertEquals("Mixin gate did not publish evidence",
-                coordinator.getStatus(IntegrationId.QUALITY_TOOLS).getDetail());
-        assertEquals(IntegrationState.ACTIVE,
-                coordinator.getStatus(IntegrationId.ANCIENT_SPELLCRAFT).getState());
     }
 
     @Test
-    void supportedDecisionFailsClosedWhenGateReportsWrongMetadataVersion() {
+    void supportedDecisionWithWrongMetadataFailsClosed() {
+        Map<IntegrationId, OptionalIntegrationEvidenceRegistry.Evidence> evidence = allSupported();
+        evidence.put(IntegrationId.ARS_MAGICA,
+                OptionalIntegrationEvidenceRegistry.Evidence.supported("GRADLE:VERSIONGRADLE:BUILD"));
         IntegrationCoordinator coordinator = initialize(
-                IntegrationConfigSnapshot.defaults(),
-                supportedVersions(),
-                gates(
-                        OptionalMixinGateRegistry.Evidence.supported("1.0.8"),
-                        OptionalMixinGateRegistry.Evidence.supported(
-                                IntegrationId.ANCIENT_SPELLCRAFT.getSupportedMetadataVersion())
-                )
-        );
-
+                IntegrationConfigSnapshot.defaults(), supportedVersions(), evidence);
         assertEquals(IntegrationState.FAILED,
-                coordinator.getStatus(IntegrationId.QUALITY_TOOLS).getState());
-        assertEquals(IntegrationState.ACTIVE,
-                coordinator.getStatus(IntegrationId.ANCIENT_SPELLCRAFT).getState());
+                coordinator.getStatus(IntegrationId.ARS_MAGICA).getState());
+        assertTrue(coordinator.getStatus(IntegrationId.ARS_MAGICA).getDetail().contains("1.6.2"));
     }
 
     @Test
-    void exactAncientReleaseAcceptsItsKnownForgeIndevAliasOnlyWithGateEvidence() {
+    void ancientForgeAliasRequiresExactArchiveEvidence() {
         Map<String, String> versions = supportedVersions();
         versions.put(IntegrationId.ANCIENT_SPELLCRAFT.getModId(), "1.12.2-INDEV");
-
         IntegrationCoordinator confirmed = initialize(
-                IntegrationConfigSnapshot.defaults(),
-                versions,
-                gates(
-                        OptionalMixinGateRegistry.Evidence.supported(IntegrationId.QUALITY_TOOLS.getSupportedMetadataVersion()),
-                        OptionalMixinGateRegistry.Evidence.supported(IntegrationId.ANCIENT_SPELLCRAFT.getSupportedMetadataVersion())
-                )
-        );
+                IntegrationConfigSnapshot.defaults(), versions, allSupported());
+        Map<IntegrationId, OptionalIntegrationEvidenceRegistry.Evidence> missing = allSupported();
+        missing.put(IntegrationId.ANCIENT_SPELLCRAFT,
+                OptionalIntegrationEvidenceRegistry.Evidence.unknown());
         IntegrationCoordinator unconfirmed = initialize(
-                IntegrationConfigSnapshot.defaults(),
-                versions,
-                gates(
-                        OptionalMixinGateRegistry.Evidence.supported(IntegrationId.QUALITY_TOOLS.getSupportedMetadataVersion()),
-                        OptionalMixinGateRegistry.Evidence.unknown()
-                )
-        );
-
-        assertEquals(IntegrationState.ACTIVE,
+                IntegrationConfigSnapshot.defaults(), versions, missing);
+        assertEquals(IntegrationState.READY,
                 confirmed.getStatus(IntegrationId.ANCIENT_SPELLCRAFT).getState());
         assertEquals(IntegrationState.FAILED,
                 unconfirmed.getStatus(IntegrationId.ANCIENT_SPELLCRAFT).getState());
-        assertEquals("Mixin gate did not publish evidence",
-                unconfirmed.getStatus(IntegrationId.ANCIENT_SPELLCRAFT).getDetail());
     }
 
     @Test
     void activationFailureReclassifiesOnlyTheAffectedIntegration() {
         IntegrationCoordinator coordinator = initialize(
-                IntegrationConfigSnapshot.defaults(),
-                supportedVersions(),
-                gates(
-                        OptionalMixinGateRegistry.Evidence.supported(
-                                IntegrationId.QUALITY_TOOLS.getSupportedMetadataVersion()),
-                        OptionalMixinGateRegistry.Evidence.supported(
-                                IntegrationId.ANCIENT_SPELLCRAFT.getSupportedMetadataVersion())
-                )
-        ).withFailure(IntegrationId.QUALITY_TOOLS, "provider registration failed");
-
+                IntegrationConfigSnapshot.defaults(), supportedVersions(), allSupported())
+                .withFailure(IntegrationId.QUALITY_TOOLS, "provider registration failed");
         assertEquals(IntegrationState.FAILED,
                 coordinator.getStatus(IntegrationId.QUALITY_TOOLS).getState());
         assertEquals("provider registration failed",
                 coordinator.getStatus(IntegrationId.QUALITY_TOOLS).getDetail());
-        assertEquals(IntegrationState.ACTIVE,
-                coordinator.getStatus(IntegrationId.ANCIENT_SPELLCRAFT).getState());
+        assertEquals(IntegrationState.READY,
+                coordinator.getStatus(IntegrationId.CRAFTTWEAKER).getState());
     }
 
-    private static IntegrationCoordinator initialize(IntegrationConfigSnapshot config,
-                                                     Map<String, String> versions,
-                                                     Map<IntegrationId, OptionalMixinGateRegistry.Evidence> gates) {
-        return IntegrationCoordinator.initialize(config, versions::get, gates::get);
+    @Test
+    void newerVersionsHaveNoUpperBoundAndOlderVersionsRemainUnsupported() {
+        for (IntegrationId integration : IntegrationId.values()) {
+            assertTrue(integration.meetsMinimumMetadataVersion(newerVersion(integration)));
+        }
+        assertFalse(IntegrationId.QUALITY_TOOLS.meetsMinimumMetadataVersion("1.0.6_for_1.12.2"));
+        assertFalse(IntegrationId.ANCIENT_SPELLCRAFT.meetsMinimumMetadataVersion("1.12.2-1.8.2"));
+        assertFalse(IntegrationId.CRAFTTWEAKER.meetsMinimumMetadataVersion("1.12-4.1.20.714"));
+        assertFalse(IntegrationId.ARS_MAGICA.meetsMinimumMetadataVersion("1.6.1"));
+
+        Map<String, String> versions = supportedVersions();
+        Map<IntegrationId, OptionalIntegrationEvidenceRegistry.Evidence> evidence = allSupported();
+        for (IntegrationId integration : IntegrationId.values()) {
+            String newer = newerVersion(integration);
+            versions.put(integration.getModId(), newer);
+            evidence.put(integration, OptionalIntegrationEvidenceRegistry.Evidence.supported(newer));
+        }
+        IntegrationCoordinator coordinator = initialize(
+                IntegrationConfigSnapshot.defaults(), versions, evidence);
+        for (IntegrationId integration : IntegrationId.values()) {
+            assertEquals(IntegrationState.READY, coordinator.getStatus(integration).getState());
+        }
+    }
+
+    @Test
+    void onlyReadyIntegrationsCanBePromotedToActive() {
+        IntegrationCoordinator ready = initialize(
+                IntegrationConfigSnapshot.defaults(), supportedVersions(), allSupported());
+        IntegrationCoordinator active = ready.withActive(
+                IntegrationId.QUALITY_TOOLS, "provider registration completed");
+        assertEquals(IntegrationState.ACTIVE,
+                active.getStatus(IntegrationId.QUALITY_TOOLS).getState());
+        assertEquals(IntegrationState.READY,
+                active.getStatus(IntegrationId.CRAFTTWEAKER).getState());
+
+        IntegrationConfigSnapshot disabledQualityTools = new IntegrationConfigSnapshot(
+                new IntegrationConfigSnapshot.QualityToolsConfig(false, true),
+                IntegrationConfigSnapshot.defaults().getAncientSpellcraft(),
+                IntegrationConfigSnapshot.defaults().getCraftTweaker(),
+                IntegrationConfigSnapshot.defaults().getArsMagica(),
+                IntegrationConfigSnapshot.defaults().getDiagnostics());
+        IntegrationCoordinator disabled = initialize(
+                disabledQualityTools, supportedVersions(), allSupported());
+        assertThrows(IllegalStateException.class, () -> disabled.withActive(
+                IntegrationId.QUALITY_TOOLS, "must not bypass disabled state"));
+
+        IntegrationCoordinator failed = ready.withFailure(
+                IntegrationId.QUALITY_TOOLS, "activation failed");
+        assertThrows(IllegalStateException.class, () -> failed.withActive(
+                IntegrationId.QUALITY_TOOLS, "must not bypass failure state"));
+    }
+
+    private static IntegrationCoordinator initialize(
+            IntegrationConfigSnapshot config,
+            Map<String, String> versions,
+            Map<IntegrationId, OptionalIntegrationEvidenceRegistry.Evidence> evidence) {
+        return IntegrationCoordinator.initialize(config, versions::get, evidence::get);
     }
 
     private static Map<String, String> supportedVersions() {
         Map<String, String> versions = new HashMap<>();
         for (IntegrationId integration : IntegrationId.values()) {
-            versions.put(integration.getModId(), integration.getSupportedMetadataVersion());
+            versions.put(integration.getModId(), integration.getMinimumMetadataVersion());
         }
         return versions;
     }
 
-    private static Map<IntegrationId, OptionalMixinGateRegistry.Evidence> gates(
-            OptionalMixinGateRegistry.Evidence qualityTools,
-            OptionalMixinGateRegistry.Evidence ancientSpellcraft) {
-        Map<IntegrationId, OptionalMixinGateRegistry.Evidence> gates = new EnumMap<>(IntegrationId.class);
-        gates.put(IntegrationId.QUALITY_TOOLS, qualityTools);
-        gates.put(IntegrationId.ANCIENT_SPELLCRAFT, ancientSpellcraft);
-        return gates;
+    private static Map<IntegrationId, OptionalIntegrationEvidenceRegistry.Evidence> allSupported() {
+        Map<IntegrationId, OptionalIntegrationEvidenceRegistry.Evidence> evidence =
+                new EnumMap<>(IntegrationId.class);
+        for (IntegrationId integration : IntegrationId.values()) {
+            evidence.put(integration, OptionalIntegrationEvidenceRegistry.Evidence.supported(
+                    integration.getMinimumMetadataVersion()));
+        }
+        return evidence;
+    }
+
+    private static Map<IntegrationId, OptionalIntegrationEvidenceRegistry.Evidence> allAbsent() {
+        Map<IntegrationId, OptionalIntegrationEvidenceRegistry.Evidence> evidence =
+                new EnumMap<>(IntegrationId.class);
+        for (IntegrationId integration : IntegrationId.values()) {
+            evidence.put(integration, OptionalIntegrationEvidenceRegistry.Evidence.absent());
+        }
+        return evidence;
+    }
+
+    private static String newerVersion(IntegrationId integration) {
+        switch (integration) {
+            case QUALITY_TOOLS: return "2.0.0-beta_for_1.12.2";
+            case ANCIENT_SPELLCRAFT: return "1.12.2-2.0.0-beta";
+            case CRAFTTWEAKER: return "1.12-4.2.0.0";
+            case ARS_MAGICA: return "2.0.0";
+            default: throw new IllegalStateException("Unhandled integration " + integration);
+        }
     }
 }

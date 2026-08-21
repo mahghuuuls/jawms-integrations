@@ -29,6 +29,8 @@ class IntegrationConfigLoaderTest {
             assertEquals(quality.getDefaultWeight(), configured.getWeight());
         }
         assertTrue(snapshot.getAncientSpellcraft().isIntegrationEnabled());
+        assertTrue(snapshot.getCraftTweaker().isEnabled());
+        assertTrue(snapshot.getArsMagica().isEnabled());
         assertTrue(snapshot.getAncientSpellcraft().getLesserManaRing().isEnabled());
         assertEquals(8, snapshot.getAncientSpellcraft().getLesserManaRing().getValue());
         assertTrue(snapshot.getAncientSpellcraft().getGreaterManaRing().isEnabled());
@@ -66,6 +68,27 @@ class IntegrationConfigLoaderTest {
         assertEquals(1, warnings.size());
         assertTrue(warnings.get(0).contains("quality_tools.enabled"));
         assertTrue(warnings.get(0).contains("using default true"));
+    }
+
+    @Test
+    void newMasterControlsValidateIndependentlyWithoutChangingExistingValues() {
+        List<String> warnings = new ArrayList<>();
+
+        boolean existingQualityTools = IntegrationConfigLoader.validateBoolean(
+                "quality_tools", "enabled", "false", true, warnings);
+        boolean existingAncient = IntegrationConfigLoader.validateBoolean(
+                "ancient_spellcraft", "enabled", "false", true, warnings);
+        boolean craftTweaker = IntegrationConfigLoader.validateBoolean(
+                "crafttweaker", "enabled", "true", true, warnings);
+        boolean arsMagica = IntegrationConfigLoader.validateBoolean(
+                "ars_magica_2_rekindled", "enabled", "invalid", true, warnings);
+
+        assertFalse(existingQualityTools);
+        assertFalse(existingAncient);
+        assertTrue(craftTweaker);
+        assertTrue(arsMagica);
+        assertEquals(1, warnings.size());
+        assertTrue(warnings.get(0).contains("ars_magica_2_rekindled.enabled"));
     }
 
     @Test

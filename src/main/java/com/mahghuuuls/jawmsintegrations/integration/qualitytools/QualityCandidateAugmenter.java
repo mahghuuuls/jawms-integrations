@@ -34,7 +34,7 @@ public final class QualityCandidateAugmenter {
         config = configured;
     }
 
-    /** Called only from the exact-version optional Quality Tools Mixin. */
+    /** Called only from the minimum-version-gated optional Quality Tools Mixin. */
     public static QualityEntry choose(QualityType selectedType,
                                       ItemStack stack,
                                       boolean reforging) {

@@ -60,13 +60,15 @@ public final class IntegrationDiagnosticsService {
             String detected = status.isPresent() ? status.getDetectedVersion() : "not installed";
             lines.add(status.getIntegration().getDisplayName() + ": " + status.getState()
                     + ", detected=" + detected
-                    + ", supported=" + status.getSupportedVersion()
+                    + ", minimum=" + status.getMinimumVersion()
                     + ", reason=" + status.getDetail());
         }
         lines.add("Configuration: Quality Tools=" + enabled(config.getQualityTools().isIntegrationEnabled())
                 + ", built-in qualities=" + builtInSummary()
                 + ", Ancient Spellcraft=" + enabled(config.getAncientSpellcraft().isIntegrationEnabled())
                 + ", Ancient replacements=" + ancientReplacementSummary()
+                + ", CraftTweaker=" + enabled(config.getCraftTweaker().isEnabled())
+                + ", Ars Magica=" + enabled(config.getArsMagica().isEnabled())
                 + ", startup diagnostics=" + enabled(config.getDiagnostics().isEnabled()));
         if (config.getDiagnostics().isEnabled()) {
             lines.add("Latest Ring of Dagorim activation: "

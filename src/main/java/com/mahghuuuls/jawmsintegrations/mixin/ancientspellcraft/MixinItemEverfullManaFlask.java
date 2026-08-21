@@ -16,7 +16,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-/** Exact-version adapter that replaces native Everfull ticking and use with the common service. */
+/** Contract-gated adapter that replaces native Everfull ticking and use with the common service. */
 @Mixin(targets = "com.windanesz.ancientspellcraft.item.ItemEverfullManaFlask", remap = false)
 public abstract class MixinItemEverfullManaFlask {
 

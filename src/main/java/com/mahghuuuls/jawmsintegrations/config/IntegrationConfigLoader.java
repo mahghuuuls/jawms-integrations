@@ -16,6 +16,8 @@ public final class IntegrationConfigLoader {
 
     private static final String QUALITY_TOOLS = "quality_tools";
     private static final String ANCIENT_SPELLCRAFT = "ancient_spellcraft";
+    private static final String CRAFTTWEAKER = "crafttweaker";
+    private static final String ARS_MAGICA = "ars_magica_2_rekindled";
     private static final String DIAGNOSTICS = "diagnostics";
 
     private IntegrationConfigLoader() {
@@ -85,6 +87,22 @@ public final class IntegrationConfigLoader {
                         readBoundedDouble(configuration, dagorimCategory, "activationChancePercent",
                                 20.0D, 0.0D, 100.0D,
                                 "Chance per eligible check to consume one ordinary mana flask. Requires restart.", warnings));
+        boolean craftTweakerEnabled = readBoolean(
+                configuration,
+                CRAFTTWEAKER,
+                "enabled",
+                true,
+                "Controls whether the JAWMS CraftTweaker scripting integration may activate. Requires restart.",
+                warnings
+        );
+        boolean arsMagicaEnabled = readBoolean(
+                configuration,
+                ARS_MAGICA,
+                "enabled",
+                true,
+                "Controls whether JAWMS-owned Wizardry payment integration may activate. Requires restart.",
+                warnings
+        );
         boolean diagnosticsEnabled = readBoolean(
                 configuration,
                 DIAGNOSTICS,
@@ -112,6 +130,8 @@ public final class IntegrationConfigLoader {
                         crystalRing,
                         everfullManaFlask,
                         ringOfDagorim),
+                new IntegrationConfigSnapshot.IntegrationToggleConfig(craftTweakerEnabled),
+                new IntegrationConfigSnapshot.IntegrationToggleConfig(arsMagicaEnabled),
                 new IntegrationConfigSnapshot.DiagnosticsConfig(diagnosticsEnabled)
         );
         return new LoadResult(snapshot, warnings);

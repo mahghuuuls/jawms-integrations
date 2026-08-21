@@ -17,7 +17,10 @@ class CommonClassReferenceTest {
     private static final String[] FORBIDDEN = {
             "com/tmtravlr/qualitytools/",
             "com/windanesz/ancientspellcraft/",
-            "com/tmtravlr/potioncore/"
+            "com/tmtravlr/potioncore/",
+            "crafttweaker/",
+            "stanhebben/zenscript/",
+            "am2/"
     };
 
     @Test
@@ -39,8 +42,11 @@ class CommonClassReferenceTest {
         String normalized = path.toString().replace('\\', '/');
         return !normalized.contains("/integration/qualitytools/")
                 && !normalized.contains("/integration/ancientspellcraft/")
+                && !normalized.contains("/integration/crafttweaker/")
+                && !normalized.contains("/integration/arsmagica/")
                 && !normalized.contains("/mixin/qualitytools/")
-                && !normalized.contains("/mixin/ancientspellcraft/");
+                && !normalized.contains("/mixin/ancientspellcraft/")
+                && !normalized.contains("/mixin/arsmagica/");
     }
 
     private static void inspect(Path path, List<String> violations) {

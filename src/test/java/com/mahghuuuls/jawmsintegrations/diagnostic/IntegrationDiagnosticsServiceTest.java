@@ -3,8 +3,9 @@ package com.mahghuuuls.jawmsintegrations.diagnostic;
 import com.mahghuuuls.jawms.api.ManaContribution;
 import com.mahghuuuls.jawmsintegrations.config.IntegrationConfigSnapshot;
 import com.mahghuuuls.jawmsintegrations.integration.IntegrationCoordinator;
+import com.mahghuuuls.jawmsintegrations.integration.IntegrationId;
 import com.mahghuuuls.jawmsintegrations.integration.JawmsCompatibility;
-import com.mahghuuuls.jawmsintegrations.integration.OptionalMixinGateRegistry;
+import com.mahghuuuls.jawmsintegrations.integration.OptionalIntegrationEvidenceRegistry;
 import electroblob.wizardry.constants.Element;
 import org.junit.jupiter.api.Test;
 
@@ -21,10 +22,10 @@ class IntegrationDiagnosticsServiceTest {
         IntegrationCoordinator coordinator = IntegrationCoordinator.initialize(
                 config,
                 modId -> null,
-                integration -> OptionalMixinGateRegistry.Evidence.absent()
+                integration -> OptionalIntegrationEvidenceRegistry.Evidence.absent()
         );
         IntegrationDiagnosticsService diagnostics = new IntegrationDiagnosticsService(
-                JawmsCompatibility.verify("0.4.0", CompatibleApi.class),
+                JawmsCompatibility.verify("1.0.0", CompatibleApi.class),
                 config,
                 coordinator
         );
@@ -32,19 +33,52 @@ class IntegrationDiagnosticsServiceTest {
         String startup = diagnostics.startupSummary();
         List<String> overall = diagnostics.overallStatus();
 
-        assertTrue(startup.contains("JAWMS 0.4.0/API 1.4"));
+        assertTrue(startup.contains("JAWMS 1.0.0/API 1.5"));
         assertTrue(startup.contains("Quality Tools=ABSENT"));
         assertTrue(startup.contains("Ancient Spellcraft=ABSENT"));
+        assertTrue(startup.contains("CraftTweaker=ABSENT"));
+        assertTrue(startup.contains("Ars Magica 2: Rekindled=ABSENT"));
         assertTrue(startup.contains("built-in qualities=enabled(12/12)"));
         assertTrue(startup.contains("Ancient replacements=inactive(state=ABSENT)"));
-        assertEquals(4, overall.size());
+        assertEquals(6, overall.size());
         assertTrue(overall.get(1).contains("Quality Tools: ABSENT"));
         assertTrue(overall.get(2).contains("Ancient Spellcraft: ABSENT"));
-        assertTrue(overall.get(3).contains("startup diagnostics=disabled"));
-        assertTrue(overall.get(3).contains("built-in qualities=enabled(12/12)"));
-        assertTrue(overall.get(3).contains("Ancient replacements=inactive(state=ABSENT)"));
+        assertTrue(overall.get(3).contains("CraftTweaker: ABSENT"));
+        assertTrue(overall.get(4).contains("Ars Magica 2: Rekindled: ABSENT"));
+        assertTrue(overall.get(5).contains("startup diagnostics=disabled"));
+        assertTrue(overall.get(5).contains("built-in qualities=enabled(12/12)"));
+        assertTrue(overall.get(5).contains("Ancient replacements=inactive(state=ABSENT)"));
+        assertTrue(overall.get(5).contains("CraftTweaker=enabled"));
+        assertTrue(overall.get(5).contains("Ars Magica=enabled"));
         assertEquals("Quality Tools reload summary: built-in qualities=enabled(12/12)",
                 diagnostics.qualityToolsReloadSummary());
+    }
+
+    @Test
+    void acceptedDependenciesAreReportedReadyUntilTheirFeatureOwnersActivate() {
+        IntegrationConfigSnapshot config = IntegrationConfigSnapshot.defaults();
+        IntegrationCoordinator coordinator = IntegrationCoordinator.initialize(
+                config,
+                modId -> {
+                    for (IntegrationId integration : IntegrationId.values()) {
+                        if (integration.getModId().equals(modId)) {
+                            return integration.getMinimumMetadataVersion();
+                        }
+                    }
+                    return null;
+                },
+                integration -> OptionalIntegrationEvidenceRegistry.Evidence.supported(
+                        integration.getMinimumMetadataVersion())
+        );
+        IntegrationDiagnosticsService diagnostics = new IntegrationDiagnosticsService(
+                JawmsCompatibility.verify("1.0.0", CompatibleApi.class), config, coordinator);
+
+        String startup = diagnostics.startupSummary();
+        List<String> overall = diagnostics.overallStatus();
+        assertTrue(startup.contains("Quality Tools=READY(1.0.7_for_1.12.2)"));
+        assertTrue(startup.contains("CraftTweaker=READY(1.12-4.1.20.715)"));
+        assertTrue(overall.get(1).contains("minimum=1.0.7"));
+        assertTrue(overall.get(3).contains("CraftTweaker: READY"));
     }
 
     @Test
@@ -70,6 +104,6 @@ class IntegrationDiagnosticsServiceTest {
     }
 
     public static final class CompatibleApi {
-        public static final String CURRENT = "1.4";
+        public static final String CURRENT = "1.5";
     }
 }

@@ -34,8 +34,8 @@ public final class IntegrationStatusView {
         return detectedVersion;
     }
 
-    public String getSupportedVersion() {
-        return integration.getSupportedVersion();
+    public String getMinimumVersion() {
+        return integration.getMinimumVersion();
     }
 
     public String getDetail() {

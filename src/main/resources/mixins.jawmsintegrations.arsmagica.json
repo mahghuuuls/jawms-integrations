@@ -1,0 +1,10 @@
+{
+  "required": true,
+  "package": "com.mahghuuuls.jawmsintegrations.mixin.arsmagica",
+  "plugin": "com.mahghuuuls.jawmsintegrations.mixin.OptionalIntegrationMixinPlugin",
+  "refmap": "mixins.jawmsintegrations.refmap.json",
+  "compatibilityLevel": "JAVA_8",
+  "mixins": [],
+  "client": [],
+  "server": []
+}

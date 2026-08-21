@@ -1,7 +1,8 @@
 package com.mahghuuuls.jawmsintegrations.mixin;
 
 import com.mahghuuuls.jawmsintegrations.integration.IntegrationId;
-import com.mahghuuuls.jawmsintegrations.integration.OptionalMixinGateRegistry;
+import com.mahghuuuls.jawmsintegrations.integration.EarlyModMetadataScanner;
+import com.mahghuuuls.jawmsintegrations.integration.OptionalIntegrationEvidenceRegistry;
 import org.objectweb.asm.tree.ClassNode;
 import org.spongepowered.asm.mixin.extensibility.IMixinConfigPlugin;
 import org.spongepowered.asm.mixin.extensibility.IMixinInfo;
@@ -10,17 +11,18 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
-/** Exact-version gate evaluated before optional target classes are resolved. */
+/** Minimum-version gate evaluated before optional target classes are resolved. */
 public final class OptionalIntegrationMixinPlugin implements IMixinConfigPlugin {
 
     private IntegrationId integration;
-    private OptionalMixinGateRegistry.Evidence evidence = OptionalMixinGateRegistry.Evidence.unknown();
+    private OptionalIntegrationEvidenceRegistry.Evidence evidence =
+            OptionalIntegrationEvidenceRegistry.Evidence.unknown();
 
     @Override
     public void onLoad(String mixinPackage) {
         integration = integrationForPackage(mixinPackage);
         if (integration == null) {
-            evidence = OptionalMixinGateRegistry.Evidence.error(
+            evidence = OptionalIntegrationEvidenceRegistry.Evidence.error(
                     "Unknown optional Mixin package '" + mixinPackage + "'"
             );
             return;
@@ -30,7 +32,8 @@ public final class OptionalIntegrationMixinPlugin implements IMixinConfigPlugin 
             contextLoader = OptionalIntegrationMixinPlugin.class.getClassLoader();
         }
         evidence = EarlyModMetadataScanner.scan(contextLoader, integration);
-        OptionalMixinGateRegistry.record(integration, evidence);
+        evidence = OptionalIntegrationContractValidator.validate(contextLoader, integration, evidence);
+        OptionalIntegrationEvidenceRegistry.record(integration, evidence);
     }
 
     @Override
@@ -41,7 +44,7 @@ public final class OptionalIntegrationMixinPlugin implements IMixinConfigPlugin 
     @Override
     public boolean shouldApplyMixin(String targetClassName, String mixinClassName) {
         return integration != null
-                && evidence.getDecision() == OptionalMixinGateRegistry.Decision.SUPPORTED;
+                && evidence.getDecision() == OptionalIntegrationEvidenceRegistry.Decision.SUPPORTED;
     }
 
     @Override
@@ -73,6 +76,9 @@ public final class OptionalIntegrationMixinPlugin implements IMixinConfigPlugin 
         }
         if ("com.mahghuuuls.jawmsintegrations.mixin.ancientspellcraft".equals(mixinPackage)) {
             return IntegrationId.ANCIENT_SPELLCRAFT;
+        }
+        if ("com.mahghuuuls.jawmsintegrations.mixin.arsmagica".equals(mixinPackage)) {
+            return IntegrationId.ARS_MAGICA;
         }
         return null;
     }

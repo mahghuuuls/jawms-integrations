@@ -328,10 +328,16 @@ test {
     doFirst {
         systemProperty 'jawmsintegrations.mainClassesDir',
                 sourceSets.main.output.classesDirs.singleFile.absolutePath
+        systemProperty 'jawmsintegrations.contract.jawmsJar',
+                configurations.jawmsContract.singleFile.absolutePath
         systemProperty 'jawmsintegrations.contract.qualityToolsJar',
                 configurations.qualityToolsContract.singleFile.absolutePath
         systemProperty 'jawmsintegrations.contract.ancientSpellcraftJar',
                 configurations.ancientSpellcraftContract.singleFile.absolutePath
+        systemProperty 'jawmsintegrations.contract.craftTweakerJar',
+                configurations.craftTweakerContract.singleFile.absolutePath
+        systemProperty 'jawmsintegrations.contract.arsMagicaJar',
+                configurations.arsMagicaContract.singleFile.absolutePath
     }
 }
 

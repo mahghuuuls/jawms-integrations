@@ -68,7 +68,7 @@ public final class QualityToolsIntegration {
         active = integration;
     }
 
-    /** Called by the exact-version command Mixin after Quality Tools reloads its files. */
+    /** Called by the minimum-version-gated command Mixin after Quality Tools reloads its files. */
     public static void afterConfigReload() {
         QualityToolsIntegration integration = active;
         if (integration != null) {
@@ -76,7 +76,7 @@ public final class QualityToolsIntegration {
         }
     }
 
-    /** Called only by the exact-version Quality Tools Mixin after its server attribute update. */
+    /** Called only by the minimum-version-gated Quality Tools Mixin after its server attribute update. */
     public static void afterAttributeUpdate(EntityLivingBase entity) {
         QualityToolsIntegration integration = active;
         if (integration == null || !(entity instanceof EntityPlayer) || entity.world.isRemote) {

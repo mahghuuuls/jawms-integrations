@@ -26,7 +26,7 @@ public final class IntegrationCoordinator {
                     ModContainer container = Loader.instance().getIndexedModList().get(modId);
                     return container == null ? null : container.getVersion();
                 },
-                OptionalMixinGateRegistry::get
+                OptionalIntegrationEvidenceRegistry::get
         );
     }
 
@@ -39,7 +39,7 @@ public final class IntegrationCoordinator {
         Map<IntegrationId, IntegrationStatusView> resolved = new EnumMap<>(IntegrationId.class);
         for (IntegrationId integration : IntegrationId.values()) {
             String detectedVersion = versions.findVersion(integration.getModId());
-            OptionalMixinGateRegistry.Evidence gate = gateEvidence.get(integration);
+            OptionalIntegrationEvidenceRegistry.Evidence gate = gateEvidence.get(integration);
             resolved.put(integration, resolve(integration, detectedVersion, gate, isEnabled(config, integration)));
         }
         return new IntegrationCoordinator(resolved);
@@ -47,37 +47,37 @@ public final class IntegrationCoordinator {
 
     private static IntegrationStatusView resolve(IntegrationId integration,
                                                  String detectedVersion,
-                                                 OptionalMixinGateRegistry.Evidence gate,
+                                                 OptionalIntegrationEvidenceRegistry.Evidence gate,
                                                  boolean enabled) {
         if (detectedVersion == null) {
             return new IntegrationStatusView(integration, IntegrationState.ABSENT, null,
                     "Optional dependency is not installed");
         }
-        if (gate.getDecision() == OptionalMixinGateRegistry.Decision.ERROR) {
+        if (gate.getDecision() == OptionalIntegrationEvidenceRegistry.Decision.ERROR) {
             return new IntegrationStatusView(integration, IntegrationState.FAILED, detectedVersion,
                     gate.getDetail());
         }
-        if (gate.getDecision() == OptionalMixinGateRegistry.Decision.UNSUPPORTED) {
+        if (gate.getDecision() == OptionalIntegrationEvidenceRegistry.Decision.UNSUPPORTED) {
             return new IntegrationStatusView(integration, IntegrationState.UNSUPPORTED, detectedVersion,
                     "Transformation gate rejected version " + gate.getDetectedVersion()
-                            + "; supported metadata version is " + integration.getSupportedMetadataVersion());
+                            + "; minimum metadata version is " + integration.getMinimumMetadataVersion());
         }
-        if (gate.getDecision() == OptionalMixinGateRegistry.Decision.ABSENT) {
+        if (gate.getDecision() == OptionalIntegrationEvidenceRegistry.Decision.ABSENT) {
             return new IntegrationStatusView(integration, IntegrationState.FAILED, detectedVersion,
                     "Forge detected the mod, but the transformation gate did not see it");
         }
-        if (gate.getDecision() == OptionalMixinGateRegistry.Decision.UNKNOWN) {
+        if (gate.getDecision() == OptionalIntegrationEvidenceRegistry.Decision.UNKNOWN) {
             return new IntegrationStatusView(integration, IntegrationState.FAILED, detectedVersion,
                     gate.getDetail());
         }
-        if (gate.getDecision() == OptionalMixinGateRegistry.Decision.SUPPORTED
-                && !integration.getSupportedMetadataVersion().equals(gate.getDetectedVersion())) {
+        if (gate.getDecision() == OptionalIntegrationEvidenceRegistry.Decision.SUPPORTED
+                && !integration.meetsMinimumMetadataVersion(gate.getDetectedVersion())) {
             return new IntegrationStatusView(integration, IntegrationState.FAILED, detectedVersion,
                     "Transformation gate reported metadata version " + gate.getDetectedVersion()
-                            + "; required metadata version is "
-                            + integration.getSupportedMetadataVersion());
+                            + "; minimum metadata version is "
+                            + integration.getMinimumMetadataVersion());
         }
-        if (gate.getDecision() == OptionalMixinGateRegistry.Decision.SUPPORTED
+        if (gate.getDecision() == OptionalIntegrationEvidenceRegistry.Decision.SUPPORTED
                 && !integration.acceptsLoaderVersion(detectedVersion)) {
             return new IntegrationStatusView(integration, IntegrationState.FAILED, detectedVersion,
                     "Transformation-time version " + gate.getDetectedVersion()
@@ -87,14 +87,8 @@ public final class IntegrationCoordinator {
             return new IntegrationStatusView(integration, IntegrationState.DISABLED, detectedVersion,
                     "Disabled by configuration");
         }
-        return new IntegrationStatusView(integration, IntegrationState.ACTIVE, detectedVersion,
-                "Exact supported version is installed and the integration is enabled");
-    }
-
-    private static IntegrationStatusView unsupported(IntegrationId integration, String detectedVersion) {
-        return new IntegrationStatusView(integration, IntegrationState.UNSUPPORTED, detectedVersion,
-                "Detected " + detectedVersion + "; supported release is " + integration.getSupportedVersion()
-                        + " (metadata " + integration.getSupportedMetadataVersion() + ")");
+        return new IntegrationStatusView(integration, IntegrationState.READY, detectedVersion,
+                "A release meeting the minimum version is installed and the integration is ready to activate");
     }
 
     private static boolean isEnabled(IntegrationConfigSnapshot config, IntegrationId integration) {
@@ -103,6 +97,10 @@ public final class IntegrationCoordinator {
                 return config.getQualityTools().isIntegrationEnabled();
             case ANCIENT_SPELLCRAFT:
                 return config.getAncientSpellcraft().isIntegrationEnabled();
+            case CRAFTTWEAKER:
+                return config.getCraftTweaker().isEnabled();
+            case ARS_MAGICA:
+                return config.getArsMagica().isEnabled();
             default:
                 throw new IllegalStateException("Unhandled integration " + integration);
         }
@@ -131,6 +129,20 @@ public final class IntegrationCoordinator {
         return new IntegrationCoordinator(failed);
     }
 
+    public IntegrationCoordinator withActive(IntegrationId integration, String detail) {
+        if (integration == null || detail == null || detail.trim().isEmpty()) {
+            throw new IllegalArgumentException("Active integration and detail must be provided");
+        }
+        IntegrationStatusView current = getStatus(integration);
+        if (current.getState() != IntegrationState.READY) {
+            throw new IllegalStateException("Only a READY integration can become ACTIVE: " + integration);
+        }
+        Map<IntegrationId, IntegrationStatusView> active = new EnumMap<>(statuses);
+        active.put(integration, new IntegrationStatusView(integration, IntegrationState.ACTIVE,
+                current.getDetectedVersion(), detail));
+        return new IntegrationCoordinator(active);
+    }
+
     @FunctionalInterface
     public interface ModVersionSource {
         /** Returns the raw Forge metadata version, or null when the mod is absent. */
@@ -139,6 +151,6 @@ public final class IntegrationCoordinator {
 
     @FunctionalInterface
     public interface GateEvidenceSource {
-        OptionalMixinGateRegistry.Evidence get(IntegrationId integration);
+        OptionalIntegrationEvidenceRegistry.Evidence get(IntegrationId integration);
     }
 }

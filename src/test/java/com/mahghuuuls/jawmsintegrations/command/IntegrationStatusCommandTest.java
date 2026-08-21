@@ -4,7 +4,7 @@ import com.mahghuuuls.jawmsintegrations.config.IntegrationConfigSnapshot;
 import com.mahghuuuls.jawmsintegrations.diagnostic.IntegrationDiagnosticsService;
 import com.mahghuuuls.jawmsintegrations.integration.IntegrationCoordinator;
 import com.mahghuuuls.jawmsintegrations.integration.JawmsCompatibility;
-import com.mahghuuuls.jawmsintegrations.integration.OptionalMixinGateRegistry;
+import com.mahghuuuls.jawmsintegrations.integration.OptionalIntegrationEvidenceRegistry;
 import net.minecraft.command.CommandResultStats;
 import net.minecraft.command.ICommandSender;
 import net.minecraft.server.MinecraftServer;
@@ -23,10 +23,10 @@ class IntegrationStatusCommandTest {
         IntegrationCoordinator coordinator = IntegrationCoordinator.initialize(
                 config,
                 modId -> null,
-                integration -> OptionalMixinGateRegistry.Evidence.absent()
+                integration -> OptionalIntegrationEvidenceRegistry.Evidence.absent()
         );
         IntegrationDiagnosticsService diagnostics = new IntegrationDiagnosticsService(
-                JawmsCompatibility.verify("0.4.0", CompatibleApi.class),
+                JawmsCompatibility.verify("1.0.0", CompatibleApi.class),
                 config,
                 coordinator
         );
@@ -39,7 +39,7 @@ class IntegrationStatusCommandTest {
     }
 
     public static final class CompatibleApi {
-        public static final String CURRENT = "1.4";
+        public static final String CURRENT = "1.5";
     }
 
     private static final class PermissionSender implements ICommandSender {

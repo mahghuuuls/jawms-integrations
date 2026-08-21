@@ -9,16 +9,23 @@ public final class IntegrationConfigSnapshot {
 
     private final QualityToolsConfig qualityTools;
     private final AncientSpellcraftConfig ancientSpellcraft;
+    private final IntegrationToggleConfig craftTweaker;
+    private final IntegrationToggleConfig arsMagica;
     private final DiagnosticsConfig diagnostics;
 
     public IntegrationConfigSnapshot(QualityToolsConfig qualityTools,
                                      AncientSpellcraftConfig ancientSpellcraft,
+                                     IntegrationToggleConfig craftTweaker,
+                                     IntegrationToggleConfig arsMagica,
                                      DiagnosticsConfig diagnostics) {
-        if (qualityTools == null || ancientSpellcraft == null || diagnostics == null) {
+        if (qualityTools == null || ancientSpellcraft == null || craftTweaker == null
+                || arsMagica == null || diagnostics == null) {
             throw new IllegalArgumentException("Configuration sections must not be null");
         }
         this.qualityTools = qualityTools;
         this.ancientSpellcraft = ancientSpellcraft;
+        this.craftTweaker = craftTweaker;
+        this.arsMagica = arsMagica;
         this.diagnostics = diagnostics;
     }
 
@@ -26,6 +33,8 @@ public final class IntegrationConfigSnapshot {
         return new IntegrationConfigSnapshot(
                 new QualityToolsConfig(true, true),
                 AncientSpellcraftConfig.defaults(),
+                new IntegrationToggleConfig(true),
+                new IntegrationToggleConfig(true),
                 new DiagnosticsConfig(false)
         );
     }
@@ -38,8 +47,28 @@ public final class IntegrationConfigSnapshot {
         return ancientSpellcraft;
     }
 
+    public IntegrationToggleConfig getCraftTweaker() {
+        return craftTweaker;
+    }
+
+    public IntegrationToggleConfig getArsMagica() {
+        return arsMagica;
+    }
+
     public DiagnosticsConfig getDiagnostics() {
         return diagnostics;
+    }
+
+    public static final class IntegrationToggleConfig {
+        private final boolean enabled;
+
+        public IntegrationToggleConfig(boolean enabled) {
+            this.enabled = enabled;
+        }
+
+        public boolean isEnabled() {
+            return enabled;
+        }
     }
 
     public static final class QualityToolsConfig {

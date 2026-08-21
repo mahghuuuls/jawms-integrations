@@ -15,8 +15,20 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 final class DependencyContractTest {
 
+    private static final String JAWMS_JAR = "jawmsintegrations.contract.jawmsJar";
     private static final String QUALITY_TOOLS_JAR = "jawmsintegrations.contract.qualityToolsJar";
     private static final String ANCIENT_SPELLCRAFT_JAR = "jawmsintegrations.contract.ancientSpellcraftJar";
+    private static final String CRAFTTWEAKER_JAR = "jawmsintegrations.contract.craftTweakerJar";
+    private static final String ARS_MAGICA_JAR = "jawmsintegrations.contract.arsMagicaJar";
+
+    @Test
+    void jawmsReleaseMatchesRequiredApiFoundation() throws IOException {
+        Path jar = requiredJar(JAWMS_JAR);
+        assertEquals("55F804795E0A8CB05B15EFD1CF6C43CF134C12F5837D0A3E54D11A897A90CDA3",
+                sha256(jar));
+        JarContract.assertField(jar,
+                "com/mahghuuuls/jawms/api/ManaApiVersion", "CURRENT", "Ljava/lang/String;");
+    }
 
     @Test
     void qualityToolsReleaseMatchesCandidateGenerationContract() throws IOException {
@@ -123,6 +135,14 @@ final class DependencyContractTest {
                 "onWornTick",
                 "(Lnet/minecraft/item/ItemStack;Lnet/minecraft/entity/EntityLivingBase;)V",
                 "net/minecraft/world/World", "field_72995_K", "Z", 1);
+    }
+
+    @Test
+    void newOptionalReleaseArtifactsMatchApprovedIdentities() throws IOException {
+        assertEquals("2CD1C68628B78FF5B58A12C94C0DBED8E91D322836BF2D34C9156FEE60390E53",
+                sha256(requiredJar(CRAFTTWEAKER_JAR)));
+        assertEquals("2141701AC5DC45C3F448AD113634AFEEC9AC42C6DC0A59853A954B09EE6DB640",
+                sha256(requiredJar(ARS_MAGICA_JAR)));
     }
 
     @Test

@@ -12,7 +12,7 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Redirect;
 
-/** Exact 1.8.3 legacy-payment and Crystal cost seams; policy owns every decision. */
+/** Contract-validated legacy-payment and Crystal cost seams; policy owns every decision. */
 @Mixin(targets = "com.windanesz.ancientspellcraft.handler.ASEventHandler", remap = false)
 public abstract class MixinASEventHandler {
 
