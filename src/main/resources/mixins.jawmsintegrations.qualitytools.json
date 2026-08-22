@@ -9,6 +9,8 @@
     "MixinQualityToolsCommonEventHandler",
     "MixinQualityToolsQualityType"
   ],
-  "client": [],
+  "client": [
+    "MixinItemStackTooltipFinalizer"
+  ],
   "server": []
 }

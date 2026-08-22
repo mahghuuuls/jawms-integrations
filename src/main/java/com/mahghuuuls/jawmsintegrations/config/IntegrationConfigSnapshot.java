@@ -130,7 +130,7 @@ public final class IntegrationConfigSnapshot {
         MANAWOVEN("manawoven", "Manawoven", "jawmsintegrations.max_mana_percent", 5.0D, 5),
         MEDITATIVE("meditative", "Meditative", "jawmsintegrations.mana_regen_percent", 5.0D, 5),
         EFFICIENT_CASTING("efficientCasting", "Efficient Casting", "jawmsintegrations.spell_efficiency", 5.0D, 2),
-        SWIFT_RECOVERY("swiftRecovery", "Swift Recovery", "jawmsintegrations.mana_regen_delay_reduction_percent", 5.0D, 2),
+        SWIFT_RECOVERY("swiftRecovery", "Swift Recovery", "jawmsintegrations.mana_regen_delay_reduction_percent", 10.0D, 2),
         MAGIC_FOCUS("magicFocus", "Magic Focus", "jawmsintegrations.spell_efficiency_magic", 8.0D, 1),
         FIRE_FOCUS("fireFocus", "Fire Focus", "jawmsintegrations.spell_efficiency_fire", 8.0D, 1),
         ICE_FOCUS("iceFocus", "Ice Focus", "jawmsintegrations.spell_efficiency_ice", 8.0D, 1),

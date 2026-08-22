@@ -2,7 +2,7 @@ package com.mahghuuuls.jawmsintegrations.proxy;
 
 import com.mahghuuuls.jawmsintegrations.client.QualityToolsTooltipAdapter;
 import com.mahghuuuls.jawmsintegrations.client.AncientSpellcraftTooltipAdapter;
-import com.mahghuuuls.jawmsintegrations.client.ClientAncientPresentationCache;
+import com.mahghuuuls.jawmsintegrations.client.ClientIntegrationPresentationCache;
 import com.mahghuuuls.jawmsintegrations.network.IntegrationPresentationSnapshot;
 import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.common.MinecraftForge;
@@ -34,16 +34,16 @@ public final class ClientProxy extends CommonProxy {
 
     @Override
     public void acceptPresentationSnapshot(IntegrationPresentationSnapshot snapshot) {
-        ClientAncientPresentationCache.install(snapshot);
+        ClientIntegrationPresentationCache.install(snapshot);
     }
 
     @Override
     public boolean isServerReplacementActive(ResourceLocation registryName) {
-        return ClientAncientPresentationCache.isActive(registryName);
+        return ClientIntegrationPresentationCache.isAncientReplacementActive(registryName);
     }
 
     @SubscribeEvent
     public void onDisconnect(FMLNetworkEvent.ClientDisconnectionFromServerEvent event) {
-        ClientAncientPresentationCache.clear();
+        ClientIntegrationPresentationCache.clear();
     }
 }

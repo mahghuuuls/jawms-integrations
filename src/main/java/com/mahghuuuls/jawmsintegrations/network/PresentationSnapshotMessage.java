@@ -34,6 +34,7 @@ public final class PresentationSnapshotMessage implements IMessage {
             if (buffer.readInt() != IntegrationPresentationSnapshot.PROTOCOL_VERSION) {
                 return;
             }
+            boolean qualityToolsActive = buffer.readBoolean();
             EnumMap<AncientReplacement, IntegrationPresentationSnapshot.Entry> entries =
                     new EnumMap<>(AncientReplacement.class);
             for (AncientReplacement replacement
@@ -48,7 +49,7 @@ public final class PresentationSnapshotMessage implements IMessage {
             if (buffer.isReadable()) {
                 return;
             }
-            snapshot = new IntegrationPresentationSnapshot(entries);
+            snapshot = new IntegrationPresentationSnapshot(qualityToolsActive, entries);
             valid = true;
         } catch (RuntimeException ignored) {
             snapshot = null;
@@ -61,6 +62,7 @@ public final class PresentationSnapshotMessage implements IMessage {
             throw new IllegalStateException("Cannot encode an invalid presentation snapshot");
         }
         buffer.writeInt(IntegrationPresentationSnapshot.PROTOCOL_VERSION);
+        buffer.writeBoolean(snapshot.isQualityToolsActive());
         for (AncientReplacement replacement : IntegrationPresentationSnapshot.staticReplacements()) {
             IntegrationPresentationSnapshot.Entry entry = snapshot.get(replacement);
             buffer.writeBoolean(entry.isEnabled());

@@ -1,6 +1,6 @@
 package com.mahghuuuls.jawmsintegrations.mixin.ancientspellcraft;
 
-import com.mahghuuuls.jawmsintegrations.client.ClientAncientPresentationCache;
+import com.mahghuuuls.jawmsintegrations.client.ClientIntegrationPresentationCache;
 import com.mahghuuuls.jawmsintegrations.integration.ancientspellcraft.AncientReplacement;
 import com.mahghuuuls.jawmsintegrations.integration.ancientspellcraft.AncientReplacementPolicy;
 import net.minecraft.client.renderer.RenderItem;
@@ -27,7 +27,8 @@ public abstract class MixinRenderItem {
     private boolean jawmsIntegrations$hideLegacyChargeBar(Item item, ItemStack stack) {
         AncientReplacement replacement = AncientReplacement.forRegistryName(item.getRegistryName());
         if (AncientReplacementPolicy.isStorage(replacement)
-                && ClientAncientPresentationCache.isActive(item.getRegistryName())) {
+                && ClientIntegrationPresentationCache.isAncientReplacementActive(
+                        item.getRegistryName())) {
             return false;
         }
         return item.showDurabilityBar(stack);

@@ -67,8 +67,10 @@ public final class QualityAttributeProjection {
         signedPercentage(values.get(Attribute.MANA_REGEN_PERCENT), builder::regenerationIncrease,
                 builder::regenerationReduction);
         double flatDelayReduction = values.get(Attribute.MANA_REGEN_DELAY_REDUCTION_FLAT);
-        if (flatDelayReduction != 0.0D) {
-            builder.flatLockoutSeconds(-flatDelayReduction);
+        if (flatDelayReduction > 0.0D) {
+            builder.flatLockoutReductionSeconds(flatDelayReduction);
+        } else if (flatDelayReduction < 0.0D) {
+            builder.flatLockoutIncreaseSeconds(-flatDelayReduction);
         }
         signedReduction(values.get(Attribute.MANA_REGEN_DELAY_REDUCTION_PERCENT),
                 builder::lockoutReduction, builder::lockoutIncrease);

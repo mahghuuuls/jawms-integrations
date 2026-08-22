@@ -13,6 +13,8 @@ import net.minecraft.inventory.EntityEquipmentSlot;
 import net.minecraft.item.ItemArmor;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.nbt.NBTTagList;
+import net.minecraft.nbt.NBTTagString;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.text.TextFormatting;
 import org.junit.jupiter.api.Test;
@@ -160,6 +162,21 @@ class QualityCandidateAugmenterTest {
         ItemStack stack = new ItemStack(official);
         NBTTagCompound quality = new NBTTagCompound();
         quality.setString("Name", "Existing Quality");
+        quality.setString("Color", "blue");
+        NBTTagList slots = new NBTTagList();
+        slots.appendTag(new NBTTagString("head"));
+        quality.setTag("Slots", slots);
+        NBTTagList storedModifiers = new NBTTagList();
+        NBTTagCompound storedModifier = new NBTTagCompound();
+        storedModifier.setString("AttributeName",
+                IntegrationConfigSnapshot.BuiltInQuality.SWIFT_RECOVERY.getAttributeName());
+        storedModifier.setString("Name", "qualitytools");
+        storedModifier.setDouble("Amount", 5.0D);
+        storedModifier.setInteger("Operation", 0);
+        storedModifier.setLong("UUIDMost", 51L);
+        storedModifier.setLong("UUIDLeast", 51L);
+        storedModifiers.appendTag(storedModifier);
+        quality.setTag("AttributeModifiers", storedModifiers);
         stack.setTagInfo("Quality", quality);
         NBTTagCompound before = stack.serializeNBT().copy();
 
@@ -174,6 +191,52 @@ class QualityCandidateAugmenterTest {
         assertTrue(selected != null);
         assertFalse("normal".equalsIgnoreCase(selected.name));
         assertEquals(before, stack.serializeNBT());
+        assertEquals(5.0D, stack.getSubCompound("Quality")
+                .getTagList("AttributeModifiers", 10)
+                .getCompoundTagAt(0).getDouble("Amount"));
+    }
+
+    @Test
+    void rebuildingCandidatesIsIdempotentAndNeverRewritesTheNativePool() {
+        QualityEntry nativeEntry = nativeEntry("normal", 100);
+        QualityEntry[] nativePool = new QualityEntry[] {nativeEntry};
+        IntegrationConfigSnapshot.QualityToolsConfig config =
+                IntegrationConfigSnapshot.defaults().getQualityTools();
+
+        QualityEntry[] first = QualityCandidateAugmenter.augmented(nativePool, config);
+        QualityEntry[] second = QualityCandidateAugmenter.augmented(nativePool, config);
+
+        assertEquals(13, first.length);
+        assertEquals(13, second.length);
+        assertEquals(1, nativePool.length);
+        assertSame(nativeEntry, nativePool[0]);
+        assertEquals(10.0D, find(first, "Swift Recovery").attributeMap
+                .get(IntegrationConfigSnapshot.BuiltInQuality.SWIFT_RECOVERY.getAttributeName())
+                .iterator().next().getAmount());
+    }
+
+    @Test
+    void rebuildingCandidatesFromValidLegacyFivePreservesFiveAcrossReloadEquivalentPasses() {
+        QualityEntry nativeEntry = nativeEntry("normal", 100);
+        QualityEntry[] nativePool = new QualityEntry[] {nativeEntry};
+        EnumMap<IntegrationConfigSnapshot.BuiltInQuality,
+                IntegrationConfigSnapshot.BuiltInQualityConfig> configured = defaults();
+        IntegrationConfigSnapshot.BuiltInQuality swift =
+                IntegrationConfigSnapshot.BuiltInQuality.SWIFT_RECOVERY;
+        configured.put(swift, new IntegrationConfigSnapshot.BuiltInQualityConfig(
+                true, swift.getDefaultDisplayName(), 5.0D, swift.getDefaultWeight()));
+        IntegrationConfigSnapshot.QualityToolsConfig legacyFive =
+                new IntegrationConfigSnapshot.QualityToolsConfig(true, true, configured);
+
+        QualityEntry[] first = QualityCandidateAugmenter.augmented(nativePool, legacyFive);
+        QualityEntry[] second = QualityCandidateAugmenter.augmented(nativePool, legacyFive);
+
+        assertEquals(5.0D, find(first, "Swift Recovery").attributeMap
+                .get(swift.getAttributeName()).iterator().next().getAmount());
+        assertEquals(5.0D, find(second, "Swift Recovery").attributeMap
+                .get(swift.getAttributeName()).iterator().next().getAmount());
+        assertEquals(1, nativePool.length);
+        assertSame(nativeEntry, nativePool[0]);
     }
 
     private static void assertBuiltIn(QualityEntry entry,

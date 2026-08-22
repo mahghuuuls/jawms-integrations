@@ -4,12 +4,12 @@ import com.mahghuuuls.jawmsintegrations.integration.ancientspellcraft.AncientRep
 import com.mahghuuuls.jawmsintegrations.network.IntegrationPresentationSnapshot;
 import net.minecraft.util.ResourceLocation;
 
-/** Connection-scoped client cache; empty state preserves native Ancient presentation. */
-public final class ClientAncientPresentationCache {
+/** Connection-scoped accepted server presentation facts; empty state changes no tooltip. */
+public final class ClientIntegrationPresentationCache {
 
     private static volatile IntegrationPresentationSnapshot snapshot;
 
-    private ClientAncientPresentationCache() {
+    private ClientIntegrationPresentationCache() {
     }
 
     public static void install(IntegrationPresentationSnapshot value) {
@@ -20,14 +20,19 @@ public final class ClientAncientPresentationCache {
         snapshot = null;
     }
 
-    public static IntegrationPresentationSnapshot.Entry entry(ResourceLocation registryName) {
+    public static boolean isQualityToolsActive() {
+        IntegrationPresentationSnapshot current = snapshot;
+        return current != null && current.isQualityToolsActive();
+    }
+
+    public static IntegrationPresentationSnapshot.Entry ancientEntry(ResourceLocation registryName) {
         IntegrationPresentationSnapshot current = snapshot;
         AncientReplacement replacement = AncientReplacement.forRegistryName(registryName);
         return current == null || replacement == null ? null : current.get(replacement);
     }
 
-    public static boolean isActive(ResourceLocation registryName) {
-        IntegrationPresentationSnapshot.Entry entry = entry(registryName);
+    public static boolean isAncientReplacementActive(ResourceLocation registryName) {
+        IntegrationPresentationSnapshot.Entry entry = ancientEntry(registryName);
         return entry != null && entry.isEnabled();
     }
 }

@@ -1,6 +1,6 @@
 package com.mahghuuuls.jawmsintegrations.mixin.ancientspellcraft;
 
-import com.mahghuuuls.jawmsintegrations.client.ClientAncientPresentationCache;
+import com.mahghuuuls.jawmsintegrations.client.ClientIntegrationPresentationCache;
 import net.minecraft.client.util.ITooltipFlag;
 import net.minecraft.item.ItemStack;
 import net.minecraft.world.World;
@@ -22,7 +22,8 @@ public abstract class MixinItemEverfullManaFlaskClient {
                                                          List<String> tooltip,
                                                          ITooltipFlag flag,
                                                          CallbackInfo callback) {
-        if (ClientAncientPresentationCache.isActive(stack.getItem().getRegistryName())) {
+        if (ClientIntegrationPresentationCache.isAncientReplacementActive(
+                stack.getItem().getRegistryName())) {
             callback.cancel();
         }
     }

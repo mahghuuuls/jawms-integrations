@@ -10,7 +10,7 @@
 	"updateJSON": "${mod_update_json}",
 	"logoFile": "${mod_logo_path}",
 	"useDependencyInformation": true,
-	"requiredMods": ["jawms@[1.0.0,)"],
+	"requiredMods": ["jawms@[1.1.0,)"],
 	"dependencies": [],
 	"dependants": []
 }]

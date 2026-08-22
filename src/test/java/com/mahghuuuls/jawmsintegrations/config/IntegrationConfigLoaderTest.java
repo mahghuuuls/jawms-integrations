@@ -11,7 +11,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class IntegrationConfigLoaderTest {
 
-
     @Test
     void exposesApprovedCoreDefaults() {
         IntegrationConfigSnapshot snapshot = IntegrationConfigSnapshot.defaults();
@@ -52,6 +51,24 @@ class IntegrationConfigLoaderTest {
         assertEquals(20.0D, snapshot.getAncientSpellcraft().getRingOfDagorim()
                 .getActivationChancePercent());
         assertFalse(snapshot.getDiagnostics().isEnabled());
+        assertEquals(10.0D, snapshot.getQualityTools().getBuiltInQuality(
+                IntegrationConfigSnapshot.BuiltInQuality.SWIFT_RECOVERY).getAmount());
+    }
+
+    @Test
+    void swiftRecoveryInvalidFallbackIsTenWhileValidLegacyFiveRemainsFive() {
+        List<String> warnings = new ArrayList<>();
+
+        assertEquals(10.0D, IntegrationConfigLoader.validatePositiveDouble(
+                "quality_tools.built_in_qualities.swiftRecovery", "amount", "invalid",
+                IntegrationConfigSnapshot.BuiltInQuality.SWIFT_RECOVERY.getDefaultAmount(),
+                warnings));
+        assertEquals(5.0D, IntegrationConfigLoader.validatePositiveDouble(
+                "quality_tools.built_in_qualities.swiftRecovery", "amount", "5.0",
+                IntegrationConfigSnapshot.BuiltInQuality.SWIFT_RECOVERY.getDefaultAmount(),
+                warnings));
+        assertEquals(1, warnings.size());
+        assertTrue(warnings.get(0).contains("using default 10.0"));
     }
 
     @Test

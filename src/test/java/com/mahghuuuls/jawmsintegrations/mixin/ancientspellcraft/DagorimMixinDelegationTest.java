@@ -3,7 +3,7 @@ package com.mahghuuuls.jawmsintegrations.mixin.ancientspellcraft;
 import org.junit.jupiter.api.Test;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
-import org.objectweb.asm.FieldVisitor;
+import org.objectweb.asm.Handle;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 
@@ -14,7 +14,6 @@ import java.nio.file.Paths;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class DagorimMixinDelegationTest {
     private static final String MIXIN = "com/mahghuuuls/jawmsintegrations/mixin/ancientspellcraft/"
@@ -32,10 +31,12 @@ class DagorimMixinDelegationTest {
                 "isServerReplacementActive", "(Lnet/minecraft/util/ResourceLocation;)Z", 1);
     }
 
-    @Test void productionCapacityLookupReadsTheFieldJawmsRefreshes() throws Exception {
+    @Test void productionUsesConfiguredFlaskSnapshotAndNeverReadsWizardryCapacityFields()
+            throws Exception {
         Path classFile = classes().resolve(SERVICE + ".class");
         AtomicInteger sizeReads = new AtomicInteger();
         AtomicInteger capacityReads = new AtomicInteger();
+        AtomicInteger snapshotApiReferences = new AtomicInteger();
         try (InputStream input = Files.newInputStream(classFile)) {
             new ClassReader(input).accept(new ClassVisitor(Opcodes.ASM5) {
                 @Override public MethodVisitor visitMethod(int access, String name, String descriptor,
@@ -50,12 +51,28 @@ class DagorimMixinDelegationTest {
                                     && owner.equals("electroblob/wizardry/item/ItemManaFlask$Size")
                                     && name.equals("capacity")) capacityReads.incrementAndGet();
                         }
+                        @Override public void visitInvokeDynamicInsn(String name,
+                                                                    String descriptor,
+                                                                    Handle bootstrap,
+                                                                    Object... arguments) {
+                            for (Object argument : arguments) {
+                                if (!(argument instanceof Handle)) continue;
+                                Handle handle = (Handle) argument;
+                                if (handle.getOwner().equals("com/mahghuuuls/jawms/api/ManaApi")
+                                        && handle.getName().equals("getConfiguredFlaskSnapshot")
+                                        && handle.getDesc().equals(
+                                        "()Lcom/mahghuuuls/jawms/api/ConfiguredFlaskSnapshot;")) {
+                                    snapshotApiReferences.incrementAndGet();
+                                }
+                            }
+                        }
                     };
                 }
             }, ClassReader.SKIP_DEBUG | ClassReader.SKIP_FRAMES);
         }
-        assertTrue(sizeReads.get() >= 1);
-        assertTrue(capacityReads.get() >= 1);
+        assertEquals(1, snapshotApiReferences.get());
+        assertEquals(0, sizeReads.get());
+        assertEquals(0, capacityReads.get());
     }
 
     private static void assertInvocation(String className, String sourceMethod, String owner,

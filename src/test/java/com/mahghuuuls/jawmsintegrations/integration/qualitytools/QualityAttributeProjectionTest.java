@@ -1,6 +1,7 @@
 package com.mahghuuuls.jawmsintegrations.integration.qualitytools;
 
 import com.mahghuuuls.jawms.api.ManaContribution;
+import com.mahghuuuls.jawmsintegrations.config.IntegrationConfigSnapshot;
 import electroblob.wizardry.constants.Element;
 import org.junit.jupiter.api.Test;
 
@@ -91,6 +92,22 @@ class QualityAttributeProjectionTest {
         assertEquals(100.0D, contribution.getRegenerationReduction(), EPSILON);
         assertEquals(2.0D, contribution.getFlatLockoutSeconds(), EPSILON);
         assertEquals(40.0D, contribution.getLockoutIncrease(), EPSILON);
+    }
+
+    @Test
+    void fourDefaultSwiftRecoveryPiecesAggregateToFortyPercentagePoints() {
+        double amount = IntegrationConfigSnapshot.BuiltInQuality.SWIFT_RECOVERY.getDefaultAmount();
+        EnumMap<QualityAttributeProjection.Attribute,
+                List<QualityAttributeProjection.ModifierValue>> input =
+                new EnumMap<>(QualityAttributeProjection.Attribute.class);
+        input.put(QualityAttributeProjection.Attribute.MANA_REGEN_DELAY_REDUCTION_PERCENT,
+                modifiers(value(amount, 0), value(amount, 0), value(amount, 0), value(amount, 0)));
+
+        ManaContribution contribution = QualityAttributeProjection.toContribution(
+                QualityAttributeProjection.project(input,
+                        QualityAttributeProjection.WarningSink.IGNORE));
+
+        assertEquals(40.0D, contribution.getLockoutReduction(), EPSILON);
     }
 
     @Test

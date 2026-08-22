@@ -17,6 +17,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class PresentationSnapshotMessageTest {
 
     @Test
+    void protocolVersionIncludesQualityToolsAuthorityFact() {
+        assertEquals(5, IntegrationPresentationSnapshot.PROTOCOL_VERSION);
+    }
+
+    @Test
     void roundTripPreservesAuthoritativeFlagsAndValues() {
         IntegrationConfigSnapshot.AncientSpellcraftConfig config =
                 new IntegrationConfigSnapshot.AncientSpellcraftConfig(
@@ -25,7 +30,7 @@ class PresentationSnapshotMessageTest {
                         new IntegrationConfigSnapshot.ToggleIntConfig(true, 13),
                         new IntegrationConfigSnapshot.ToggleDoubleConfig(true, 19.5D),
                         new IntegrationConfigSnapshot.ToggleDoubleConfig(true, 27.5D));
-        IntegrationPresentationSnapshot original = IntegrationPresentationSnapshot.from(
+        IntegrationPresentationSnapshot original = IntegrationPresentationSnapshot.from(true,
                 new AncientReplacementPolicy(true, config));
         PresentationSnapshotMessage outgoing = new PresentationSnapshotMessage(original);
         ByteBuf buffer = Unpooled.buffer();
@@ -35,6 +40,7 @@ class PresentationSnapshotMessageTest {
             incoming.fromBytes(buffer);
 
             assertTrue(incoming.isValid());
+            assertTrue(incoming.getSnapshot().isQualityToolsActive());
             assertFalse(incoming.getSnapshot().get(
                     AncientReplacement.LESSER_MANA_RING).isEnabled());
             assertEquals(9.0D, incoming.getSnapshot().get(
@@ -80,7 +86,7 @@ class PresentationSnapshotMessageTest {
                 new IntegrationPresentationSnapshot.Entry(true, 8.5D));
 
         assertThrows(IllegalArgumentException.class,
-                () -> new IntegrationPresentationSnapshot(entries));
+                () -> new IntegrationPresentationSnapshot(true, entries));
     }
 
     private static void assertInvalid(BufferWriter writer) {
@@ -96,7 +102,7 @@ class PresentationSnapshotMessageTest {
     }
 
     private static IntegrationPresentationSnapshot defaultSnapshot() {
-        return new IntegrationPresentationSnapshot(defaultEntries());
+        return new IntegrationPresentationSnapshot(false, defaultEntries());
     }
 
     private static EnumMap<AncientReplacement, IntegrationPresentationSnapshot.Entry>

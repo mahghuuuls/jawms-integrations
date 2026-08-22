@@ -26,7 +26,7 @@ class IntegrationStatusCommandTest {
                 integration -> OptionalIntegrationEvidenceRegistry.Evidence.absent()
         );
         IntegrationDiagnosticsService diagnostics = new IntegrationDiagnosticsService(
-                JawmsCompatibility.verify("1.0.0", CompatibleApi.class),
+                JawmsCompatibility.verify("1.1.0", CompatibleApi.class),
                 config,
                 coordinator
         );
@@ -39,7 +39,7 @@ class IntegrationStatusCommandTest {
     }
 
     public static final class CompatibleApi {
-        public static final String CURRENT = "1.5";
+        public static final String CURRENT = "1.6";
     }
 
     private static final class PermissionSender implements ICommandSender {

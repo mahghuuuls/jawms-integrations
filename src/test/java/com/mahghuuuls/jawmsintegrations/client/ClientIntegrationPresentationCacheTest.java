@@ -12,28 +12,28 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class ClientAncientPresentationCacheTest {
+class ClientIntegrationPresentationCacheTest {
 
     @AfterEach
     void clearCache() {
-        ClientAncientPresentationCache.clear();
+        ClientIntegrationPresentationCache.clear();
     }
 
     @Test
     void cacheClaimsNothingBeforeSnapshotAndClearsAtConnectionEnd() {
-        assertNull(ClientAncientPresentationCache.entry(
+        assertNull(ClientIntegrationPresentationCache.ancientEntry(
                 AncientReplacement.LESSER_MANA_RING.getRegistryName()));
-        assertFalse(ClientAncientPresentationCache.isActive(
+        assertFalse(ClientIntegrationPresentationCache.isAncientReplacementActive(
                 AncientReplacement.LESSER_MANA_RING.getRegistryName()));
 
-        ClientAncientPresentationCache.install(IntegrationPresentationSnapshot.from(
+        ClientIntegrationPresentationCache.install(IntegrationPresentationSnapshot.from(true,
                 new AncientReplacementPolicy(true,
                         IntegrationConfigSnapshot.defaults().getAncientSpellcraft())));
-        assertTrue(ClientAncientPresentationCache.isActive(
+        assertTrue(ClientIntegrationPresentationCache.isAncientReplacementActive(
                 AncientReplacement.LESSER_MANA_RING.getRegistryName()));
 
-        ClientAncientPresentationCache.clear();
-        assertNull(ClientAncientPresentationCache.entry(
+        ClientIntegrationPresentationCache.clear();
+        assertNull(ClientIntegrationPresentationCache.ancientEntry(
                 AncientReplacement.LESSER_MANA_RING.getRegistryName()));
     }
 
@@ -44,12 +44,28 @@ class ClientAncientPresentationCacheTest {
         assertFalse(proxy.isServerReplacementActive(
                 AncientReplacement.EVERFULL_MANA_FLASK.getRegistryName()));
 
-        ClientAncientPresentationCache.install(IntegrationPresentationSnapshot.from(
+        ClientIntegrationPresentationCache.install(IntegrationPresentationSnapshot.from(true,
                 new AncientReplacementPolicy(true,
                         IntegrationConfigSnapshot.defaults().getAncientSpellcraft())));
 
         assertFalse(AncientReplacementPolicy.active().isEverfullEnabled());
         assertTrue(proxy.isServerReplacementActive(
                 AncientReplacement.EVERFULL_MANA_FLASK.getRegistryName()));
+    }
+
+    @Test
+    void qualityToolsPresentationUsesOnlyTheAcceptedServerSnapshot() {
+        assertFalse(ClientIntegrationPresentationCache.isQualityToolsActive());
+        ClientIntegrationPresentationCache.install(IntegrationPresentationSnapshot.from(true,
+                AncientReplacementPolicy.disabled()));
+        assertTrue(ClientIntegrationPresentationCache.isQualityToolsActive());
+        ClientIntegrationPresentationCache.install(IntegrationPresentationSnapshot.from(false,
+                enabledPolicy()));
+        assertFalse(ClientIntegrationPresentationCache.isQualityToolsActive());
+    }
+
+    private static AncientReplacementPolicy enabledPolicy() {
+        return new AncientReplacementPolicy(true,
+                IntegrationConfigSnapshot.defaults().getAncientSpellcraft());
     }
 }

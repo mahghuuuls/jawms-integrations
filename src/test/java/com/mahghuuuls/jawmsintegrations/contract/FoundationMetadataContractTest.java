@@ -47,13 +47,13 @@ final class FoundationMetadataContractTest {
         }
 
         assertEquals("[1.12.2]", values.get("acceptedMinecraftVersions"));
-        assertEquals("required-after:jawms@[1.0.0,);before:crafttweaker",
+        assertEquals("required-after:jawms@[1.1.0,);before:crafttweaker",
                 values.get("dependencies"));
         try (InputStream metadata = FoundationMetadataContractTest.class.getClassLoader()
                 .getResourceAsStream("mcmod.info")) {
             assertTrue(metadata != null, "Processed mcmod.info must be present");
             String contents = new String(readAll(metadata), StandardCharsets.UTF_8);
-            assertTrue(contents.contains("\"requiredMods\": [\"jawms@[1.0.0,)\"]"));
+            assertTrue(contents.contains("\"requiredMods\": [\"jawms@[1.1.0,)\"]"));
         }
     }
 

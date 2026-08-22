@@ -24,10 +24,14 @@ final class DependencyContractTest {
     @Test
     void jawmsReleaseMatchesRequiredApiFoundation() throws IOException {
         Path jar = requiredJar(JAWMS_JAR);
-        assertEquals("55F804795E0A8CB05B15EFD1CF6C43CF134C12F5837D0A3E54D11A897A90CDA3",
+        assertEquals("3BB68BCEA775B4E42534865C2E788A01ECB363A0AD6247F540E781DBB79FED98",
                 sha256(jar));
         JarContract.assertField(jar,
                 "com/mahghuuuls/jawms/api/ManaApiVersion", "CURRENT", "Ljava/lang/String;");
+        JarContract.assertMethod(jar,
+                "com/mahghuuuls/jawms/api/IManaService",
+                "startRegenerationLockout",
+                "(Lnet/minecraft/entity/player/EntityPlayer;Lnet/minecraft/util/ResourceLocation;)J");
     }
 
     @Test

@@ -1,6 +1,6 @@
 package com.mahghuuuls.jawmsintegrations.mixin.ancientspellcraft;
 
-import com.mahghuuuls.jawmsintegrations.client.ClientAncientPresentationCache;
+import com.mahghuuuls.jawmsintegrations.client.ClientIntegrationPresentationCache;
 import com.mahghuuuls.jawmsintegrations.config.IntegrationConfigSnapshot;
 import com.mahghuuuls.jawmsintegrations.integration.ancientspellcraft.AncientReplacement;
 import com.mahghuuuls.jawmsintegrations.integration.ancientspellcraft.AncientReplacementPolicy;
@@ -36,7 +36,7 @@ class AncientSuppressionMixinTest {
     @AfterEach
     void resetAuthority() {
         AncientReplacementPolicy.install(AncientReplacementPolicy.disabled());
-        ClientAncientPresentationCache.clear();
+        ClientIntegrationPresentationCache.clear();
     }
 
     @Test
@@ -135,8 +135,8 @@ class AncientSuppressionMixinTest {
         assertTrue((Boolean) bar.invoke(new TestRenderItemMixin(), nativeItem, nativeStack));
         assertEquals(1, nativeItem.calls);
 
-        ClientAncientPresentationCache.install(
-                IntegrationPresentationSnapshot.from(enabledPolicy()));
+        ClientIntegrationPresentationCache.install(
+                IntegrationPresentationSnapshot.from(false, enabledPolicy()));
         CallbackInfo active = new CallbackInfo("test", true);
         tooltip.invoke(new TestTooltipMixin(), lesser, null, new ArrayList<>(), null, active);
         assertTrue(active.isCancelled());
@@ -162,8 +162,8 @@ class AncientSuppressionMixinTest {
                 beforeSnapshot);
         assertFalse(beforeSnapshot.isCancelled());
 
-        ClientAncientPresentationCache.install(
-                IntegrationPresentationSnapshot.from(enabledPolicy()));
+        ClientIntegrationPresentationCache.install(
+                IntegrationPresentationSnapshot.from(false, enabledPolicy()));
         CallbackInfo crystalActive = new CallbackInfo("test", true);
         tooltip.invoke(new TestArtefactMixin(), crystal, null, new ArrayList<>(), null,
                 crystalActive);

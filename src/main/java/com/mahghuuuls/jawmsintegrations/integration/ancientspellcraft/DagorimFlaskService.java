@@ -1,11 +1,11 @@
 package com.mahghuuuls.jawmsintegrations.integration.ancientspellcraft;
 
+import com.mahghuuuls.jawms.api.ConfiguredFlaskSnapshot;
 import com.mahghuuuls.jawms.api.IManaService;
 import com.mahghuuuls.jawms.api.ManaApi;
 import com.mahghuuuls.jawms.api.ManaMutationResult;
 import com.mahghuuuls.jawmsintegrations.Tags;
 import com.mahghuuuls.jawmsintegrations.config.IntegrationConfigSnapshot;
-import electroblob.wizardry.item.ItemManaFlask;
 import electroblob.wizardry.registry.WizardryItems;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.player.EntityPlayer;
@@ -18,7 +18,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.WeakHashMap;
 import java.util.function.IntUnaryOperator;
-import java.util.function.ToIntFunction;
+import java.util.function.Supplier;
 
 /** Owns the complete server-authoritative automatic ordinary-flask transaction. */
 public final class DagorimFlaskService {
@@ -32,7 +32,7 @@ public final class DagorimFlaskService {
     private final Item largeFlask;
     private final Item mediumFlask;
     private final Item smallFlask;
-    private final ToIntFunction<ItemStack> capacity;
+    private final Supplier<ConfiguredFlaskSnapshot> flaskSnapshots;
     private final Map<Object, Integer> lastCheckedTick = new WeakHashMap<>();
     private volatile ActivationRecord latestActivation;
 
@@ -40,15 +40,15 @@ public final class DagorimFlaskService {
                                IntegrationConfigSnapshot.RingOfDagorimConfig config) {
         this(integrationActive, config, WizardryItems.large_mana_flask,
                 WizardryItems.medium_mana_flask, WizardryItems.small_mana_flask,
-                stack -> ((ItemManaFlask) stack.getItem()).size.capacity);
+                ManaApi::getConfiguredFlaskSnapshot);
     }
 
     DagorimFlaskService(boolean integrationActive,
                         IntegrationConfigSnapshot.RingOfDagorimConfig config,
                         Item largeFlask, Item mediumFlask, Item smallFlask,
-                        ToIntFunction<ItemStack> capacity) {
+                        Supplier<ConfiguredFlaskSnapshot> flaskSnapshots) {
         if (config == null || largeFlask == null || mediumFlask == null
-                || smallFlask == null || capacity == null) {
+                || smallFlask == null || flaskSnapshots == null) {
             throw new NullPointerException("Dagorim service dependencies");
         }
         this.integrationActive = integrationActive;
@@ -56,14 +56,14 @@ public final class DagorimFlaskService {
         this.largeFlask = largeFlask;
         this.mediumFlask = mediumFlask;
         this.smallFlask = smallFlask;
-        this.capacity = capacity;
+        this.flaskSnapshots = flaskSnapshots;
     }
 
     public static DagorimFlaskService disabled() {
         Item placeholder = new Item();
         return new DagorimFlaskService(false,
                 new IntegrationConfigSnapshot.RingOfDagorimConfig(false, 5, 20, 20.0D),
-                placeholder, placeholder, placeholder, stack -> 0);
+                placeholder, placeholder, placeholder, ConfiguredFlaskSnapshot::unavailable);
     }
 
     public static void install(DagorimFlaskService service) {
@@ -92,31 +92,47 @@ public final class DagorimFlaskService {
         if (currentMana >= config.getManaThreshold()) return false;
         double randomValue = wearer.randomValue();
         if (!eligible(wearer.ticksExisted(), currentMana, randomValue)) return false;
+        ConfiguredFlaskSnapshot snapshot = flaskSnapshots.get();
+        if (!usable(snapshot)) return false;
         Activation activation = attempt(wearer.ticksExisted(), currentMana,
-                randomValue, wearer.inventory(), wearer::restore);
+                randomValue, wearer.inventory(), wearer::restore, snapshot);
         if (activation.isSuccessful()) {
             wearer.markDirty();
             latestActivation = new ActivationRecord(wearer.playerId(),
                     activation.getFlask().getRegistryName(), wearer.ticksExisted(),
-                    activation.getRequested(), activation.getActual());
+                    activation.getRequested(), activation.getActual(),
+                    activation.getSnapshotRevision());
         }
         return activation.isSuccessful();
     }
 
     Activation attempt(int wearerTicks, int currentMana, double randomValue,
-                       List<ItemStack> inventory, IntUnaryOperator restore) {
-        if (!eligible(wearerTicks, currentMana, randomValue)) {
+                       List<ItemStack> inventory, IntUnaryOperator restore,
+                       ConfiguredFlaskSnapshot snapshot) {
+        if (!eligible(wearerTicks, currentMana, randomValue) || !usable(snapshot)) {
             return Activation.NONE;
         }
         ItemStack selected = select(inventory);
         if (selected.isEmpty()) return Activation.NONE;
-        int requested = Math.max(0, capacity.applyAsInt(selected));
+        int requested = restoration(selected, snapshot);
         if (requested <= 0) return Activation.NONE;
         int actual = Math.max(0, Math.min(requested, restore.applyAsInt(requested)));
         if (actual <= 0) return Activation.NONE;
         Item item = selected.getItem();
         selected.shrink(1);
-        return new Activation(item, requested, actual);
+        return new Activation(item, requested, actual, snapshot.getRevision());
+    }
+
+    private static boolean usable(ConfiguredFlaskSnapshot snapshot) {
+        return snapshot != null && snapshot.isAvailable() && snapshot.hasKnownRevision();
+    }
+
+    private int restoration(ItemStack selected, ConfiguredFlaskSnapshot snapshot) {
+        Item item = selected.getItem();
+        if (item == largeFlask) return snapshot.getLargeRestoration();
+        if (item == mediumFlask) return snapshot.getMediumRestoration();
+        if (item == smallFlask) return snapshot.getSmallRestoration();
+        return 0;
     }
 
     boolean eligible(int wearerTicks, int currentMana, double randomValue) {
@@ -193,17 +209,21 @@ public final class DagorimFlaskService {
     }
 
     static final class Activation {
-        static final Activation NONE = new Activation(null, 0, 0);
+        static final Activation NONE = new Activation(
+                null, 0, 0, ConfiguredFlaskSnapshot.UNKNOWN_REVISION);
         private final Item flask;
         private final int requested;
         private final int actual;
-        Activation(Item flask, int requested, int actual) {
+        private final long snapshotRevision;
+        Activation(Item flask, int requested, int actual, long snapshotRevision) {
             this.flask = flask; this.requested = requested; this.actual = actual;
+            this.snapshotRevision = snapshotRevision;
         }
         boolean isSuccessful() { return flask != null && actual > 0; }
         Item getFlask() { return flask; }
         int getRequested() { return requested; }
         int getActual() { return actual; }
+        long getSnapshotRevision() { return snapshotRevision; }
     }
 
     private static final class ActivationRecord {
@@ -212,14 +232,17 @@ public final class DagorimFlaskService {
         private final int tick;
         private final int requested;
         private final int actual;
+        private final long snapshotRevision;
         private ActivationRecord(String playerId, ResourceLocation flask, int tick,
-                                 int requested, int actual) {
+                                 int requested, int actual, long snapshotRevision) {
             this.playerId = playerId; this.flask = flask; this.tick = tick;
             this.requested = requested; this.actual = actual;
+            this.snapshotRevision = snapshotRevision;
         }
         @Override public String toString() {
             return "player=" + playerId + ", tick=" + tick + ", flask=" + flask
-                    + ", requested=" + requested + ", actual=" + actual;
+                    + ", requested=" + requested + ", actual=" + actual
+                    + ", flaskRevision=" + snapshotRevision;
         }
     }
 }

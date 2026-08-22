@@ -25,7 +25,7 @@ class IntegrationDiagnosticsServiceTest {
                 integration -> OptionalIntegrationEvidenceRegistry.Evidence.absent()
         );
         IntegrationDiagnosticsService diagnostics = new IntegrationDiagnosticsService(
-                JawmsCompatibility.verify("1.0.0", CompatibleApi.class),
+                JawmsCompatibility.verify("1.1.0", CompatibleApi.class),
                 config,
                 coordinator
         );
@@ -33,7 +33,7 @@ class IntegrationDiagnosticsServiceTest {
         String startup = diagnostics.startupSummary();
         List<String> overall = diagnostics.overallStatus();
 
-        assertTrue(startup.contains("JAWMS 1.0.0/API 1.5"));
+        assertTrue(startup.contains("JAWMS 1.1.0/API 1.6"));
         assertTrue(startup.contains("Quality Tools=ABSENT"));
         assertTrue(startup.contains("Ancient Spellcraft=ABSENT"));
         assertTrue(startup.contains("CraftTweaker=ABSENT"));
@@ -71,7 +71,7 @@ class IntegrationDiagnosticsServiceTest {
                         integration.getMinimumMetadataVersion())
         );
         IntegrationDiagnosticsService diagnostics = new IntegrationDiagnosticsService(
-                JawmsCompatibility.verify("1.0.0", CompatibleApi.class), config, coordinator);
+                JawmsCompatibility.verify("1.1.0", CompatibleApi.class), config, coordinator);
 
         String startup = diagnostics.startupSummary();
         List<String> overall = diagnostics.overallStatus();
@@ -104,6 +104,6 @@ class IntegrationDiagnosticsServiceTest {
     }
 
     public static final class CompatibleApi {
-        public static final String CURRENT = "1.5";
+        public static final String CURRENT = "1.6";
     }
 }

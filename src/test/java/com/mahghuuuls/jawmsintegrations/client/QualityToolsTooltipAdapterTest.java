@@ -91,7 +91,7 @@ class QualityToolsTooltipAdapterTest {
                 "+0.4 Mana regen",
                 "+5 Ice spell efficiency"));
 
-        QualityToolsTooltipAdapter.moveQualityBlockToEnd(
+        QualityToolsTooltipFinalizer.moveQualityBlockToEnd(
                 tooltip, "Quality:", 1, 1);
 
         assertEquals(Arrays.asList(
@@ -108,6 +108,48 @@ class QualityToolsTooltipAdapterTest {
     }
 
     @Test
+    void activeFinalizerMovesEveryNbtBackedVisibleLineAndIgnoresHiddenAmounts() {
+        NBTTagCompound quality = new NBTTagCompound();
+        NBTTagList slots = new NBTTagList();
+        slots.appendTag(new net.minecraft.nbt.NBTTagString("legs"));
+        quality.setTag("Slots", slots);
+        NBTTagList modifiers = new NBTTagList();
+        appendAmount(modifiers, 5.0D);
+        appendAmount(modifiers, -2.0D);
+        appendAmount(modifiers, 0.0D);
+        appendAmount(modifiers, -0.0D);
+        appendAmount(modifiers, Double.NaN);
+        quality.setTag("AttributeModifiers", modifiers);
+        List<String> tooltip = new ArrayList<>(Arrays.asList(
+                "Ice Battlemage Leggings",
+                "When on legs:",
+                " +6 Armor",
+                "",
+                "Quality: Mixed Casting",
+                "When on legs:",
+                " +5 Spell Efficiency",
+                " -2% Maximum Mana",
+                "+10 Mana",
+                "+0.4 Mana regen",
+                "+5 Ice spell efficiency"));
+
+        QualityToolsTooltipFinalizer.finalizeTooltip(true, quality, tooltip, "Quality:");
+
+        assertEquals(Arrays.asList(
+                "Ice Battlemage Leggings",
+                "When on legs:",
+                " +6 Armor",
+                "+10 Mana",
+                "+0.4 Mana regen",
+                "+5 Ice spell efficiency",
+                "",
+                "Quality: Mixed Casting",
+                "When on legs:",
+                " +5 Spell Efficiency",
+                " -2% Maximum Mana"), tooltip);
+    }
+
+    @Test
     void qualityBlockAlreadyAtEndRemainsStable() {
         List<String> tooltip = new ArrayList<>(Arrays.asList(
                 "Wizard Hat",
@@ -117,7 +159,7 @@ class QualityToolsTooltipAdapterTest {
                 "When on head:",
                 " +5 Maximum Mana"));
 
-        QualityToolsTooltipAdapter.moveQualityBlockToEnd(
+        QualityToolsTooltipFinalizer.moveQualityBlockToEnd(
                 tooltip, "Quality:", 1, 1);
 
         assertEquals(Arrays.asList(
@@ -139,7 +181,7 @@ class QualityToolsTooltipAdapterTest {
         visible.setDouble("Amount", 5.0D);
         modifiers.appendTag(visible);
 
-        assertEquals(1, QualityToolsTooltipAdapter.countDisplayedModifiers(modifiers));
+        assertEquals(1, QualityToolsTooltipFinalizer.countDisplayedModifiers(modifiers));
     }
 
     @Test
@@ -149,6 +191,32 @@ class QualityToolsTooltipAdapterTest {
         negativeZero.setDouble("Amount", -0.0D);
         modifiers.appendTag(negativeZero);
 
-        assertEquals(0, QualityToolsTooltipAdapter.countDisplayedModifiers(modifiers));
+        assertEquals(0, QualityToolsTooltipFinalizer.countDisplayedModifiers(modifiers));
+    }
+
+    @Test
+    void inactiveServerPresentationLeavesLaterJawmsLinesInPlace() {
+        NBTTagCompound quality = new NBTTagCompound();
+        NBTTagList slots = new NBTTagList();
+        slots.appendTag(new net.minecraft.nbt.NBTTagString("head"));
+        quality.setTag("Slots", slots);
+        NBTTagList modifiers = new NBTTagList();
+        NBTTagCompound modifier = new NBTTagCompound();
+        modifier.setDouble("Amount", 10.0D);
+        modifiers.appendTag(modifier);
+        quality.setTag("AttributeModifiers", modifiers);
+        List<String> tooltip = new ArrayList<>(Arrays.asList(
+                "Quality: Swift Recovery", "When on head:", "+10% Post-Cast Mana Regen Delay",
+                "+10 Mana"));
+
+        QualityToolsTooltipFinalizer.finalizeTooltip(false, quality, tooltip, "Quality:");
+
+        assertEquals("+10 Mana", tooltip.get(3));
+    }
+
+    private static void appendAmount(NBTTagList modifiers, double amount) {
+        NBTTagCompound modifier = new NBTTagCompound();
+        modifier.setDouble("Amount", amount);
+        modifiers.appendTag(modifier);
     }
 }

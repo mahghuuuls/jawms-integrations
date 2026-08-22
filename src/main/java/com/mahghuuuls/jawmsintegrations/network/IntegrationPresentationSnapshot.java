@@ -10,10 +10,12 @@ import java.util.Map;
 /** Versioned, server-authored facts used only for client presentation. */
 public final class IntegrationPresentationSnapshot {
 
-    public static final int PROTOCOL_VERSION = 4;
+    public static final int PROTOCOL_VERSION = 5;
+    private final boolean qualityToolsActive;
     private final Map<AncientReplacement, Entry> ancientStatic;
 
-    public IntegrationPresentationSnapshot(Map<AncientReplacement, Entry> ancientStatic) {
+    public IntegrationPresentationSnapshot(boolean qualityToolsActive,
+                                           Map<AncientReplacement, Entry> ancientStatic) {
         if (ancientStatic == null) {
             throw new NullPointerException("ancientStatic");
         }
@@ -26,10 +28,12 @@ public final class IntegrationPresentationSnapshot {
             validateValue(replacement, entry);
             copy.put(replacement, entry);
         }
+        this.qualityToolsActive = qualityToolsActive;
         this.ancientStatic = Collections.unmodifiableMap(copy);
     }
 
-    public static IntegrationPresentationSnapshot from(AncientReplacementPolicy policy) {
+    public static IntegrationPresentationSnapshot from(boolean qualityToolsActive,
+                                                       AncientReplacementPolicy policy) {
         EnumMap<AncientReplacement, Entry> entries = new EnumMap<>(AncientReplacement.class);
         for (AncientReplacement replacement : presentationReplacements()) {
             if (replacement == AncientReplacement.RING_OF_DAGORIM) {
@@ -42,7 +46,11 @@ public final class IntegrationPresentationSnapshot {
                         policy.presentationValue(replacement)));
             }
         }
-        return new IntegrationPresentationSnapshot(entries);
+        return new IntegrationPresentationSnapshot(qualityToolsActive, entries);
+    }
+
+    public boolean isQualityToolsActive() {
+        return qualityToolsActive;
     }
 
     public static AncientReplacement[] staticReplacements() {

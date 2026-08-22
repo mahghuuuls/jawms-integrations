@@ -25,7 +25,7 @@ public final class AncientSpellcraftTooltipAdapter {
         ResourceLocation registryName = stack.getItem().getRegistryName();
         AncientReplacement replacement = AncientReplacement.forRegistryName(registryName);
         IntegrationPresentationSnapshot.Entry entry =
-                ClientAncientPresentationCache.entry(registryName);
+                ClientIntegrationPresentationCache.ancientEntry(registryName);
         if (replacement == null || entry == null || !entry.isEnabled()) {
             return;
         }

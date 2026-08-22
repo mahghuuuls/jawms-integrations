@@ -1,6 +1,6 @@
 package com.mahghuuuls.jawmsintegrations.mixin.ancientspellcraft;
 
-import com.mahghuuuls.jawmsintegrations.client.ClientAncientPresentationCache;
+import com.mahghuuuls.jawmsintegrations.client.ClientIntegrationPresentationCache;
 import com.mahghuuuls.jawmsintegrations.integration.ancientspellcraft.AncientReplacement;
 import net.minecraft.client.util.ITooltipFlag;
 import net.minecraft.item.ItemStack;
@@ -27,7 +27,7 @@ public abstract class MixinItemArtefactClient {
                 stack.getItem().getRegistryName());
         if ((replacement == AncientReplacement.CRYSTAL_RING
                 || replacement == AncientReplacement.RING_OF_DAGORIM)
-                && ClientAncientPresentationCache.isActive(
+                && ClientIntegrationPresentationCache.isAncientReplacementActive(
                         stack.getItem().getRegistryName())) {
             callback.cancel();
         }

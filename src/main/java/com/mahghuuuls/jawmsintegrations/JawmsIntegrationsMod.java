@@ -16,7 +16,7 @@ import com.mahghuuuls.jawmsintegrations.integration.ancientspellcraft.AncientSpe
 import com.mahghuuuls.jawmsintegrations.integration.ancientspellcraft.AncientReplacementPolicy;
 import com.mahghuuuls.jawmsintegrations.integration.ancientspellcraft.EverfullManaService;
 import com.mahghuuuls.jawmsintegrations.integration.ancientspellcraft.DagorimFlaskService;
-import com.mahghuuuls.jawmsintegrations.network.AncientPresentationSync;
+import com.mahghuuuls.jawmsintegrations.network.IntegrationPresentationSync;
 import com.mahghuuuls.jawmsintegrations.network.IntegrationNetwork;
 import com.mahghuuuls.jawmsintegrations.proxy.CommonProxy;
 import net.minecraftforge.fml.common.Mod;
@@ -36,7 +36,7 @@ import org.apache.logging.log4j.Logger;
         name = Tags.MOD_NAME,
         version = Tags.VERSION,
         acceptedMinecraftVersions = "[1.12.2]",
-        dependencies = "required-after:jawms@[1.0.0,);before:crafttweaker"
+        dependencies = "required-after:jawms@[1.1.0,);before:crafttweaker"
 )
 public final class JawmsIntegrationsMod {
 
@@ -84,7 +84,6 @@ public final class JawmsIntegrationsMod {
         if (coordinator.getStatus(IntegrationId.QUALITY_TOOLS).getState() == IntegrationState.READY) {
             try {
                 QualityToolsIntegration.activate(config.getQualityTools(), this::emitQualityToolsReloadSummary);
-                PROXY.activateQualityToolsClient();
                 coordinator = coordinator.withActive(IntegrationId.QUALITY_TOOLS,
                         "Quality Tools integration activated");
             } catch (RuntimeException exception) {
@@ -92,6 +91,12 @@ public final class JawmsIntegrationsMod {
                         "Activation failed: " + exception.getMessage());
                 LOGGER.error("Quality Tools integration activation failed", exception);
             }
+        }
+        IntegrationState qualityToolsState = coordinator.getStatus(
+                IntegrationId.QUALITY_TOOLS).getState();
+        if (qualityToolsState == IntegrationState.ACTIVE
+                || qualityToolsState == IntegrationState.DISABLED) {
+            PROXY.activateQualityToolsClient();
         }
         for (IntegrationStatusView status : coordinator.getStatuses()) {
             if (status.getState() == IntegrationState.UNSUPPORTED
@@ -110,7 +115,6 @@ public final class JawmsIntegrationsMod {
         if (ancientState == IntegrationState.READY) {
             try {
                 AncientSpellcraftIntegration.activate(config.getAncientSpellcraft());
-                FMLCommonHandler.instance().bus().register(new AncientPresentationSync());
                 coordinator = coordinator.withActive(IntegrationId.ANCIENT_SPELLCRAFT,
                         "Ancient Spellcraft integration activated");
             } catch (RuntimeException exception) {
@@ -128,6 +132,9 @@ public final class JawmsIntegrationsMod {
         if (ancientState == IntegrationState.ACTIVE || ancientState == IntegrationState.DISABLED) {
             PROXY.activateAncientSpellcraftClient();
         }
+        FMLCommonHandler.instance().bus().register(new IntegrationPresentationSync(
+                coordinator.getStatus(IntegrationId.QUALITY_TOOLS).getState()
+                        == IntegrationState.ACTIVE));
         diagnostics = new IntegrationDiagnosticsService(jawms, config, coordinator);
     }
 
