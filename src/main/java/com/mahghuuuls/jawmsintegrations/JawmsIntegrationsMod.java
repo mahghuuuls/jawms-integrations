@@ -16,6 +16,8 @@ import com.mahghuuuls.jawmsintegrations.integration.ancientspellcraft.AncientSpe
 import com.mahghuuuls.jawmsintegrations.integration.ancientspellcraft.AncientReplacementPolicy;
 import com.mahghuuuls.jawmsintegrations.integration.ancientspellcraft.EverfullManaService;
 import com.mahghuuuls.jawmsintegrations.integration.ancientspellcraft.DagorimFlaskService;
+import com.mahghuuuls.jawmsintegrations.integration.crafttweaker.CraftTweakerManaService;
+import com.mahghuuuls.jawmsintegrations.integration.crafttweaker.CraftTweakerRegistrationBootstrap;
 import com.mahghuuuls.jawmsintegrations.network.IntegrationPresentationSync;
 import com.mahghuuuls.jawmsintegrations.network.IntegrationNetwork;
 import com.mahghuuuls.jawmsintegrations.proxy.CommonProxy;
@@ -81,6 +83,7 @@ public final class JawmsIntegrationsMod {
 
         coordinator = IntegrationCoordinator.initialize(config);
         diagnostics = new IntegrationDiagnosticsService(jawms, config, coordinator);
+        activateCraftTweaker(contextLoader);
         if (coordinator.getStatus(IntegrationId.QUALITY_TOOLS).getState() == IntegrationState.READY) {
             try {
                 QualityToolsIntegration.activate(config.getQualityTools(), this::emitQualityToolsReloadSummary);
@@ -153,6 +156,30 @@ public final class JawmsIntegrationsMod {
     private void emitQualityToolsReloadSummary() {
         if (config.getDiagnostics().isEnabled()) {
             LOGGER.info(diagnostics.qualityToolsReloadSummary());
+        }
+    }
+
+    private void activateCraftTweaker(ClassLoader loader) {
+        IntegrationState state = coordinator.getStatus(IntegrationId.CRAFTTWEAKER).getState();
+        if (state != IntegrationState.READY && state != IntegrationState.DISABLED) {
+            CraftTweakerManaService.installInactive(
+                    coordinator.getStatus(IntegrationId.CRAFTTWEAKER).getDetail());
+            return;
+        }
+        try {
+            CraftTweakerRegistrationBootstrap.register(loader);
+            if (state == IntegrationState.READY) {
+                CraftTweakerManaService.installActive();
+                coordinator = coordinator.withActive(IntegrationId.CRAFTTWEAKER,
+                        "CraftTweaker mana API registered and activated");
+            } else {
+                CraftTweakerManaService.installInactive("Disabled by configuration");
+            }
+        } catch (RuntimeException | LinkageError exception) {
+            CraftTweakerManaService.installInactive("Registration failed: " + exception.getMessage());
+            coordinator = coordinator.withFailure(IntegrationId.CRAFTTWEAKER,
+                    "Registration failed: " + exception.getMessage());
+            LOGGER.error("CraftTweaker integration registration failed", exception);
         }
     }
 }

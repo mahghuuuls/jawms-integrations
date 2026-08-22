@@ -1,17 +1,18 @@
 # JAWMS Integrations
 
-JAWMS Integrations adds optional compatibility between [Just Another Wizardry Mana System](https://www.curseforge.com/minecraft/mc-mods/just-another-wizardry-mana-system), [Quality Tools](https://www.curseforge.com/minecraft/mc-mods/quality-tools), and [Ancient Spellcraft](https://www.curseforge.com/minecraft/mc-mods/ancient-spellcraft) for Minecraft 1.12.2.
+JAWMS Integrations adds optional compatibility between [Just Another Wizardry Mana System](https://www.curseforge.com/minecraft/mc-mods/just-another-wizardry-mana-system) and other Minecraft 1.12.2 mods.
 
 - [Player and download-page description](MOD-PAGE.md)
 - [Changelog](CHANGELOG.md)
+- [CraftTweaker scripting API](docs/CRAFTTWEAKER.md)
 - [License](LICENSE)
 - [Third-party notices](THIRD-PARTY-NOTICES.md)
 
 ## Runtime Scope
 
 - Standard Forge for Minecraft 1.12.2.
-- JAWMS 0.4.0 is required.
-- Quality Tools 1.0.7 and Ancient Spellcraft 1.8.3 are optional. Each integration activates only when its supported mod is installed.
+- JAWMS 1.1.0 or newer is required.
+- Quality Tools, Ancient Spellcraft, and CraftTweaker are optional. Each integration activates only when its supported mod is installed and enabled.
 - Install JAWMS Integrations on both the client and server. Gameplay configuration and mana changes are server-authoritative.
 
 ## Quality Tools Integration
@@ -48,6 +49,10 @@ Selected Ancient Spellcraft mana items are adapted to JAWMS:
 - Ring of Dagorim: can consume ordinary mana flasks when the wearer is below its configured mana threshold.
 
 Ancient Spellcraft items with unrelated self-contained bauble mana remain unchanged.
+
+## CraftTweaker Integration
+
+Pack authors can inspect coherent JAWMS mana state, set or restore mana, perform atomic exact consumption or bounded draining, and start the current post-cast regeneration lockout from ZenScript. See the [CraftTweaker scripting API](docs/CRAFTTWEAKER.md) for the stable names, units, results, errors, and examples.
 
 ## Configuration And Diagnostics
 

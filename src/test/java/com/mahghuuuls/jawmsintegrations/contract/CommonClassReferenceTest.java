@@ -18,7 +18,11 @@ class CommonClassReferenceTest {
             "com/tmtravlr/qualitytools/",
             "com/windanesz/ancientspellcraft/",
             "com/tmtravlr/potioncore/",
-            "crafttweaker/",
+            "crafttweaker/CraftTweakerAPI",
+            "crafttweaker/api/",
+            "crafttweaker/annotations/",
+            "crafttweaker/runtime/",
+            "crafttweaker/mc1120/",
             "stanhebben/zenscript/",
             "am2/"
     };

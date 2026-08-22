@@ -148,6 +148,26 @@ class IntegrationCoordinatorTest {
     }
 
     @Test
+    void craftTweakerForgeAliasIsAcceptedOnlyAfterFullMetadataGatePasses() {
+        Map<String, String> versions = supportedVersions();
+        versions.put(IntegrationId.CRAFTTWEAKER.getModId(), "4.1.20");
+
+        IntegrationCoordinator accepted = initialize(
+                IntegrationConfigSnapshot.defaults(), versions, allSupported());
+        assertEquals(IntegrationState.READY,
+                accepted.getStatus(IntegrationId.CRAFTTWEAKER).getState());
+
+        Map<IntegrationId, OptionalIntegrationEvidenceRegistry.Evidence> rejected = allSupported();
+        rejected.put(IntegrationId.CRAFTTWEAKER,
+                OptionalIntegrationEvidenceRegistry.Evidence.unsupported(
+                        "1.12-4.1.20.714"));
+        IntegrationCoordinator unsupported = initialize(
+                IntegrationConfigSnapshot.defaults(), versions, rejected);
+        assertEquals(IntegrationState.UNSUPPORTED,
+                unsupported.getStatus(IntegrationId.CRAFTTWEAKER).getState());
+    }
+
+    @Test
     void onlyReadyIntegrationsCanBePromotedToActive() {
         IntegrationCoordinator ready = initialize(
                 IntegrationConfigSnapshot.defaults(), supportedVersions(), allSupported());

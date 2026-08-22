@@ -349,6 +349,45 @@ tasks.register('prepareQualityToolsValidationFixtures', Copy) {
     into layout.projectDirectory.dir('run/config/qualitytools')
 }
 
+tasks.register('prepareCraftTweakerDevelopmentValidationScript', Copy) {
+    group = 'jawms integrations verification'
+    description = 'Installs the compile-only CraftTweaker API contract script into run/scripts.'
+    onlyIf { craftTweakerRuntimeEnabled }
+    from layout.projectDirectory.dir('src/test/resources/validation/crafttweaker')
+    into layout.projectDirectory.dir('run/scripts/jawmsintegrations-validation')
+}
+
+tasks.register('prepareCraftTweakerPackagedValidationScript', Copy) {
+    group = 'jawms integrations verification'
+    description = 'Installs the compile-only CraftTweaker API contract script into the packaged game directory.'
+    onlyIf { craftTweakerRuntimeEnabled }
+    from layout.projectDirectory.dir('src/test/resources/validation/crafttweaker')
+    into layout.projectDirectory.dir('run/obfuscated/scripts/jawmsintegrations-validation')
+}
+
+tasks.register('prepareCraftTweakerCampaignScript', Copy) {
+    group = 'jawms integrations verification'
+    description = 'Installs the development-only CraftTweaker owner-campaign trigger script.'
+    onlyIf {
+        propertyBool('enable_agent_test_toolkit') && craftTweakerRuntimeEnabled
+    }
+    from layout.projectDirectory.dir('src/test/resources/validation/crafttweaker-campaign')
+    into layout.projectDirectory.dir('run/scripts/jawmsintegrations-validation')
+}
+
+['runClient', 'runServer'].each { taskName ->
+    tasks.named(taskName).configure {
+        dependsOn tasks.named('prepareCraftTweakerDevelopmentValidationScript')
+        dependsOn tasks.named('prepareCraftTweakerCampaignScript')
+    }
+}
+
+['runObfClient', 'runObfServer'].each { taskName ->
+    tasks.named(taskName).configure {
+        dependsOn tasks.named('prepareCraftTweakerPackagedValidationScript')
+    }
+}
+
 tasks.register('prepareIntegrationRuntimeMods') {
     group = 'jawms integrations verification'
     description = 'Installs the selected classloader-sensitive optional mods into run/mods.'

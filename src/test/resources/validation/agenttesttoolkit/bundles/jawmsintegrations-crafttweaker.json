@@ -1,0 +1,41 @@
+{
+  "cycle1_crafttweaker_setup": {
+    "description": "Prepare the bounded CraftTweaker mana API owner campaign trigger",
+    "stopOnFailure": true,
+    "commands": [
+      "devtool session start cycle1_crafttweaker",
+      "gamemode survival",
+      "gamerule keepInventory true",
+      "replaceitem entity @s slot.armor.head minecraft:air",
+      "replaceitem entity @s slot.armor.chest minecraft:air",
+      "replaceitem entity @s slot.armor.legs minecraft:air",
+      "replaceitem entity @s slot.armor.feet minecraft:air",
+      "replaceitem entity @s slot.hotbar.0 minecraft:blaze_rod 1 0 {display:{Name:\"JAWMS CraftTweaker Validation\"}}",
+      "replaceitem entity @s slot.hotbar.1 minecraft:air",
+      { "command": "jawmsintegrations status @s", "delayTicks": 20 },
+      "devtool inspect player",
+      "devtool mark CYCLE1_CRAFTTWEAKER_READY"
+    ]
+  },
+  "cycle1_crafttweaker_observe": {
+    "description": "Record state after one server-side right-click execution of the validation script",
+    "stopOnFailure": true,
+    "commands": [
+      "jawmsintegrations status @s",
+      "devtool inspect player",
+      "devtool mark CYCLE1_CRAFTTWEAKER_RESULT_OBSERVED"
+    ]
+  },
+  "cycle1_crafttweaker_cleanup": {
+    "description": "Remove the validation trigger and close the diagnostic session",
+    "stopOnFailure": false,
+    "commands": [
+      "replaceitem entity @s slot.hotbar.0 minecraft:air",
+      "replaceitem entity @s slot.hotbar.1 minecraft:air",
+      "devtool inspect player",
+      "devtool mark CYCLE1_CRAFTTWEAKER_CLEANUP_COMPLETE",
+      "devtool log all off",
+      "devtool session stop"
+    ]
+  }
+}

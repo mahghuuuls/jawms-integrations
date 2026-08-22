@@ -10,7 +10,13 @@ public enum IntegrationId {
             "1.12.2-1.8.3",
             "1.12.2-INDEV"
     ),
-    CRAFTTWEAKER("CraftTweaker", "crafttweaker", "1.12-4.1.20.715", "1.12-4.1.20.715"),
+    CRAFTTWEAKER(
+            "CraftTweaker",
+            "crafttweaker",
+            "1.12-4.1.20.715",
+            "1.12-4.1.20.715",
+            "4.1.20"
+    ),
     ARS_MAGICA("Ars Magica 2: Rekindled", "arsmagica2", "1.6.2", "1.6.2");
 
     private final String displayName;

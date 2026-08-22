@@ -32,6 +32,37 @@ final class DependencyContractTest {
                 "com/mahghuuuls/jawms/api/IManaService",
                 "startRegenerationLockout",
                 "(Lnet/minecraft/entity/player/EntityPlayer;Lnet/minecraft/util/ResourceLocation;)J");
+        JarContract.assertMethodInvocationCount(jar,
+                "com/mahghuuuls/jawms/internal/mana/ManaService",
+                "startRegenerationLockout",
+                "(Lnet/minecraft/entity/player/EntityPlayer;Lnet/minecraft/util/ResourceLocation;)J",
+                "com/mahghuuuls/jawms/internal/mana/ManaState",
+                "getEffectiveLockoutTicks", "()J", 1);
+        JarContract.assertMethodInvocationCount(jar,
+                "com/mahghuuuls/jawms/internal/mana/ManaService",
+                "startRegenerationLockout",
+                "(Lnet/minecraft/entity/player/EntityPlayer;Lnet/minecraft/util/ResourceLocation;)J",
+                "com/mahghuuuls/jawms/internal/mana/ManaService",
+                "transition",
+                "(Lnet/minecraft/entity/player/EntityPlayer;"
+                        + "Lcom/mahghuuuls/jawms/internal/mana/ManaState;"
+                        + "Lnet/minecraft/util/ResourceLocation;ZLjava/lang/Runnable;)V", 1);
+        JarContract.assertMethodInvocationCount(jar,
+                "com/mahghuuuls/jawms/internal/mana/ManaService",
+                "startRegenerationLockout",
+                "(Lnet/minecraft/entity/player/EntityPlayer;Lnet/minecraft/util/ResourceLocation;)J",
+                "com/mahghuuuls/jawms/internal/mana/ManaService",
+                "setCurrentMana",
+                "(Lnet/minecraft/entity/player/EntityPlayer;ILnet/minecraft/util/ResourceLocation;)"
+                        + "Lcom/mahghuuuls/jawms/api/ManaMutationResult;", 0);
+        JarContract.assertMethodInvocationCount(jar,
+                "com/mahghuuuls/jawms/internal/mana/ManaService",
+                "startRegenerationLockout",
+                "(Lnet/minecraft/entity/player/EntityPlayer;Lnet/minecraft/util/ResourceLocation;)J",
+                "com/mahghuuuls/jawms/internal/mana/ManaService",
+                "consumeMana",
+                "(Lnet/minecraft/entity/player/EntityPlayer;ILnet/minecraft/util/ResourceLocation;)"
+                        + "Lcom/mahghuuuls/jawms/api/ManaMutationResult;", 0);
     }
 
     @Test
@@ -143,8 +174,14 @@ final class DependencyContractTest {
 
     @Test
     void newOptionalReleaseArtifactsMatchApprovedIdentities() throws IOException {
+        Path craftTweaker = requiredJar(CRAFTTWEAKER_JAR);
         assertEquals("2CD1C68628B78FF5B58A12C94C0DBED8E91D322836BF2D34C9156FEE60390E53",
-                sha256(requiredJar(CRAFTTWEAKER_JAR)));
+                sha256(craftTweaker));
+        JarContract.assertMethod(craftTweaker, "crafttweaker/CraftTweakerAPI", "registerClass",
+                "(Ljava/lang/Class;)V");
+        JarContract.assertMethod(craftTweaker, "crafttweaker/api/minecraft/CraftTweakerMC",
+                "getPlayer",
+                "(Lcrafttweaker/api/player/IPlayer;)Lnet/minecraft/entity/player/EntityPlayer;");
         assertEquals("2141701AC5DC45C3F448AD113634AFEEC9AC42C6DC0A59853A954B09EE6DB640",
                 sha256(requiredJar(ARS_MAGICA_JAR)));
     }
