@@ -1,0 +1,93 @@
+{
+  "cycle1_swift_existing_setup": {
+    "description": "Prepare a stored five-point Swift Recovery fixture and a blank Wizard hat for the preserved-config reforge card",
+    "stopOnFailure": true,
+    "commands": [
+      "devtool session start cycle1_existing_swift_five",
+      "gamemode creative",
+      "gamerule keepInventory true",
+      "gamerule doMobSpawning false",
+      "replaceitem entity @s slot.armor.head minecraft:air",
+      "replaceitem entity @s slot.hotbar.0 ebwizardry:wizard_hat 1 0 {Quality:{Name:\"Swift Recovery Stored 5\",Color:\"aqua\",Slots:[\"head\"],AttributeModifiers:[{AttributeName:\"jawmsintegrations.mana_regen_delay_reduction_percent\",Name:\"qualitytools\",Amount:5.0d,Operation:0,UUIDMost:510L,UUIDLeast:510L}]}}",
+      "replaceitem entity @s slot.hotbar.1 ebwizardry:wizard_hat",
+      "replaceitem entity @s slot.hotbar.6 qualitytools:reforging_station",
+      "replaceitem entity @s slot.hotbar.7 minecraft:nether_star 64",
+      { "command": "jawmsintegrations status @s", "delayTicks": 20 },
+      "devtool inspect player",
+      "devtool mark CYCLE1_SWIFT_EXISTING_FIVE_READY"
+    ]
+  },
+  "cycle1_swift_existing_stored_observe": {
+    "description": "Capture raw held-item NBT for the stored five-point fixture under the preserved configuration",
+    "stopOnFailure": true,
+    "commands": [
+      "jawmsintegrations status @s",
+      "devtool nbt held",
+      "devtool inspect player",
+      "devtool mark CYCLE1_SWIFT_EXISTING_STORED_FIVE_OBSERVED"
+    ]
+  },
+  "cycle1_swift_existing_reforge_observe": {
+    "description": "Capture raw held-item NBT for the Swift Recovery result reforged from the preserved five-point configuration",
+    "stopOnFailure": true,
+    "commands": [
+      "jawmsintegrations status @s",
+      "devtool nbt held",
+      "devtool inspect player",
+      "devtool mark CYCLE1_SWIFT_EXISTING_REFORGE_FIVE_OBSERVED"
+    ]
+  },
+  "cycle1_swift_default_setup": {
+    "description": "Prepare the same stored fixture and a blank Wizard hat after fresh Swift Recovery default generation",
+    "stopOnFailure": true,
+    "commands": [
+      "devtool session start cycle1_existing_swift_ten",
+      "gamemode creative",
+      "gamerule keepInventory true",
+      "gamerule doMobSpawning false",
+      "replaceitem entity @s slot.armor.head minecraft:air",
+      "replaceitem entity @s slot.hotbar.0 ebwizardry:wizard_hat 1 0 {Quality:{Name:\"Swift Recovery Stored 5\",Color:\"aqua\",Slots:[\"head\"],AttributeModifiers:[{AttributeName:\"jawmsintegrations.mana_regen_delay_reduction_percent\",Name:\"qualitytools\",Amount:5.0d,Operation:0,UUIDMost:510L,UUIDLeast:510L}]}}",
+      "replaceitem entity @s slot.hotbar.1 ebwizardry:wizard_hat",
+      "replaceitem entity @s slot.hotbar.6 qualitytools:reforging_station",
+      "replaceitem entity @s slot.hotbar.7 minecraft:nether_star 64",
+      { "command": "jawmsintegrations status @s", "delayTicks": 20 },
+      "devtool inspect player",
+      "devtool mark CYCLE1_SWIFT_DEFAULT_TEN_READY"
+    ]
+  },
+  "cycle1_swift_default_stored_observe": {
+    "description": "Capture raw held-item NBT proving the stored five-point fixture remains unchanged after fresh default generation",
+    "stopOnFailure": true,
+    "commands": [
+      "jawmsintegrations status @s",
+      "devtool nbt held",
+      "devtool inspect player",
+      "devtool mark CYCLE1_SWIFT_DEFAULT_STORED_FIVE_OBSERVED"
+    ]
+  },
+  "cycle1_swift_default_reforge_observe": {
+    "description": "Capture raw held-item NBT for the Swift Recovery result reforged from the fresh ten-point default",
+    "stopOnFailure": true,
+    "commands": [
+      "jawmsintegrations status @s",
+      "devtool nbt held",
+      "devtool inspect player",
+      "devtool mark CYCLE1_SWIFT_DEFAULT_REFORGE_TEN_OBSERVED"
+    ]
+  },
+  "cycle1_swift_cleanup": {
+    "description": "Remove Swift Recovery validation fixtures and close the diagnostic session",
+    "stopOnFailure": false,
+    "commands": [
+      "replaceitem entity @s slot.armor.head minecraft:air",
+      "replaceitem entity @s slot.hotbar.0 minecraft:air",
+      "replaceitem entity @s slot.hotbar.1 minecraft:air",
+      "replaceitem entity @s slot.hotbar.6 minecraft:air",
+      "replaceitem entity @s slot.hotbar.7 minecraft:air",
+      "devtool inspect player",
+      "devtool mark CYCLE1_SWIFT_CLEANUP_COMPLETE",
+      "devtool log all off",
+      "devtool session stop"
+    ]
+  }
+}
