@@ -13,7 +13,6 @@ import com.mahghuuuls.jawmsintegrations.integration.IntegrationState;
 import com.mahghuuuls.jawmsintegrations.integration.IntegrationStatusView;
 import com.mahghuuuls.jawmsintegrations.integration.JawmsCompatibility;
 import com.mahghuuuls.jawmsintegrations.integration.ancientspellcraft.DagorimFlaskService;
-import com.mahghuuuls.jawmsintegrations.integration.arsmagica.ArsPlayerStateInspectionService;
 import net.minecraft.entity.player.EntityPlayer;
 
 import java.util.ArrayList;
@@ -51,9 +50,7 @@ public final class IntegrationDiagnosticsService {
         result.append("; built-in qualities=")
                 .append(builtInSummary())
                 .append("; Ancient replacements=")
-                .append(ancientReplacementSummary())
-                .append("; Ars Wizardry payment=")
-                .append(arsPaymentSummary());
+                .append(ancientReplacementSummary());
         return result.toString();
     }
 
@@ -72,8 +69,6 @@ public final class IntegrationDiagnosticsService {
                 + ", Ancient Spellcraft=" + enabled(config.getAncientSpellcraft().isIntegrationEnabled())
                 + ", Ancient replacements=" + ancientReplacementSummary()
                 + ", CraftTweaker=" + enabled(config.getCraftTweaker().isEnabled())
-                + ", Ars Magica=" + enabled(config.getArsMagica().isEnabled())
-                + ", Ars Wizardry payment=" + arsPaymentSummary()
                 + ", startup diagnostics=" + enabled(config.getDiagnostics().isEnabled()));
         if (config.getDiagnostics().isEnabled()) {
             lines.add("Latest Ring of Dagorim activation: "
@@ -123,9 +118,6 @@ public final class IntegrationDiagnosticsService {
         if (count == 0) {
             lines.add("- none");
         }
-        if (coordinator.getStatus(IntegrationId.ARS_MAGICA).getState() == IntegrationState.ACTIVE) {
-            lines.addAll(ArsPlayerStateInspectionService.inspect(player));
-        }
         return lines;
     }
 
@@ -173,13 +165,6 @@ public final class IntegrationDiagnosticsService {
                 + ", dagorim=" + ancient.getRingOfDagorim().getIntervalSeconds()
                 + "s/below" + ancient.getRingOfDagorim().getManaThreshold()
                 + "/chance" + ancient.getRingOfDagorim().getActivationChancePercent() + "%)";
-    }
-
-    private String arsPaymentSummary() {
-        IntegrationState state = coordinator.getStatus(IntegrationId.ARS_MAGICA).getState();
-        return state == IntegrationState.ACTIVE
-                ? "JAWMS-owned"
-                : "Ars-native(state=" + state + ")";
     }
 
     static String formatContribution(ManaContribution contribution) {

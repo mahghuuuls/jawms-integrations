@@ -16,6 +16,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 final class FoundationMetadataContractTest {
@@ -54,6 +55,10 @@ final class FoundationMetadataContractTest {
             assertTrue(metadata != null, "Processed mcmod.info must be present");
             String contents = new String(readAll(metadata), StandardCharsets.UTF_8);
             assertTrue(contents.contains("\"requiredMods\": [\"jawms@[1.1.0,)\"]"));
+            assertTrue(contents.contains("Quality Tools"));
+            assertTrue(contents.contains("Ancient Spellcraft"));
+            assertTrue(contents.contains("CraftTweaker"));
+            assertFalse(contents.toLowerCase().contains("ars magica"));
         }
     }
 

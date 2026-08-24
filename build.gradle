@@ -336,8 +336,6 @@ test {
                 configurations.ancientSpellcraftContract.singleFile.absolutePath
         systemProperty 'jawmsintegrations.contract.craftTweakerJar',
                 configurations.craftTweakerContract.singleFile.absolutePath
-        systemProperty 'jawmsintegrations.contract.arsMagicaJar',
-                configurations.arsMagicaContract.singleFile.absolutePath
     }
 }
 

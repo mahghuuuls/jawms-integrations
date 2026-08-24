@@ -34,12 +34,6 @@ class OptionalIntegrationContractValidatorTest {
     }
 
     @Test
-    void pinnedArsArtifactSatisfiesRuntimeMixinContract() throws Exception {
-        assertCurrentArtifactPasses("jawmsintegrations.contract.arsMagicaJar",
-                IntegrationId.ARS_MAGICA);
-    }
-
-    @Test
     void newerMetadataWithoutRequiredSeamsFailsOnlyThatMixinGate() throws Exception {
         String newerVersion = "9.0.0_for_1.12.2";
         Files.write(temporaryDirectory.resolve("mcmod.info"), (

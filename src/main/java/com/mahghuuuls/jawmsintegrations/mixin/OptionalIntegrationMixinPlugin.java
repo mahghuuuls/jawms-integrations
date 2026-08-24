@@ -77,9 +77,6 @@ public final class OptionalIntegrationMixinPlugin implements IMixinConfigPlugin 
         if ("com.mahghuuuls.jawmsintegrations.mixin.ancientspellcraft".equals(mixinPackage)) {
             return IntegrationId.ANCIENT_SPELLCRAFT;
         }
-        if ("com.mahghuuuls.jawmsintegrations.mixin.arsmagica".equals(mixinPackage)) {
-            return IntegrationId.ARS_MAGICA;
-        }
         return null;
     }
 }

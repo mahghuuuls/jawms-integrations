@@ -7,7 +7,6 @@ Currently includes integrations for:
 - [Quality Tools](https://www.curseforge.com/minecraft/mc-mods/quality-tools)
 - [Ancient Spellcraft](https://www.curseforge.com/minecraft/mc-mods/ancient-spellcraft)
 - [CraftTweaker](https://www.curseforge.com/minecraft/mc-mods/crafttweaker)
-- [Ars Magica 2: Rekindled](https://www.curseforge.com/minecraft/mc-mods/ars-magica-2-rekindled)
 
 <span style="color:#d6a100">**AI usage disclaimer:** This mod was developed with AI-agent assistance using [this agent workflow](https://github.com/mahghuuuls/minecraft-1.12.2-mod-agent-workflow). The project owner reviewed the work during development.</span>
 
@@ -84,10 +83,6 @@ Reworks selected mana-related baubles to use JAWMS mana. This includes:
 ## [CraftTweaker](https://www.curseforge.com/minecraft/mc-mods/crafttweaker)
 
 Adds a server-authoritative ZenScript API for reading coherent JAWMS mana state, setting or restoring mana, exact consumption, bounded draining, and starting the current post-cast regeneration delay.
-
-## [Ars Magica 2: Rekindled](https://www.curseforge.com/minecraft/mc-mods/ars-magica-2-rekindled)
-
-Makes JAWMS the sole affordability and mana-payment system for Electroblob's Wizardry spells. Those casts no longer consume Ars mana or add Ars burnout. Ars-native spells retain their normal resources, while Ars silence, discipline potency, configured magic XP, affinity gain, and unrelated Wizardry compatibility remain active.
 
 ## Configuration And Installation
 

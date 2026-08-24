@@ -19,7 +19,6 @@ final class DependencyContractTest {
     private static final String QUALITY_TOOLS_JAR = "jawmsintegrations.contract.qualityToolsJar";
     private static final String ANCIENT_SPELLCRAFT_JAR = "jawmsintegrations.contract.ancientSpellcraftJar";
     private static final String CRAFTTWEAKER_JAR = "jawmsintegrations.contract.craftTweakerJar";
-    private static final String ARS_MAGICA_JAR = "jawmsintegrations.contract.arsMagicaJar";
 
     @Test
     void jawmsReleaseMatchesRequiredApiFoundation() throws IOException {
@@ -173,7 +172,7 @@ final class DependencyContractTest {
     }
 
     @Test
-    void newOptionalReleaseArtifactsMatchApprovedIdentities() throws IOException {
+    void craftTweakerReleaseArtifactMatchesApprovedIdentity() throws IOException {
         Path craftTweaker = requiredJar(CRAFTTWEAKER_JAR);
         assertEquals("2CD1C68628B78FF5B58A12C94C0DBED8E91D322836BF2D34C9156FEE60390E53",
                 sha256(craftTweaker));
@@ -182,44 +181,6 @@ final class DependencyContractTest {
         JarContract.assertMethod(craftTweaker, "crafttweaker/api/minecraft/CraftTweakerMC",
                 "getPlayer",
                 "(Lcrafttweaker/api/player/IPlayer;)Lnet/minecraft/entity/player/EntityPlayer;");
-        Path arsMagica = requiredJar(ARS_MAGICA_JAR);
-        assertEquals("2141701AC5DC45C3F448AD113634AFEEC9AC42C6DC0A59853A954B09EE6DB640",
-                sha256(arsMagica));
-        String handler = "am2/common/compat/electroblob/EBWizardryCompatHandler";
-        String pre = "(Lelectroblob/wizardry/event/SpellCastEvent$Pre;)V";
-        String post = "(Lelectroblob/wizardry/event/SpellCastEvent$Post;)V";
-        JarContract.assertMethod(arsMagica, handler, "onEBWizSpellCastPre", pre);
-        JarContract.assertMethod(arsMagica, handler, "onEBWizSpellCastPost", post);
-        JarContract.assertMethodInvocationCount(arsMagica, handler,
-                "onEBWizSpellCastPre", pre,
-                "am2/api/extensions/IEntityExtension", "hasEnoughMana", "(F)Z", 2);
-        JarContract.assertMethodInvocationCount(arsMagica, handler,
-                "onEBWizSpellCastPre", pre,
-                "electroblob/wizardry/event/SpellCastEvent$Pre", "setCanceled", "(Z)V", 3);
-        JarContract.assertMethodInvocationCount(arsMagica, handler,
-                "onEBWizSpellCastPre", pre,
-                "electroblob/wizardry/util/SpellModifiers", "set",
-                "(Ljava/lang/String;FZ)Lelectroblob/wizardry/util/SpellModifiers;", 3);
-        JarContract.assertMethodInvocationCount(arsMagica, handler,
-                "onEBWizSpellCastPre", pre,
-                "java/util/Map", "put",
-                "(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;", 2);
-        JarContract.assertMethodInvocationCount(arsMagica, handler,
-                "onEBWizSpellCastPost", post,
-                "java/util/Map", "remove", "(Ljava/lang/Object;)Ljava/lang/Object;", 1);
-        JarContract.assertMethodInvocationCount(arsMagica, handler,
-                "onEBWizSpellCastPost", post,
-                "am2/api/extensions/IEntityExtension", "deductMana", "(F)V", 1);
-        JarContract.assertMethodInvocationCount(arsMagica, handler,
-                "onEBWizSpellCastPost", post,
-                "am2/api/extensions/IEntityExtension", "setCurrentBurnout", "(F)V", 1);
-        JarContract.assertMethodInvocationCount(arsMagica, handler,
-                "onEBWizSpellCastPost", post,
-                "am2/api/extensions/IEntityExtension", "addMagicXP", "(F)V", 1);
-        JarContract.assertMethodInvocationCount(arsMagica, handler,
-                "onEBWizSpellCastPost", post,
-                "am2/common/extensions/AffinityData", "incrementAffinity",
-                "(Lam2/api/affinity/Affinity;F)V", 1);
     }
 
     @Test
@@ -229,16 +190,6 @@ final class DependencyContractTest {
                 "com/tmtravlr/qualitytools/config/QualityType",
                 "generateQualityTag",
                 "(Lnet/minecraft/item/ItemStack;)V"));
-    }
-
-    @Test
-    void arsContractCheckFailsWhenPaymentCallCountDrifts() {
-        Path jar = requiredJar(ARS_MAGICA_JAR);
-        assertThrows(AssertionError.class, () -> JarContract.assertMethodInvocationCount(jar,
-                "am2/common/compat/electroblob/EBWizardryCompatHandler",
-                "onEBWizSpellCastPre",
-                "(Lelectroblob/wizardry/event/SpellCastEvent$Pre;)V",
-                "am2/api/extensions/IEntityExtension", "hasEnoughMana", "(F)Z", 1));
     }
 
     private static Path requiredJar(String propertyName) {

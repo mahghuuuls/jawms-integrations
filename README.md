@@ -12,7 +12,7 @@ JAWMS Integrations adds optional compatibility between [Just Another Wizardry Ma
 
 - Standard Forge for Minecraft 1.12.2.
 - JAWMS 1.1.0 or newer is required.
-- Quality Tools, Ancient Spellcraft, CraftTweaker, and Ars Magica 2: Rekindled are optional. Each integration activates only when its supported mod is installed and enabled.
+- Quality Tools, Ancient Spellcraft, and CraftTweaker are optional. Each integration activates only when its supported mod is installed and enabled.
 - Install JAWMS Integrations on both the client and server. Gameplay configuration and mana changes are server-authoritative.
 
 ## Quality Tools Integration
@@ -53,10 +53,6 @@ Ancient Spellcraft items with unrelated self-contained bauble mana remain unchan
 ## CraftTweaker Integration
 
 Pack authors can inspect coherent JAWMS mana state, set or restore mana, perform atomic exact consumption or bounded draining, and start the current post-cast regeneration lockout from ZenScript. See the [CraftTweaker scripting API](docs/CRAFTTWEAKER.md) for the stable names, units, results, errors, and examples.
-
-## Ars Magica 2: Rekindled Integration
-
-JAWMS remains the sole affordability and mana-payment authority for Electroblob's Wizardry spells. Ars mana and burnout are not used for those casts, while Ars-native spells keep their normal mana and burnout behavior. Ars silence, discipline potency, configured magic XP, affinity gain, and unrelated Wizardry compatibility remain owned by Ars Magica.
 
 ## Configuration And Diagnostics
 

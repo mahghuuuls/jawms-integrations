@@ -10,22 +10,19 @@ public final class IntegrationConfigSnapshot {
     private final QualityToolsConfig qualityTools;
     private final AncientSpellcraftConfig ancientSpellcraft;
     private final IntegrationToggleConfig craftTweaker;
-    private final IntegrationToggleConfig arsMagica;
     private final DiagnosticsConfig diagnostics;
 
     public IntegrationConfigSnapshot(QualityToolsConfig qualityTools,
                                      AncientSpellcraftConfig ancientSpellcraft,
                                      IntegrationToggleConfig craftTweaker,
-                                     IntegrationToggleConfig arsMagica,
                                      DiagnosticsConfig diagnostics) {
         if (qualityTools == null || ancientSpellcraft == null || craftTweaker == null
-                || arsMagica == null || diagnostics == null) {
+                || diagnostics == null) {
             throw new IllegalArgumentException("Configuration sections must not be null");
         }
         this.qualityTools = qualityTools;
         this.ancientSpellcraft = ancientSpellcraft;
         this.craftTweaker = craftTweaker;
-        this.arsMagica = arsMagica;
         this.diagnostics = diagnostics;
     }
 
@@ -33,7 +30,6 @@ public final class IntegrationConfigSnapshot {
         return new IntegrationConfigSnapshot(
                 new QualityToolsConfig(true, true),
                 AncientSpellcraftConfig.defaults(),
-                new IntegrationToggleConfig(true),
                 new IntegrationToggleConfig(true),
                 new DiagnosticsConfig(false)
         );
@@ -49,10 +45,6 @@ public final class IntegrationConfigSnapshot {
 
     public IntegrationToggleConfig getCraftTweaker() {
         return craftTweaker;
-    }
-
-    public IntegrationToggleConfig getArsMagica() {
-        return arsMagica;
     }
 
     public DiagnosticsConfig getDiagnostics() {

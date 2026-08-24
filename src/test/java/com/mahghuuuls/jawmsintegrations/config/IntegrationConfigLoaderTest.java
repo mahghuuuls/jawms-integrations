@@ -1,15 +1,25 @@
 package com.mahghuuuls.jawmsintegrations.config;
 
+import net.minecraftforge.fml.relauncher.FMLInjectionData;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+
+import java.lang.reflect.Field;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class IntegrationConfigLoaderTest {
+
+    @TempDir
+    Path temporaryDirectory;
 
     @Test
     void exposesApprovedCoreDefaults() {
@@ -29,7 +39,6 @@ class IntegrationConfigLoaderTest {
         }
         assertTrue(snapshot.getAncientSpellcraft().isIntegrationEnabled());
         assertTrue(snapshot.getCraftTweaker().isEnabled());
-        assertTrue(snapshot.getArsMagica().isEnabled());
         assertTrue(snapshot.getAncientSpellcraft().getLesserManaRing().isEnabled());
         assertEquals(8, snapshot.getAncientSpellcraft().getLesserManaRing().getValue());
         assertTrue(snapshot.getAncientSpellcraft().getGreaterManaRing().isEnabled());
@@ -53,6 +62,26 @@ class IntegrationConfigLoaderTest {
         assertFalse(snapshot.getDiagnostics().isEnabled());
         assertEquals(10.0D, snapshot.getQualityTools().getBuiltInQuality(
                 IntegrationConfigSnapshot.BuiltInQuality.SWIFT_RECOVERY).getAmount());
+    }
+
+    @Test
+    void generatedDefaultConfigContainsOnlySupportedIntegrationCategories() throws Exception {
+        Path configPath = temporaryDirectory.resolve("jawmsintegrations.cfg");
+        Field minecraftHome = FMLInjectionData.class.getDeclaredField("minecraftHome");
+        minecraftHome.setAccessible(true);
+        Object originalHome = minecraftHome.get(null);
+        try {
+            minecraftHome.set(null, temporaryDirectory.toFile());
+            IntegrationConfigLoader.load(configPath.toFile());
+        } finally {
+            minecraftHome.set(null, originalHome);
+        }
+
+        String generated = new String(Files.readAllBytes(configPath), StandardCharsets.UTF_8);
+        assertTrue(generated.contains("quality_tools"));
+        assertTrue(generated.contains("ancient_spellcraft"));
+        assertTrue(generated.contains("crafttweaker"));
+        assertFalse(generated.toLowerCase().contains("ars_magica"));
     }
 
     @Test
@@ -97,15 +126,11 @@ class IntegrationConfigLoaderTest {
                 "ancient_spellcraft", "enabled", "false", true, warnings);
         boolean craftTweaker = IntegrationConfigLoader.validateBoolean(
                 "crafttweaker", "enabled", "true", true, warnings);
-        boolean arsMagica = IntegrationConfigLoader.validateBoolean(
-                "ars_magica_2_rekindled", "enabled", "invalid", true, warnings);
 
         assertFalse(existingQualityTools);
         assertFalse(existingAncient);
         assertTrue(craftTweaker);
-        assertTrue(arsMagica);
-        assertEquals(1, warnings.size());
-        assertTrue(warnings.get(0).contains("ars_magica_2_rekindled.enabled"));
+        assertTrue(warnings.isEmpty());
     }
 
     @Test

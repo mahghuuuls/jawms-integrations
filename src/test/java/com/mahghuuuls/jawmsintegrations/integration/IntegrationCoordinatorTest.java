@@ -15,10 +15,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class IntegrationCoordinatorTest {
 
     @Test
-    void allFourAbsentOptionalModsRemainIndependentInactiveStates() {
+    void allThreeAbsentOptionalModsRemainIndependentInactiveStates() {
         IntegrationCoordinator coordinator = initialize(
                 IntegrationConfigSnapshot.defaults(), new HashMap<>(), allAbsent());
-        assertEquals(4, coordinator.getStatuses().size());
+        assertEquals(3, coordinator.getStatuses().size());
         for (IntegrationId integration : IntegrationId.values()) {
             assertEquals(IntegrationState.ABSENT, coordinator.getStatus(integration).getState());
         }
@@ -30,7 +30,6 @@ class IntegrationCoordinatorTest {
                 new IntegrationConfigSnapshot.QualityToolsConfig(false, true),
                 new IntegrationConfigSnapshot.AncientSpellcraftConfig(true),
                 new IntegrationConfigSnapshot.IntegrationToggleConfig(false),
-                new IntegrationConfigSnapshot.IntegrationToggleConfig(true),
                 new IntegrationConfigSnapshot.DiagnosticsConfig(false));
         IntegrationCoordinator coordinator = initialize(config, supportedVersions(), allSupported());
         assertEquals(IntegrationState.DISABLED,
@@ -39,8 +38,6 @@ class IntegrationCoordinatorTest {
                 coordinator.getStatus(IntegrationId.ANCIENT_SPELLCRAFT).getState());
         assertEquals(IntegrationState.DISABLED,
                 coordinator.getStatus(IntegrationId.CRAFTTWEAKER).getState());
-        assertEquals(IntegrationState.READY,
-                coordinator.getStatus(IntegrationId.ARS_MAGICA).getState());
     }
 
     @Test
@@ -56,23 +53,21 @@ class IntegrationCoordinatorTest {
         assertEquals(IntegrationState.UNSUPPORTED, craftTweaker.getState());
         assertTrue(craftTweaker.getDetail().contains("1.12-4.1.20.714"));
         assertTrue(craftTweaker.getDetail().contains("1.12-4.1.20.715"));
-        assertEquals(IntegrationState.READY,
-                coordinator.getStatus(IntegrationId.ARS_MAGICA).getState());
     }
 
     @Test
     void bootstrapFailureAndMissingEvidenceFailClosedOnlyForAffectedIntegration() {
         Map<IntegrationId, OptionalIntegrationEvidenceRegistry.Evidence> evidence = allSupported();
-        evidence.put(IntegrationId.ARS_MAGICA,
+        evidence.put(IntegrationId.ANCIENT_SPELLCRAFT,
                 OptionalIntegrationEvidenceRegistry.Evidence.error("metadata unreadable"));
         evidence.put(IntegrationId.CRAFTTWEAKER,
                 OptionalIntegrationEvidenceRegistry.Evidence.unknown());
         IntegrationCoordinator coordinator = initialize(
                 IntegrationConfigSnapshot.defaults(), supportedVersions(), evidence);
         assertEquals(IntegrationState.FAILED,
-                coordinator.getStatus(IntegrationId.ARS_MAGICA).getState());
+                coordinator.getStatus(IntegrationId.ANCIENT_SPELLCRAFT).getState());
         assertEquals("metadata unreadable",
-                coordinator.getStatus(IntegrationId.ARS_MAGICA).getDetail());
+                coordinator.getStatus(IntegrationId.ANCIENT_SPELLCRAFT).getDetail());
         assertEquals(IntegrationState.FAILED,
                 coordinator.getStatus(IntegrationId.CRAFTTWEAKER).getState());
         assertEquals("Bootstrap gate did not publish evidence",
@@ -84,13 +79,13 @@ class IntegrationCoordinatorTest {
     @Test
     void supportedDecisionWithWrongMetadataFailsClosed() {
         Map<IntegrationId, OptionalIntegrationEvidenceRegistry.Evidence> evidence = allSupported();
-        evidence.put(IntegrationId.ARS_MAGICA,
-                OptionalIntegrationEvidenceRegistry.Evidence.supported("GRADLE:VERSIONGRADLE:BUILD"));
+        evidence.put(IntegrationId.QUALITY_TOOLS,
+                OptionalIntegrationEvidenceRegistry.Evidence.supported("not-a-version"));
         IntegrationCoordinator coordinator = initialize(
                 IntegrationConfigSnapshot.defaults(), supportedVersions(), evidence);
         assertEquals(IntegrationState.FAILED,
-                coordinator.getStatus(IntegrationId.ARS_MAGICA).getState());
-        assertTrue(coordinator.getStatus(IntegrationId.ARS_MAGICA).getDetail().contains("1.6.2"));
+                coordinator.getStatus(IntegrationId.QUALITY_TOOLS).getState());
+        assertTrue(coordinator.getStatus(IntegrationId.QUALITY_TOOLS).getDetail().contains("1.0.7"));
     }
 
     @Test
@@ -108,26 +103,6 @@ class IntegrationCoordinatorTest {
                 confirmed.getStatus(IntegrationId.ANCIENT_SPELLCRAFT).getState());
         assertEquals(IntegrationState.FAILED,
                 unconfirmed.getStatus(IntegrationId.ANCIENT_SPELLCRAFT).getState());
-    }
-
-    @Test
-    void releasedArsForgePlaceholderUsesExactSupportedArchiveEvidence() {
-        Map<String, String> versions = supportedVersions();
-        versions.put(IntegrationId.ARS_MAGICA.getModId(), "GRADLE:VERSIONGRADLE:BUILD");
-
-        IntegrationCoordinator confirmed = initialize(
-                IntegrationConfigSnapshot.defaults(), versions, allSupported());
-        IntegrationStatusView ars = confirmed.getStatus(IntegrationId.ARS_MAGICA);
-        assertEquals(IntegrationState.READY, ars.getState());
-        assertEquals("1.6.2", ars.getDetectedVersion());
-
-        Map<IntegrationId, OptionalIntegrationEvidenceRegistry.Evidence> rejected = allSupported();
-        rejected.put(IntegrationId.ARS_MAGICA,
-                OptionalIntegrationEvidenceRegistry.Evidence.unsupported("1.6.1"));
-        IntegrationCoordinator unsupported = initialize(
-                IntegrationConfigSnapshot.defaults(), versions, rejected);
-        assertEquals(IntegrationState.UNSUPPORTED,
-                unsupported.getStatus(IntegrationId.ARS_MAGICA).getState());
     }
 
     @Test
@@ -151,7 +126,6 @@ class IntegrationCoordinatorTest {
         assertFalse(IntegrationId.QUALITY_TOOLS.meetsMinimumMetadataVersion("1.0.6_for_1.12.2"));
         assertFalse(IntegrationId.ANCIENT_SPELLCRAFT.meetsMinimumMetadataVersion("1.12.2-1.8.2"));
         assertFalse(IntegrationId.CRAFTTWEAKER.meetsMinimumMetadataVersion("1.12-4.1.20.714"));
-        assertFalse(IntegrationId.ARS_MAGICA.meetsMinimumMetadataVersion("1.6.1"));
 
         Map<String, String> versions = supportedVersions();
         Map<IntegrationId, OptionalIntegrationEvidenceRegistry.Evidence> evidence = allSupported();
@@ -202,7 +176,6 @@ class IntegrationCoordinatorTest {
                 new IntegrationConfigSnapshot.QualityToolsConfig(false, true),
                 IntegrationConfigSnapshot.defaults().getAncientSpellcraft(),
                 IntegrationConfigSnapshot.defaults().getCraftTweaker(),
-                IntegrationConfigSnapshot.defaults().getArsMagica(),
                 IntegrationConfigSnapshot.defaults().getDiagnostics());
         IntegrationCoordinator disabled = initialize(
                 disabledQualityTools, supportedVersions(), allSupported());
@@ -254,7 +227,6 @@ class IntegrationCoordinatorTest {
             case QUALITY_TOOLS: return "2.0.0-beta_for_1.12.2";
             case ANCIENT_SPELLCRAFT: return "1.12.2-2.0.0-beta";
             case CRAFTTWEAKER: return "1.12-4.2.0.0";
-            case ARS_MAGICA: return "2.0.0";
             default: throw new IllegalStateException("Unhandled integration " + integration);
         }
     }

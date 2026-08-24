@@ -53,11 +53,6 @@ configurations {
         canBeResolved = true
         transitive = false
     }
-    arsMagicaContract {
-        canBeConsumed = false
-        canBeResolved = true
-        transitive = false
-    }
     ancientSpellcraftRuntimeMods {
         canBeConsumed = false
         canBeResolved = true
@@ -77,7 +72,7 @@ configurations {
 
 def integrationRuntimeProfile = propertyString('integration_runtime_profile').toLowerCase(Locale.ROOT)
 def supportedIntegrationRuntimeProfiles = [
-        'none', 'qualitytools', 'ancientspellcraft', 'crafttweaker', 'arsmagica', 'both', 'all'
+        'none', 'qualitytools', 'ancientspellcraft', 'crafttweaker', 'both', 'all'
 ]
 if (!supportedIntegrationRuntimeProfiles.contains(integrationRuntimeProfile)) {
     throw new GradleException("Unsupported integration_runtime_profile '${integrationRuntimeProfile}'. "
@@ -87,7 +82,6 @@ if (!supportedIntegrationRuntimeProfiles.contains(integrationRuntimeProfile)) {
 def qualityToolsRuntimeEnabled = integrationRuntimeProfile in ['qualitytools', 'both', 'all']
 def ancientSpellcraftRuntimeEnabled = integrationRuntimeProfile in ['ancientspellcraft', 'both', 'all']
 def craftTweakerRuntimeEnabled = integrationRuntimeProfile in ['crafttweaker', 'all']
-def arsMagicaRuntimeEnabled = integrationRuntimeProfile in ['arsmagica', 'all']
 
 dependencies {
     // Include StripLatestForgeRequirements by default for the dev env, saves everyone a hassle
@@ -132,14 +126,6 @@ dependencies {
     if (craftTweakerRuntimeEnabled) {
         runtimeOnly 'curse.maven:crafttweaker-239197:8051578'
         optionalPackagedRuntimeMods 'curse.maven:crafttweaker-239197:8051578'
-    }
-
-    compileOnly rfg.deobf('curse.maven:ars-magica-2-rekindled-1430906:8314968')
-    testImplementation rfg.deobf('curse.maven:ars-magica-2-rekindled-1430906:8314968')
-    arsMagicaContract 'curse.maven:ars-magica-2-rekindled-1430906:8314968'
-    if (arsMagicaRuntimeEnabled) {
-        runtimeOnly rfg.deobf('curse.maven:ars-magica-2-rekindled-1430906:8314968')
-        optionalPackagedRuntimeMods 'curse.maven:ars-magica-2-rekindled-1430906:8314968'
     }
 
     testImplementation 'org.ow2.asm:asm:5.2'
@@ -210,7 +196,6 @@ if (obfuscationAttribute == null) {
  configurations.qualityToolsContract,
  configurations.ancientSpellcraftContract,
  configurations.craftTweakerContract,
- configurations.arsMagicaContract,
  configurations.optionalPackagedRuntimeMods,
  configurations.ancientSpellcraftPackagedRuntimeMods].each { configuration ->
     configuration.attributes {
@@ -235,6 +220,7 @@ tasks.register('cleanManagedPackagedRuntimeArtifacts') {
                     || name.contains('ancientspellcraft') || name.contains('ancient-spellcraft')
                     || name.contains('wizardryutils')
                     || name.contains('crafttweaker')
+                    // Remove artifacts left by the abandoned prototype; this is not a supported profile.
                     || name.contains('ars-magica') || name.contains('arsmagica')
         }
         delete managedFiles
@@ -254,7 +240,9 @@ def packagedRuntimeCounts = {
             },
             wizardryUtils: countMatches { it.contains('wizardryutils') },
             craftTweaker: countMatches { it.contains('crafttweaker') },
-            arsMagica: countMatches { it.contains('ars-magica') || it.contains('arsmagica') },
+            rejectedArsPrototype: countMatches {
+                it.contains('ars-magica') || it.contains('arsmagica')
+            },
             jawms: countMatches { it.contains('just-another-wizardry') },
             product: countMatches { it.contains('jawms-integrations') }
     ]
@@ -275,7 +263,7 @@ def packagedRuntimeMismatches = { Map counts, boolean requireComplete ->
     check('Ancient Spellcraft', counts.ancientSpellcraft, ancientSpellcraftRuntimeEnabled)
     check('WizardryUtils', counts.wizardryUtils, ancientSpellcraftRuntimeEnabled)
     check('CraftTweaker', counts.craftTweaker, craftTweakerRuntimeEnabled)
-    check('Ars Magica', counts.arsMagica, arsMagicaRuntimeEnabled)
+    check('Rejected Ars prototype artifact', counts.rejectedArsPrototype, false)
     mismatches
 }
 
@@ -375,38 +363,16 @@ tasks.register('prepareCraftTweakerCampaignScript', Copy) {
     into layout.projectDirectory.dir('run/scripts/jawmsintegrations-validation')
 }
 
-tasks.register('prepareArsMagicaDevelopmentValidationConfig', Copy) {
-    group = 'jawms integrations verification'
-    description = 'Installs the controlled Ars owner-campaign configuration into run/config.'
-    onlyIf {
-        propertyBool('enable_agent_test_toolkit') && arsMagicaRuntimeEnabled
-    }
-    from layout.projectDirectory.dir('src/test/resources/validation/arsmagica')
-    into layout.projectDirectory.dir('run/config')
-}
-
-tasks.register('prepareArsMagicaPackagedValidationConfig', Copy) {
-    group = 'jawms integrations verification'
-    description = 'Installs the controlled Ars owner-campaign configuration into the packaged game directory.'
-    onlyIf {
-        propertyBool('enable_agent_test_toolkit') && arsMagicaRuntimeEnabled
-    }
-    from layout.projectDirectory.dir('src/test/resources/validation/arsmagica')
-    into layout.projectDirectory.dir('run/obfuscated/config')
-}
-
 ['runClient', 'runServer'].each { taskName ->
     tasks.named(taskName).configure {
         dependsOn tasks.named('prepareCraftTweakerDevelopmentValidationScript')
         dependsOn tasks.named('prepareCraftTweakerCampaignScript')
-        dependsOn tasks.named('prepareArsMagicaDevelopmentValidationConfig')
     }
 }
 
 ['runObfClient', 'runObfServer'].each { taskName ->
     tasks.named(taskName).configure {
         dependsOn tasks.named('prepareCraftTweakerPackagedValidationScript')
-        dependsOn tasks.named('prepareArsMagicaPackagedValidationConfig')
     }
 }
 
@@ -459,7 +425,9 @@ tasks.register('verifyDevelopmentRuntimeProfile') {
         def toolkitCount = countMatches { it.contains('agenttesttoolkit') }
         def jawmsCount = countMatches { it.contains('just-another-wizardry') }
         def craftTweakerCount = countMatches { it.contains('crafttweaker') }
-        def arsMagicaCount = countMatches { it.contains('ars-magica') || it.contains('arsmagica') }
+        def rejectedArsPrototypeCount = countMatches {
+            it.contains('ars-magica') || it.contains('arsmagica')
+        }
 
         def mismatches = []
         if (jawmsCount != 1) mismatches << "JAWMS count=${jawmsCount}"
@@ -478,8 +446,8 @@ tasks.register('verifyDevelopmentRuntimeProfile') {
         if (craftTweakerCount != (craftTweakerRuntimeEnabled ? 1 : 0)) {
             mismatches << "CraftTweaker count=${craftTweakerCount}"
         }
-        if (arsMagicaCount != (arsMagicaRuntimeEnabled ? 1 : 0)) {
-            mismatches << "Ars Magica count=${arsMagicaCount}"
+        if (rejectedArsPrototypeCount != 0) {
+            mismatches << "Rejected Ars prototype artifact count=${rejectedArsPrototypeCount}"
         }
         if (toolkitCount != (propertyBool('enable_agent_test_toolkit') ? 1 : 0)) {
             mismatches << "Agent Test Toolkit count=${toolkitCount}"

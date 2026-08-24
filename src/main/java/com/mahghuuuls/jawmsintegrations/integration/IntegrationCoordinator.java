@@ -102,8 +102,6 @@ public final class IntegrationCoordinator {
                 return config.getAncientSpellcraft().isIntegrationEnabled();
             case CRAFTTWEAKER:
                 return config.getCraftTweaker().isEnabled();
-            case ARS_MAGICA:
-                return config.getArsMagica().isEnabled();
             default:
                 throw new IllegalStateException("Unhandled integration " + integration);
         }

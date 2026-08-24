@@ -42,11 +42,6 @@ class EarlyModMetadataScannerTest {
     }
 
     @Test
-    void readsExactArsReleaseMetadataWithoutLoadingItsClasses() throws Exception {
-        assertRelease("jawmsintegrations.contract.arsMagicaJar", IntegrationId.ARS_MAGICA);
-    }
-
-    @Test
     void readsPackagedQualityToolsMetadataFromTheForgeModsDirectory() throws Exception {
         File jar = new File(System.getProperty("jawmsintegrations.contract.qualityToolsJar"));
         Path mods = Files.createDirectories(temporaryDirectory.resolve("mods"));
