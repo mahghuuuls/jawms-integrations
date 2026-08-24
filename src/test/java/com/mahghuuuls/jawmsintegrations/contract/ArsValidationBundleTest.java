@@ -109,6 +109,7 @@ class ArsValidationBundleTest {
         assertTrue(config.contains("I:base_ticks_for_full_regen=" + controlledRegenTicks));
         int controlledMagicLevelCap = 99;
         assertTrue(config.contains("I:magic_level_cap=" + controlledMagicLevelCap));
+        assertTrue(config.contains("B:old_xp_calculations=true"));
         int controlledPlayerLevel = 1;
         double capLevelMaximumMana = Math.pow(controlledPlayerLevel, 1.5D)
                 * (85.0D * controlledPlayerLevel / 100.0D) + 100.0D;
@@ -116,7 +117,7 @@ class ArsValidationBundleTest {
         double manaRegeneratedInTenMinutes = capLevelMaximumMana / fastestRegenTicks * 20.0D * 600.0D;
         assertTrue(manaRegeneratedInTenMinutes < 1.0D,
                 "Controlled Ars regeneration must stay below one mana over a ten-minute owner delay");
-        double levelOneMaximumXp = 0.2D + Math.log(1.0D + controlledPlayerLevel * 0.2D);
+        double levelOneMaximumXp = Math.pow(0.25D * controlledPlayerLevel, 1.5D);
         double fiveWorstFiniteFloatCostCastsXp = 5.0D * Math.log(Float.MAX_VALUE)
                 * controlledWizardryXpMultiplier;
         assertTrue(fiveWorstFiniteFloatCostCastsXp < levelOneMaximumXp,
