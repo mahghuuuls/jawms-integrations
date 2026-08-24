@@ -93,7 +93,7 @@
     "stopOnFailure": true,
     "commands": [
       "am setmana 100000",
-      "effect @s arsmagica2:silence 30 0 true",
+      "effect @s arsmagica2:silence 3600 0 true",
       { "command": "jawmsintegrations status @s", "delayTicks": 20 },
       "devtool inspect player",
       "devtool mark CYCLE1_ARS_SILENCE_READY"

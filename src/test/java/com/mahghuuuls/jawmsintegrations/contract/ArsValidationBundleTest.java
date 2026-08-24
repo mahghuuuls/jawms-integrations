@@ -80,7 +80,7 @@ class ArsValidationBundleTest {
             assertTrue(commands(root.getAsJsonObject("cycle1_ars_inverse_ready"))
                     .contains("am setmana 100000"));
             assertTrue(commands(root.getAsJsonObject("cycle1_ars_silence_ready"))
-                    .contains("effect @s arsmagica2:silence 30 0 true"));
+                    .contains("effect @s arsmagica2:silence 3600 0 true"));
             assertTrue(commands(root.getAsJsonObject("cycle1_ars_potency_control_ready"))
                     .contains("am respec"));
             assertTrue(commands(root.getAsJsonObject("cycle1_ars_potency_control_ready")).stream()
