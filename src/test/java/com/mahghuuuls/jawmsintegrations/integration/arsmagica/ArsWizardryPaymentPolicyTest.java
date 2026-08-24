@@ -30,6 +30,14 @@ class ArsWizardryPaymentPolicyTest {
     }
 
     @Test
+    void onlyEnabledClientSideBookkeepingIsSuppressed() {
+        assertFalse(ArsWizardryPaymentPolicy.disabled().suppressClientBookkeeping(false));
+        assertFalse(ArsWizardryPaymentPolicy.disabled().suppressClientBookkeeping(true));
+        assertFalse(ArsWizardryPaymentPolicy.enabled().suppressClientBookkeeping(false));
+        assertTrue(ArsWizardryPaymentPolicy.enabled().suppressClientBookkeeping(true));
+    }
+
+    @Test
     void nullPolicyCannotEraseTheSafeFallback() {
         ArsWizardryPaymentPolicy.install(ArsWizardryPaymentPolicy.disabled());
         assertThrows(IllegalArgumentException.class,

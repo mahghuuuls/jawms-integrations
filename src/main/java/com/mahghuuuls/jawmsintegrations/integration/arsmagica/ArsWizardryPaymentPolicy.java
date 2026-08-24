@@ -33,4 +33,8 @@ public final class ArsWizardryPaymentPolicy {
     public boolean ownsWizardryPayment() {
         return ownsWizardryPayment;
     }
+
+    public boolean suppressClientBookkeeping(boolean clientSide) {
+        return ownsWizardryPayment && clientSide;
+    }
 }

@@ -8,12 +8,43 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Redirect;
 
+import java.util.Map;
+
 @Mixin(targets = "am2.common.compat.electroblob.EBWizardryCompatHandler", remap = false)
 public abstract class MixinEBWizardryCompatHandler {
     private static final String PRE =
             "onEBWizSpellCastPre(Lelectroblob/wizardry/event/SpellCastEvent$Pre;)V";
     private static final String POST =
             "onEBWizSpellCastPost(Lelectroblob/wizardry/event/SpellCastEvent$Post;)V";
+
+    @Redirect(method = PRE, at = @At(value = "INVOKE",
+            target = "Ljava/util/Map;put(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;"),
+            require = 2, remap = false)
+    private Object jawmsintegrations$suppressClientPendingPut(Map<?, ?> pending,
+                                                              Object key,
+                                                              Object value,
+                                                              SpellCastEvent.Pre event) {
+        if (event.getCaster() != null && ArsWizardryPaymentPolicy.active()
+                .suppressClientBookkeeping(event.getCaster().world.isRemote)) {
+            return null;
+        }
+        @SuppressWarnings("unchecked")
+        Map<Object, Object> writable = (Map<Object, Object>) pending;
+        return writable.put(key, value);
+    }
+
+    @Redirect(method = POST, at = @At(value = "INVOKE",
+            target = "Ljava/util/Map;remove(Ljava/lang/Object;)Ljava/lang/Object;"),
+            require = 1, remap = false)
+    private Object jawmsintegrations$suppressClientPendingRemove(Map<?, ?> pending,
+                                                                 Object key,
+                                                                 SpellCastEvent.Post event) {
+        if (event.getCaster() != null && ArsWizardryPaymentPolicy.active()
+                .suppressClientBookkeeping(event.getCaster().world.isRemote)) {
+            return null;
+        }
+        return pending.remove(key);
+    }
 
     @Redirect(method = PRE, at = @At(value = "INVOKE",
             target = "Lam2/api/extensions/IEntityExtension;hasEnoughMana(F)Z"),
