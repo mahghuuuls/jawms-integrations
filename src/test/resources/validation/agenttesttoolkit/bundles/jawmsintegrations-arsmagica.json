@@ -9,7 +9,7 @@
       "gamerule doMobSpawning false",
       "gamerule doDaylightCycle false",
       "time set night",
-      "am magiclevel 10",
+      "am magiclevel 99",
       "am respec",
       "am setmana 0",
       "replaceitem entity @s slot.hotbar.0 ebwizardry:magic_wand 1 0 {spells:[I;1,0,0,0,0],selectedSpell:0,display:{Name:\"IMP-013 Magic Missile Wand\"}}",
@@ -174,7 +174,7 @@
     "commands": [
       "devtool session start cycle1_ars_disabled",
       "gamemode survival",
-      "am magiclevel 10",
+      "am magiclevel 99",
       "am setmana 100000",
       "replaceitem entity @s slot.hotbar.0 ebwizardry:magic_wand 1 0 {spells:[I;1,0,0,0,0],selectedSpell:0,display:{Name:\"IMP-013 Disabled Magic Missile Wand\"}}",
       "replaceitem entity @s slot.hotbar.3 minecraft:nether_star 1 0 {display:{Name:\"IMP-013 Set JAWMS to 60\"}}",

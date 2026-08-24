@@ -54,6 +54,7 @@ class ArsValidationBundleTest {
                     .get("stopOnFailure").getAsBoolean());
             List<String> setup = commands(root.getAsJsonObject("cycle1_ars_setup"));
             assertTrue(setup.contains("am respec"));
+            assertTrue(setup.contains("am magiclevel 99"));
             assertTrue(setup.contains("am setmana 0"));
             assertTrue(setup.stream().anyMatch(command -> command.contains("ebwizardry:magic_wand")
                     && command.contains("spells:[I;1,0,0,0,0]")));
@@ -72,8 +73,9 @@ class ArsValidationBundleTest {
             assertTrue(setup.stream().anyMatch(command -> command.contains("minecraft:redstone_torch")));
             assertTrue(setup.contains("devtool inspect inventory"));
             assertTrue(setup.contains("devtool log entity_damage on radius 24"));
-            assertTrue(commands(root.getAsJsonObject("cycle1_ars_disabled_setup"))
-                    .contains("devtool session start cycle1_ars_disabled"));
+            List<String> disabledSetup = commands(root.getAsJsonObject("cycle1_ars_disabled_setup"));
+            assertTrue(disabledSetup.contains("devtool session start cycle1_ars_disabled"));
+            assertTrue(disabledSetup.contains("am magiclevel 99"));
             assertTrue(commands(root.getAsJsonObject("cycle1_ars_inverse_ready"))
                     .contains("am setmana 100000"));
             assertTrue(commands(root.getAsJsonObject("cycle1_ars_silence_ready"))
@@ -98,6 +100,13 @@ class ArsValidationBundleTest {
         assertTrue(config.contains("D:EBWiz_Magic_XP_Multiplier=1.0"));
         assertTrue(config.contains("D:EBWiz_Affinity_Gain_Amount=1.0"));
         assertTrue(config.contains("D:EBWiz_Discipline_Potency_Bonus_Per_Level=100.0"));
+        int controlledRegenTicks = 2_100_000_000;
+        assertTrue(config.contains("I:base_ticks_for_full_regen=" + controlledRegenTicks));
+        double capLevelMaximumMana = Math.pow(99.0D, 1.5D) * (85.0D * 99.0D / 100.0D) + 100.0D;
+        double fastestRegenTicks = controlledRegenTicks * (0.75D - 0.25D);
+        double manaRegeneratedInTenMinutes = capLevelMaximumMana / fastestRegenTicks * 20.0D * 600.0D;
+        assertTrue(manaRegeneratedInTenMinutes < 1.0D,
+                "Controlled Ars regeneration must stay below one mana over a ten-minute owner delay");
 
         String controls = new String(Files.readAllBytes(Paths.get(
                 "src/test/resources/validation/crafttweaker-campaign/"
