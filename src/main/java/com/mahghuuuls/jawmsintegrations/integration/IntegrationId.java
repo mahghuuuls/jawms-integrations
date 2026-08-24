@@ -17,7 +17,13 @@ public enum IntegrationId {
             "1.12-4.1.20.715",
             "4.1.20"
     ),
-    ARS_MAGICA("Ars Magica 2: Rekindled", "arsmagica2", "1.6.2", "1.6.2");
+    ARS_MAGICA(
+            "Ars Magica 2: Rekindled",
+            "arsmagica2",
+            "1.6.2",
+            "1.6.2",
+            "GRADLE:VERSIONGRADLE:BUILD"
+    );
 
     private final String displayName;
     private final String modId;

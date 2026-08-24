@@ -111,6 +111,26 @@ class IntegrationCoordinatorTest {
     }
 
     @Test
+    void releasedArsForgePlaceholderUsesExactSupportedArchiveEvidence() {
+        Map<String, String> versions = supportedVersions();
+        versions.put(IntegrationId.ARS_MAGICA.getModId(), "GRADLE:VERSIONGRADLE:BUILD");
+
+        IntegrationCoordinator confirmed = initialize(
+                IntegrationConfigSnapshot.defaults(), versions, allSupported());
+        IntegrationStatusView ars = confirmed.getStatus(IntegrationId.ARS_MAGICA);
+        assertEquals(IntegrationState.READY, ars.getState());
+        assertEquals("1.6.2", ars.getDetectedVersion());
+
+        Map<IntegrationId, OptionalIntegrationEvidenceRegistry.Evidence> rejected = allSupported();
+        rejected.put(IntegrationId.ARS_MAGICA,
+                OptionalIntegrationEvidenceRegistry.Evidence.unsupported("1.6.1"));
+        IntegrationCoordinator unsupported = initialize(
+                IntegrationConfigSnapshot.defaults(), versions, rejected);
+        assertEquals(IntegrationState.UNSUPPORTED,
+                unsupported.getStatus(IntegrationId.ARS_MAGICA).getState());
+    }
+
+    @Test
     void activationFailureReclassifiesOnlyTheAffectedIntegration() {
         IntegrationCoordinator coordinator = initialize(
                 IntegrationConfigSnapshot.defaults(), supportedVersions(), allSupported())

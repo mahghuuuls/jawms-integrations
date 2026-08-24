@@ -15,6 +15,9 @@ import com.mahghuuuls.jawmsintegrations.integration.qualitytools.QualityToolsInt
 import com.mahghuuuls.jawmsintegrations.integration.ancientspellcraft.AncientSpellcraftIntegration;
 import com.mahghuuuls.jawmsintegrations.integration.ancientspellcraft.AncientReplacementPolicy;
 import com.mahghuuuls.jawmsintegrations.integration.ancientspellcraft.EverfullManaService;
+import com.mahghuuuls.jawmsintegrations.integration.arsmagica.ArsWizardryPaymentPolicy;
+import com.mahghuuuls.jawmsintegrations.integration.arsmagica.ArsPlayerStateInspectionService;
+import com.mahghuuuls.jawmsintegrations.integration.arsmagica.ArsStateInspectionBootstrap;
 import com.mahghuuuls.jawmsintegrations.integration.ancientspellcraft.DagorimFlaskService;
 import com.mahghuuuls.jawmsintegrations.integration.crafttweaker.CraftTweakerManaService;
 import com.mahghuuuls.jawmsintegrations.integration.crafttweaker.CraftTweakerRegistrationBootstrap;
@@ -113,6 +116,8 @@ public final class JawmsIntegrationsMod {
 
     @Mod.EventHandler
     public void init(FMLInitializationEvent event) {
+        ArsWizardryPaymentPolicy.install(ArsWizardryPaymentPolicy.disabled());
+        ArsPlayerStateInspectionService.installUnavailable();
         IntegrationState ancientState = coordinator.getStatus(
                 IntegrationId.ANCIENT_SPELLCRAFT).getState();
         if (ancientState == IntegrationState.READY) {
@@ -134,6 +139,23 @@ public final class JawmsIntegrationsMod {
         ancientState = coordinator.getStatus(IntegrationId.ANCIENT_SPELLCRAFT).getState();
         if (ancientState == IntegrationState.ACTIVE || ancientState == IntegrationState.DISABLED) {
             PROXY.activateAncientSpellcraftClient();
+        }
+        IntegrationState arsState = coordinator.getStatus(IntegrationId.ARS_MAGICA).getState();
+        if (arsState == IntegrationState.READY) {
+            try {
+                ArsWizardryPaymentPolicy.install(ArsWizardryPaymentPolicy.enabled());
+                activateArsStateInspection();
+                coordinator = coordinator.withActive(IntegrationId.ARS_MAGICA,
+                        "JAWMS owns Wizardry payment; Ars progression remains active");
+            } catch (RuntimeException exception) {
+                ArsWizardryPaymentPolicy.install(ArsWizardryPaymentPolicy.disabled());
+                ArsPlayerStateInspectionService.installUnavailable();
+                coordinator = coordinator.withFailure(IntegrationId.ARS_MAGICA,
+                        "Activation failed: " + exception.getMessage());
+                LOGGER.error("Ars Magica integration activation failed", exception);
+                LOGGER.warn("Ars Magica integration FAILED: {}",
+                        coordinator.getStatus(IntegrationId.ARS_MAGICA).getDetail());
+            }
         }
         FMLCommonHandler.instance().bus().register(new IntegrationPresentationSync(
                 coordinator.getStatus(IntegrationId.QUALITY_TOOLS).getState()
@@ -180,6 +202,20 @@ public final class JawmsIntegrationsMod {
             coordinator = coordinator.withFailure(IntegrationId.CRAFTTWEAKER,
                     "Registration failed: " + exception.getMessage());
             LOGGER.error("CraftTweaker integration registration failed", exception);
+        }
+    }
+
+    private void activateArsStateInspection() {
+        ClassLoader loader = Thread.currentThread().getContextClassLoader();
+        if (loader == null) {
+            loader = JawmsIntegrationsMod.class.getClassLoader();
+        }
+        try {
+            ArsStateInspectionBootstrap.activate(loader);
+        } catch (RuntimeException | LinkageError exception) {
+            ArsPlayerStateInspectionService.installUnavailable();
+            LOGGER.warn("Ars state inspection is unavailable; payment integration remains active: {}",
+                    exception.getMessage());
         }
     }
 }

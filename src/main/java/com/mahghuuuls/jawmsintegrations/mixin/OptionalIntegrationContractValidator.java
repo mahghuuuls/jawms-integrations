@@ -4,6 +4,7 @@ import com.mahghuuuls.jawmsintegrations.integration.IntegrationId;
 import com.mahghuuuls.jawmsintegrations.integration.OptionalIntegrationEvidenceRegistry;
 import com.mahghuuuls.jawmsintegrations.mixin.ancientspellcraft.AncientSpellcraftMixinContract;
 import com.mahghuuuls.jawmsintegrations.mixin.qualitytools.QualityToolsMixinContract;
+import com.mahghuuuls.jawmsintegrations.mixin.arsmagica.ArsMagicaMixinContract;
 
 import java.io.IOException;
 
@@ -19,8 +20,8 @@ final class OptionalIntegrationContractValidator {
             switch (integration) {
                 case QUALITY_TOOLS: QualityToolsMixinContract.validate(loader); break;
                 case ANCIENT_SPELLCRAFT: AncientSpellcraftMixinContract.validate(loader); break;
-                case CRAFTTWEAKER:
-                case ARS_MAGICA: break;
+                case ARS_MAGICA: ArsMagicaMixinContract.validate(loader); break;
+                case CRAFTTWEAKER: break;
                 default: throw new IllegalStateException("Unhandled integration " + integration);
             }
             return evidence;

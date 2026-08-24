@@ -83,11 +83,14 @@ public final class IntegrationCoordinator {
                     "Transformation-time version " + gate.getDetectedVersion()
                             + " differs from Forge version " + detectedVersion);
         }
+        String reportedVersion = integration.meetsMinimumMetadataVersion(detectedVersion)
+                ? detectedVersion
+                : gate.getDetectedVersion();
         if (!enabled) {
-            return new IntegrationStatusView(integration, IntegrationState.DISABLED, detectedVersion,
+            return new IntegrationStatusView(integration, IntegrationState.DISABLED, reportedVersion,
                     "Disabled by configuration");
         }
-        return new IntegrationStatusView(integration, IntegrationState.READY, detectedVersion,
+        return new IntegrationStatusView(integration, IntegrationState.READY, reportedVersion,
                 "A release meeting the minimum version is installed and the integration is ready to activate");
     }
 

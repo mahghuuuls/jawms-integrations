@@ -40,6 +40,7 @@ class IntegrationDiagnosticsServiceTest {
         assertTrue(startup.contains("Ars Magica 2: Rekindled=ABSENT"));
         assertTrue(startup.contains("built-in qualities=enabled(12/12)"));
         assertTrue(startup.contains("Ancient replacements=inactive(state=ABSENT)"));
+        assertTrue(startup.contains("Ars Wizardry payment=Ars-native(state=ABSENT)"));
         assertEquals(6, overall.size());
         assertTrue(overall.get(1).contains("Quality Tools: ABSENT"));
         assertTrue(overall.get(2).contains("Ancient Spellcraft: ABSENT"));
@@ -50,6 +51,7 @@ class IntegrationDiagnosticsServiceTest {
         assertTrue(overall.get(5).contains("Ancient replacements=inactive(state=ABSENT)"));
         assertTrue(overall.get(5).contains("CraftTweaker=enabled"));
         assertTrue(overall.get(5).contains("Ars Magica=enabled"));
+        assertTrue(overall.get(5).contains("Ars Wizardry payment=Ars-native(state=ABSENT)"));
         assertEquals("Quality Tools reload summary: built-in qualities=enabled(12/12)",
                 diagnostics.qualityToolsReloadSummary());
     }
@@ -79,6 +81,17 @@ class IntegrationDiagnosticsServiceTest {
         assertTrue(startup.contains("CraftTweaker=READY(1.12-4.1.20.715)"));
         assertTrue(overall.get(1).contains("minimum=1.0.7"));
         assertTrue(overall.get(3).contains("CraftTweaker: READY"));
+        assertTrue(startup.contains("Ars Wizardry payment=Ars-native(state=READY)"));
+
+        IntegrationCoordinator activeArs = coordinator.withActive(
+                IntegrationId.ARS_MAGICA,
+                "JAWMS owns Wizardry payment; Ars progression remains active");
+        IntegrationDiagnosticsService activeDiagnostics = new IntegrationDiagnosticsService(
+                JawmsCompatibility.verify("1.1.0", CompatibleApi.class), config, activeArs);
+        assertTrue(activeDiagnostics.startupSummary()
+                .contains("Ars Wizardry payment=JAWMS-owned"));
+        assertTrue(activeDiagnostics.overallStatus().get(5)
+                .contains("Ars Wizardry payment=JAWMS-owned"));
     }
 
     @Test

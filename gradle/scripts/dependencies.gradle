@@ -375,16 +375,38 @@ tasks.register('prepareCraftTweakerCampaignScript', Copy) {
     into layout.projectDirectory.dir('run/scripts/jawmsintegrations-validation')
 }
 
+tasks.register('prepareArsMagicaDevelopmentValidationConfig', Copy) {
+    group = 'jawms integrations verification'
+    description = 'Installs the controlled Ars owner-campaign configuration into run/config.'
+    onlyIf {
+        propertyBool('enable_agent_test_toolkit') && arsMagicaRuntimeEnabled
+    }
+    from layout.projectDirectory.dir('src/test/resources/validation/arsmagica')
+    into layout.projectDirectory.dir('run/config')
+}
+
+tasks.register('prepareArsMagicaPackagedValidationConfig', Copy) {
+    group = 'jawms integrations verification'
+    description = 'Installs the controlled Ars owner-campaign configuration into the packaged game directory.'
+    onlyIf {
+        propertyBool('enable_agent_test_toolkit') && arsMagicaRuntimeEnabled
+    }
+    from layout.projectDirectory.dir('src/test/resources/validation/arsmagica')
+    into layout.projectDirectory.dir('run/obfuscated/config')
+}
+
 ['runClient', 'runServer'].each { taskName ->
     tasks.named(taskName).configure {
         dependsOn tasks.named('prepareCraftTweakerDevelopmentValidationScript')
         dependsOn tasks.named('prepareCraftTweakerCampaignScript')
+        dependsOn tasks.named('prepareArsMagicaDevelopmentValidationConfig')
     }
 }
 
 ['runObfClient', 'runObfServer'].each { taskName ->
     tasks.named(taskName).configure {
         dependsOn tasks.named('prepareCraftTweakerPackagedValidationScript')
+        dependsOn tasks.named('prepareArsMagicaPackagedValidationConfig')
     }
 }
 

@@ -47,7 +47,7 @@ class CommonClassReferenceTest {
         return !normalized.contains("/integration/qualitytools/")
                 && !normalized.contains("/integration/ancientspellcraft/")
                 && !normalized.contains("/integration/crafttweaker/")
-                && !normalized.contains("/integration/arsmagica/")
+                && !normalized.contains("/integration/arsmagica/optional/")
                 && !normalized.contains("/mixin/qualitytools/")
                 && !normalized.contains("/mixin/ancientspellcraft/")
                 && !normalized.contains("/mixin/arsmagica/");

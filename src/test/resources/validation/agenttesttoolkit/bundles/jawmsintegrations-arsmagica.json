@@ -1,0 +1,220 @@
+{
+  "cycle1_ars_setup": {
+    "description": "Prepare deterministic Wizardry wand, scroll, Ars spell, resource controls, and zero-discipline baseline",
+    "stopOnFailure": true,
+    "commands": [
+      "devtool session start cycle1_ars",
+      "gamemode survival",
+      "gamerule keepInventory true",
+      "gamerule doMobSpawning false",
+      "gamerule doDaylightCycle false",
+      "time set night",
+      "am magiclevel 10",
+      "am respec",
+      "am setmana 0",
+      "replaceitem entity @s slot.hotbar.0 ebwizardry:magic_wand 1 0 {spells:[I;1,0,0,0,0],selectedSpell:0,display:{Name:\"IMP-013 Magic Missile Wand\"}}",
+      "replaceitem entity @s slot.hotbar.1 arsmagica2:spell 1 0 {ManaCostCached:10.0f,display:{Name:\"Ars Validation Bolt\"},ForgeCaps:{\"arsmagica2:spell_caster\":{UUIDMostSignificantBits:0L,UUIDLeastSignificantBits:13013L,CurrentShapeGroup:0,ShapeGroups:[{ID:0,BaseManaCost:10.0f,StoredData:{},Group:[{ID:0,Parts:[\"arsmagica2:projectile\",\"arsmagica2:magic_damage\"]}]}],SpellCommon:[],AffinityShift:[],StoredData:{}}}}",
+      "replaceitem entity @s slot.hotbar.2 ebwizardry:scroll 8 1 {display:{Name:\"IMP-013 Magic Missile Scroll\"}}",
+      "replaceitem entity @s slot.hotbar.3 minecraft:nether_star 1 0 {display:{Name:\"IMP-013 Set JAWMS to 60\"}}",
+      "replaceitem entity @s slot.hotbar.4 minecraft:redstone_torch 1 0 {display:{Name:\"IMP-013 Set JAWMS to 0\"}}",
+      "replaceitem entity @s slot.hotbar.5 ebwizardry:apprentice_ice_wand 1 0 {spells:[I;20,0,0,0,0],selectedSpell:0,display:{Name:\"IMP-013 Ice Shard Potency Wand\"}}",
+      "replaceitem entity @s slot.hotbar.6 arsmagica2:infinity_orb 1 0 {display:{Name:\"IMP-013 One Blue Discipline Point\"}}",
+      "replaceitem entity @s slot.armor.head minecraft:iron_helmet 1 0 {Quality:{Name:\"IMP-013 No Regeneration\",Color:\"gray\",Slots:[\"head\"],AttributeModifiers:[{AttributeName:\"jawmsintegrations.mana_regen_percent\",Name:\"qualitytools\",Amount:-100.0d,Operation:0,UUIDMost:13013L,UUIDLeast:13013L}]}}",
+      "setblock ~2 ~ ~ arsmagica2:occulus",
+      { "command": "jawmsintegrations status", "delayTicks": 20 },
+      "jawmsintegrations status @s",
+      "devtool inspect player",
+      "devtool inspect inventory",
+      "devtool log item_use on radius 24",
+      "devtool log entity_damage on radius 24",
+      "devtool mark CYCLE1_ARS_LOW_ARS_ZERO_DISCIPLINE_READY"
+    ]
+  },
+  "cycle1_ars_full_jawms_ready": {
+    "description": "Record exact JAWMS 60 and Ars 0 after the owner uses the nether-star control",
+    "stopOnFailure": true,
+    "commands": [
+      "am setmana 0",
+      { "command": "jawmsintegrations status @s", "delayTicks": 20 },
+      "devtool inspect player",
+      "devtool mark CYCLE1_ARS_WAND_LOW_ARS_READY"
+    ]
+  },
+  "cycle1_ars_wand_observe": {
+    "description": "Record authoritative state after one Magic Missile wand cast",
+    "stopOnFailure": true,
+    "commands": [
+      { "command": "jawmsintegrations status @s", "delayTicks": 20 },
+      "devtool inspect player",
+      "devtool mark CYCLE1_ARS_WAND_CAST_OBSERVED"
+    ]
+  },
+  "cycle1_ars_scroll_ready": {
+    "description": "Record exact JAWMS 60 and Ars 0 before the distinct Wizardry scroll branch",
+    "stopOnFailure": true,
+    "commands": [
+      "am setmana 0",
+      { "command": "jawmsintegrations status @s", "delayTicks": 20 },
+      "devtool inspect inventory",
+      "devtool mark CYCLE1_ARS_SCROLL_LOW_ARS_READY"
+    ]
+  },
+  "cycle1_ars_scroll_observe": {
+    "description": "Record state and scroll count after one Magic Missile scroll cast",
+    "stopOnFailure": true,
+    "commands": [
+      { "command": "jawmsintegrations status @s", "delayTicks": 20 },
+      "devtool inspect inventory",
+      "devtool mark CYCLE1_ARS_SCROLL_CAST_OBSERVED"
+    ]
+  },
+  "cycle1_ars_inverse_ready": {
+    "description": "Record JAWMS 0 and full Ars after the owner uses the redstone-torch control",
+    "stopOnFailure": true,
+    "commands": [
+      "am setmana 100000",
+      { "command": "jawmsintegrations status @s", "delayTicks": 20 },
+      "devtool inspect player",
+      "devtool mark CYCLE1_ARS_LOW_JAWMS_READY"
+    ]
+  },
+  "cycle1_ars_inverse_observe": {
+    "description": "Record the rejected Wizardry cast with JAWMS empty and Ars full",
+    "stopOnFailure": true,
+    "commands": [
+      { "command": "jawmsintegrations status @s", "delayTicks": 20 },
+      "devtool inspect player",
+      "devtool mark CYCLE1_ARS_LOW_JAWMS_CAST_OBSERVED"
+    ]
+  },
+  "cycle1_ars_silence_ready": {
+    "description": "Apply native Ars silence before a funded Wizardry cast",
+    "stopOnFailure": true,
+    "commands": [
+      "am setmana 100000",
+      "effect @s arsmagica2:silence 30 0 true",
+      { "command": "jawmsintegrations status @s", "delayTicks": 20 },
+      "devtool inspect player",
+      "devtool mark CYCLE1_ARS_SILENCE_READY"
+    ]
+  },
+  "cycle1_ars_silence_cleanup": {
+    "description": "Remove Ars silence after the owner confirms rejection",
+    "stopOnFailure": false,
+    "commands": [
+      "effect @s clear",
+      "jawmsintegrations status @s",
+      "devtool mark CYCLE1_ARS_SILENCE_CLEARED"
+    ]
+  },
+  "cycle1_ars_native_ready": {
+    "description": "Record full Ars resources and empty JAWMS before one Ars-native spell",
+    "stopOnFailure": true,
+    "commands": [
+      "am setmana 100000",
+      { "command": "jawmsintegrations status @s", "delayTicks": 20 },
+      "devtool mark CYCLE1_ARS_NATIVE_READY"
+    ]
+  },
+  "cycle1_ars_native_observe": {
+    "description": "Record Ars-native mana and burnout changes without JAWMS mutation",
+    "stopOnFailure": true,
+    "commands": [
+      { "command": "jawmsintegrations status @s", "delayTicks": 20 },
+      "devtool inspect player",
+      "devtool mark CYCLE1_ARS_NATIVE_CAST_OBSERVED"
+    ]
+  },
+  "cycle1_ars_potency_control_ready": {
+    "description": "Reset disciplines and prepare the zero-discipline Ice Shard damage control",
+    "stopOnFailure": true,
+    "commands": [
+      "am respec",
+      "kill @e[name=ars_potency_control]",
+      "kill @e[name=ars_potency_disciplined]",
+      "summon minecraft:zombie ~ ~ ~8 {CustomName:\"ars_potency_control\",NoAI:1,PersistenceRequired:1,Attributes:[{Name:\"generic.maxHealth\",Base:100.0}],Health:100.0f}",
+      "jawmsintegrations status @s",
+      "devtool inspect entity @e[name=ars_potency_control]",
+      "devtool mark CYCLE1_ARS_POTENCY_CONTROL_READY"
+    ]
+  },
+  "cycle1_ars_potency_control_observe": {
+    "description": "Record the zero-discipline target after one Ice Shard wand cast",
+    "stopOnFailure": true,
+    "commands": [
+      "devtool inspect entity @e[name=ars_potency_control]",
+      "jawmsintegrations status @s",
+      "devtool mark CYCLE1_ARS_POTENCY_CONTROL_OBSERVED"
+    ]
+  },
+  "cycle1_ars_potency_disciplined_ready": {
+    "description": "Prepare an identical target after the owner allocates exactly one Ice discipline level",
+    "stopOnFailure": true,
+    "commands": [
+      "kill @e[name=ars_potency_control]",
+      "kill @e[name=ars_potency_disciplined]",
+      "summon minecraft:zombie ~ ~ ~8 {CustomName:\"ars_potency_disciplined\",NoAI:1,PersistenceRequired:1,Attributes:[{Name:\"generic.maxHealth\",Base:100.0}],Health:100.0f}",
+      "jawmsintegrations status @s",
+      "devtool inspect entity @e[name=ars_potency_disciplined]",
+      "devtool mark CYCLE1_ARS_POTENCY_DISCIPLINED_READY"
+    ]
+  },
+  "cycle1_ars_potency_observe": {
+    "description": "Record the one-Ice-discipline target after one Ice Shard wand cast",
+    "stopOnFailure": true,
+    "commands": [
+      "devtool inspect entity @e[name=ars_potency_disciplined]",
+      "jawmsintegrations status @s",
+      "devtool mark CYCLE1_ARS_DISCIPLINE_POTENCY_OBSERVED"
+    ]
+  },
+  "cycle1_ars_disabled_setup": {
+    "description": "Start the disabled-integration session with deterministic Wizardry fixtures and full Ars resources",
+    "stopOnFailure": true,
+    "commands": [
+      "devtool session start cycle1_ars_disabled",
+      "gamemode survival",
+      "am magiclevel 10",
+      "am setmana 100000",
+      "replaceitem entity @s slot.hotbar.0 ebwizardry:magic_wand 1 0 {spells:[I;1,0,0,0,0],selectedSpell:0,display:{Name:\"IMP-013 Disabled Magic Missile Wand\"}}",
+      "replaceitem entity @s slot.hotbar.3 minecraft:nether_star 1 0 {display:{Name:\"IMP-013 Set JAWMS to 60\"}}",
+      "replaceitem entity @s slot.hotbar.4 minecraft:redstone_torch 1 0 {display:{Name:\"IMP-013 Set JAWMS to 0\"}}",
+      "replaceitem entity @s slot.armor.head minecraft:iron_helmet 1 0 {Quality:{Name:\"IMP-013 No Regeneration\",Color:\"gray\",Slots:[\"head\"],AttributeModifiers:[{AttributeName:\"jawmsintegrations.mana_regen_percent\",Name:\"qualitytools\",Amount:-100.0d,Operation:0,UUIDMost:13013L,UUIDLeast:13013L}]}}",
+      "jawmsintegrations status",
+      "jawmsintegrations status @s",
+      "devtool inspect player",
+      "devtool mark CYCLE1_ARS_DISABLED_READY"
+    ]
+  },
+  "cycle1_ars_disabled_observe": {
+    "description": "Record restored native Ars Wizardry payment after one disabled-state cast",
+    "stopOnFailure": true,
+    "commands": [
+      { "command": "jawmsintegrations status @s", "delayTicks": 20 },
+      "devtool inspect player",
+      "devtool mark CYCLE1_ARS_DISABLED_CAST_OBSERVED"
+    ]
+  },
+  "cycle1_ars_cleanup": {
+    "description": "Remove controlled fixtures and close the Ars payment campaign",
+    "stopOnFailure": false,
+    "commands": [
+      "kill @e[name=ars_potency_control]",
+      "kill @e[name=ars_potency_disciplined]",
+      "replaceitem entity @s slot.hotbar.0 minecraft:air",
+      "replaceitem entity @s slot.hotbar.1 minecraft:air",
+      "replaceitem entity @s slot.hotbar.2 minecraft:air",
+      "replaceitem entity @s slot.hotbar.3 minecraft:air",
+      "replaceitem entity @s slot.hotbar.4 minecraft:air",
+      "replaceitem entity @s slot.hotbar.5 minecraft:air",
+      "replaceitem entity @s slot.hotbar.6 minecraft:air",
+      "replaceitem entity @s slot.armor.head minecraft:air",
+      "effect @s clear",
+      "jawmsintegrations status @s",
+      "devtool inspect player",
+      "devtool mark CYCLE1_ARS_CLEANUP_COMPLETE",
+      "devtool log all off",
+      "devtool session stop"
+    ]
+  }
+}
