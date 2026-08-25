@@ -1,0 +1,53 @@
+{
+  "cycle1_final_smoke_setup": {
+    "description": "Prepare the all-integrations release candidate for the representative Nether continuity check",
+    "stopOnFailure": true,
+    "commands": [
+      "devtool session start cycle1_final_smoke",
+      "gamemode survival",
+      "gamerule keepInventory true",
+      "gamerule doMobSpawning false",
+      "replaceitem entity @s slot.armor.head ebwizardry:wizard_hat 1 0 {Quality:{Name:\"Final Manawoven Fixture\",Color:\"aqua\",Slots:[\"head\"],AttributeModifiers:[{AttributeName:\"jawmsintegrations.max_mana_percent\",Name:\"qualitytools\",Amount:5.0d,Operation:0,UUIDMost:514L,UUIDLeast:514L}]}}",
+      "replaceitem entity @s slot.hotbar.0 minecraft:blaze_rod 1 0 {display:{Name:\"JAWMS Final Validation\"}}",
+      { "command": "jawmsintegrations status @s", "delayTicks": 20 },
+      "devtool environment",
+      "devtool inspect player",
+      "devtool inspect inventory",
+      "devtool mark CYCLE1_FINAL_OVERWORLD_READY"
+    ]
+  },
+  "cycle1_final_smoke_nether_ready": {
+    "description": "Record the equipped item and mana state after entering the Nether and mark the scripted mutation",
+    "stopOnFailure": true,
+    "commands": [
+      "devtool environment",
+      "jawmsintegrations status @s",
+      "devtool inspect player",
+      "devtool inspect inventory",
+      "devtool mark CYCLE1_FINAL_NETHER_MUTATION_READY"
+    ]
+  },
+  "cycle1_final_smoke_result": {
+    "description": "Record the post-mutation Nether state",
+    "stopOnFailure": true,
+    "commands": [
+      "jawmsintegrations status @s",
+      "devtool inspect player",
+      "devtool inspect inventory",
+      "devtool environment",
+      "devtool mark CYCLE1_FINAL_NETHER_RESULT_OBSERVED"
+    ]
+  },
+  "cycle1_final_smoke_cleanup": {
+    "description": "Remove the final-smoke fixtures and close the diagnostic session",
+    "stopOnFailure": false,
+    "commands": [
+      "replaceitem entity @s slot.armor.head minecraft:air",
+      "replaceitem entity @s slot.hotbar.0 minecraft:air",
+      "devtool inspect inventory",
+      "devtool mark CYCLE1_FINAL_CLEANUP_COMPLETE",
+      "devtool log all off",
+      "devtool session stop"
+    ]
+  }
+}

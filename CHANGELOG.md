@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.1.0
+
+### Added
+
+- Added an optional CraftTweaker API for inspecting JAWMS mana state, setting or restoring mana, exact consumption, bounded draining, and starting the post-cast regeneration lockout.
+
+### Changed
+
+- Updated the required JAWMS baseline to 1.1.0 or newer and adopted JAWMS API 1.6.
+- Increased the default Swift Recovery quality from 5% to 10%. Existing user configuration values remain unchanged.
+- Updated compatibility metadata and diagnostics for the three supported optional integrations: Quality Tools, Ancient Spellcraft, and CraftTweaker.
+
 ## 1.0.0
 
 ### Added

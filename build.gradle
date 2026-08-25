@@ -172,10 +172,16 @@ apply from: 'gradle/scripts/dependencies.gradle'
 }
 
 if (propertyBool('enable_agent_test_toolkit')) {
-    ['runClient', 'runServer', 'runObfClient', 'runObfServer'].each { taskName ->
+    ['runClient', 'runServer'].each { taskName ->
         tasks.named(taskName).configure {
             dependsOn tasks.named('prepareAgentTestToolkitRuntime')
             dependsOn tasks.named('prepareQualityToolsValidationFixtures')
+        }
+    }
+    ['runObfClient', 'runObfServer'].each { taskName ->
+        tasks.named(taskName).configure {
+            dependsOn tasks.named('preparePackagedAgentTestToolkitConfiguration')
+            dependsOn tasks.named('preparePackagedQualityToolsValidationFixtures')
         }
     }
 }

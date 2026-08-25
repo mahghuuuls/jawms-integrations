@@ -220,10 +220,15 @@ tasks.register('cleanManagedPackagedRuntimeArtifacts') {
                     || name.contains('ancientspellcraft') || name.contains('ancient-spellcraft')
                     || name.contains('wizardryutils')
                     || name.contains('crafttweaker')
+                    || name.contains('agenttesttoolkit')
                     // Remove artifacts left by the abandoned prototype; this is not a supported profile.
                     || name.contains('ars-magica') || name.contains('arsmagica')
         }
         delete managedFiles
+        delete layout.projectDirectory.dir('run/obfuscated/config/devtool')
+        delete layout.projectDirectory.file(
+                'run/obfuscated/config/qualitytools/Quailities/jawms-integrations-validation.json')
+        delete layout.projectDirectory.dir('run/obfuscated/scripts/jawmsintegrations-validation')
     }
 }
 
@@ -240,6 +245,7 @@ def packagedRuntimeCounts = {
             },
             wizardryUtils: countMatches { it.contains('wizardryutils') },
             craftTweaker: countMatches { it.contains('crafttweaker') },
+            toolkit: countMatches { it.contains('agenttesttoolkit') },
             rejectedArsPrototype: countMatches {
                 it.contains('ars-magica') || it.contains('arsmagica')
             },
@@ -263,6 +269,7 @@ def packagedRuntimeMismatches = { Map counts, boolean requireComplete ->
     check('Ancient Spellcraft', counts.ancientSpellcraft, ancientSpellcraftRuntimeEnabled)
     check('WizardryUtils', counts.wizardryUtils, ancientSpellcraftRuntimeEnabled)
     check('CraftTweaker', counts.craftTweaker, craftTweakerRuntimeEnabled)
+    check('Agent Test Toolkit', counts.toolkit, propertyBool('enable_agent_test_toolkit'))
     check('Rejected Ars prototype artifact', counts.rejectedArsPrototype, false)
     mismatches
 }
@@ -292,11 +299,21 @@ tasks.named('prepareObfModsFolder', Copy).configure {
     from configurations.optionalPackagedRuntimeMods
 }
 
+tasks.register('preparePackagedAgentTestToolkitRuntime', Copy) {
+    group = 'jawms integrations verification'
+    description = 'Installs the verified development-only Agent Test Toolkit JAR into the packaged game directory.'
+    onlyIf { propertyBool('enable_agent_test_toolkit') }
+    dependsOn tasks.named('verifyNoStalePackagedRuntimeArtifacts')
+    from file(propertyString('agent_test_toolkit_path'))
+    into layout.projectDirectory.dir('run/obfuscated/mods')
+}
+
 tasks.register('verifyPackagedRuntimeProfile') {
     group = 'jawms integrations verification'
     description = 'Verifies the selected optional integrations in the packaged obfuscated mods folder.'
     inputs.property 'integrationRuntimeProfile', integrationRuntimeProfile
     dependsOn tasks.named('prepareObfModsFolder')
+    dependsOn tasks.named('preparePackagedAgentTestToolkitRuntime')
     doLast {
         def mismatches = packagedRuntimeMismatches(packagedRuntimeCounts(), true)
         if (!mismatches.empty) {
@@ -327,6 +344,14 @@ tasks.register('prepareAgentTestToolkitRuntime', Sync) {
     into layout.projectDirectory.dir('run/config/devtool')
 }
 
+tasks.register('preparePackagedAgentTestToolkitConfiguration', Sync) {
+    group = 'jawms integrations verification'
+    description = 'Installs project-owned Agent Test Toolkit configuration and bundles into the packaged game directory.'
+    onlyIf { propertyBool('enable_agent_test_toolkit') }
+    from layout.projectDirectory.dir('src/test/resources/validation/agenttesttoolkit')
+    into layout.projectDirectory.dir('run/obfuscated/config/devtool')
+}
+
 tasks.register('prepareQualityToolsValidationFixtures', Copy) {
     group = 'jawms integrations verification'
     description = 'Installs development-only Quality Tools validation JSON into run/config.'
@@ -335,6 +360,16 @@ tasks.register('prepareQualityToolsValidationFixtures', Copy) {
     }
     from layout.projectDirectory.dir('src/test/resources/validation/qualitytools')
     into layout.projectDirectory.dir('run/config/qualitytools')
+}
+
+tasks.register('preparePackagedQualityToolsValidationFixtures', Copy) {
+    group = 'jawms integrations verification'
+    description = 'Installs development-only Quality Tools validation JSON into the packaged game directory.'
+    onlyIf {
+        propertyBool('enable_agent_test_toolkit') && qualityToolsRuntimeEnabled
+    }
+    from layout.projectDirectory.dir('src/test/resources/validation/qualitytools')
+    into layout.projectDirectory.dir('run/obfuscated/config/qualitytools')
 }
 
 tasks.register('prepareCraftTweakerDevelopmentValidationScript', Copy) {
@@ -363,6 +398,16 @@ tasks.register('prepareCraftTweakerCampaignScript', Copy) {
     into layout.projectDirectory.dir('run/scripts/jawmsintegrations-validation')
 }
 
+tasks.register('prepareCraftTweakerPackagedCampaignScript', Copy) {
+    group = 'jawms integrations verification'
+    description = 'Installs the development-only CraftTweaker owner-campaign trigger into the packaged game directory.'
+    onlyIf {
+        propertyBool('enable_agent_test_toolkit') && craftTweakerRuntimeEnabled
+    }
+    from layout.projectDirectory.dir('src/test/resources/validation/crafttweaker-campaign')
+    into layout.projectDirectory.dir('run/obfuscated/scripts/jawmsintegrations-validation')
+}
+
 ['runClient', 'runServer'].each { taskName ->
     tasks.named(taskName).configure {
         dependsOn tasks.named('prepareCraftTweakerDevelopmentValidationScript')
@@ -373,6 +418,7 @@ tasks.register('prepareCraftTweakerCampaignScript', Copy) {
 ['runObfClient', 'runObfServer'].each { taskName ->
     tasks.named(taskName).configure {
         dependsOn tasks.named('prepareCraftTweakerPackagedValidationScript')
+        dependsOn tasks.named('prepareCraftTweakerPackagedCampaignScript')
     }
 }
 

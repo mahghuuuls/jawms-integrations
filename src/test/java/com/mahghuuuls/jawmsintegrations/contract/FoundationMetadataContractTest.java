@@ -54,6 +54,7 @@ final class FoundationMetadataContractTest {
                 .getResourceAsStream("mcmod.info")) {
             assertTrue(metadata != null, "Processed mcmod.info must be present");
             String contents = new String(readAll(metadata), StandardCharsets.UTF_8);
+            assertTrue(contents.contains("\"version\": \"1.1.0\""));
             assertTrue(contents.contains("\"requiredMods\": [\"jawms@[1.1.0,)\"]"));
             assertTrue(contents.contains("Quality Tools"));
             assertTrue(contents.contains("Ancient Spellcraft"));
