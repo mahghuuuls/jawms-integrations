@@ -139,5 +139,46 @@
       "devtool log all off",
       "devtool session stop"
     ]
+  },
+  "cycle2_ancient_bar_setup": {
+    "description": "Prepare the three charged Ancient storage replacements and an ordinary damaged item for the dual-runtime charge-bar card",
+    "stopOnFailure": true,
+    "commands": [
+      "devtool session start cycle2_ancient_bar",
+      "gamemode creative",
+      "gamerule keepInventory true",
+      "gamerule doMobSpawning false",
+      "replaceitem entity @s slot.hotbar.0 ancientspellcraft:ring_mana_lesser 1 100",
+      "replaceitem entity @s slot.hotbar.1 ancientspellcraft:ring_mana_greater 1 200",
+      "replaceitem entity @s slot.hotbar.2 ancientspellcraft:charm_majestic_mana 1 300",
+      "replaceitem entity @s slot.hotbar.3 minecraft:diamond_pickaxe 1 100",
+      { "command": "jawmsintegrations status @s", "delayTicks": 20 },
+      "devtool environment",
+      "devtool inspect inventory",
+      "devtool mark CYCLE2_ANCIENT_BAR_READY"
+    ]
+  },
+  "cycle2_ancient_bar_observe": {
+    "description": "Record authoritative state after the owner observes the charged-item bars",
+    "stopOnFailure": true,
+    "commands": [
+      "jawmsintegrations status @s",
+      "devtool inspect inventory",
+      "devtool mark CYCLE2_ANCIENT_BAR_OBSERVED"
+    ]
+  },
+  "cycle2_ancient_bar_cleanup": {
+    "description": "Clear cycle-two charge-bar fixtures and close the diagnostic session",
+    "stopOnFailure": false,
+    "commands": [
+      "replaceitem entity @s slot.hotbar.0 minecraft:air",
+      "replaceitem entity @s slot.hotbar.1 minecraft:air",
+      "replaceitem entity @s slot.hotbar.2 minecraft:air",
+      "replaceitem entity @s slot.hotbar.3 minecraft:air",
+      "devtool inspect inventory",
+      "devtool mark CYCLE2_ANCIENT_BAR_CLEANUP_COMPLETE",
+      "devtool log all off",
+      "devtool session stop"
+    ]
   }
 }

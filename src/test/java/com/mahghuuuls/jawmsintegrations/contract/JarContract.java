@@ -24,6 +24,14 @@ final class JarContract {
         assertMember(jarPath, internalClassName, methodName, descriptor, true);
     }
 
+    static void assertNoMethod(Path jarPath, String internalClassName,
+                               String methodName, String descriptor) throws IOException {
+        if (hasMember(jarPath, internalClassName, methodName, descriptor, true)) {
+            throw new AssertionError("Unexpected method " + internalClassName + "."
+                    + methodName + descriptor + " in " + jarPath);
+        }
+    }
+
     static void assertField(Path jarPath, String internalClassName,
                             String fieldName, String descriptor) throws IOException {
         assertMember(jarPath, internalClassName, fieldName, descriptor, false);
@@ -161,6 +169,16 @@ final class JarContract {
 
     private static void assertMember(Path jarPath, String internalClassName,
                                      String memberName, String descriptor, boolean method) throws IOException {
+        if (!hasMember(jarPath, internalClassName, memberName, descriptor, method)) {
+            throw new AssertionError("Missing " + (method ? "method " : "field ")
+                    + internalClassName + "." + memberName
+                    + descriptor + " in " + jarPath);
+        }
+    }
+
+    private static boolean hasMember(Path jarPath, String internalClassName,
+                                     String memberName, String descriptor, boolean method)
+            throws IOException {
         String entryName = internalClassName + ".class";
         AtomicBoolean found = new AtomicBoolean(false);
 
@@ -193,10 +211,6 @@ final class JarContract {
             }
         }
 
-        if (!found.get()) {
-            throw new AssertionError("Missing " + (method ? "method " : "field ")
-                    + internalClassName + "." + memberName
-                    + descriptor + " in " + jarPath);
-        }
+        return found.get();
     }
 }

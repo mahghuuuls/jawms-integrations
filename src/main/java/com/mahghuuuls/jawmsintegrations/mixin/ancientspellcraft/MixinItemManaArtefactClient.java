@@ -1,6 +1,8 @@
 package com.mahghuuuls.jawmsintegrations.mixin.ancientspellcraft;
 
 import com.mahghuuuls.jawmsintegrations.client.ClientIntegrationPresentationCache;
+import com.mahghuuuls.jawmsintegrations.integration.ancientspellcraft.AncientReplacement;
+import com.mahghuuuls.jawmsintegrations.integration.ancientspellcraft.AncientReplacementPolicy;
 import net.minecraft.client.util.ITooltipFlag;
 import net.minecraft.item.ItemStack;
 import net.minecraft.world.World;
@@ -14,6 +16,21 @@ import java.util.List;
 /** Removes obsolete charge/description lines only after an authoritative snapshot arrives. */
 @Mixin(targets = "com.windanesz.ancientspellcraft.item.ItemManaArtefact", remap = false)
 public abstract class MixinItemManaArtefactClient {
+
+    /**
+     * Overrides the inherited Forge item decision at the item that owns the legacy charge.
+     * The pinned target contract rejects Ancient releases that declare a conflicting method.
+     */
+    public boolean showDurabilityBar(ItemStack stack) {
+        AncientReplacement replacement = AncientReplacement.forRegistryName(
+                stack.getItem().getRegistryName());
+        if (AncientReplacementPolicy.isStorage(replacement)
+                && ClientIntegrationPresentationCache.isAncientReplacementActive(
+                        stack.getItem().getRegistryName())) {
+            return false;
+        }
+        return stack.isItemDamaged();
+    }
 
     @Inject(method = "addInformation", at = @At("HEAD"), cancellable = true,
             require = 1, remap = true)

@@ -33,6 +33,22 @@ public final class AncientSpellcraftMixinContract {
         BytecodeContract.requireMethod(artefact, new String[]{"func_77624_a", "addInformation"},
                 "(Lnet/minecraft/item/ItemStack;Lnet/minecraft/world/World;Ljava/util/List;"
                         + "Lnet/minecraft/client/util/ITooltipFlag;)V");
+        BytecodeContract.requireNoMethod(artefact,
+                new String[]{"showDurabilityBar"},
+                "(Lnet/minecraft/item/ItemStack;)Z");
+        requireNativeDurabilityInheritance(loader, artefact);
+
+        ClassNode items = BytecodeContract.read(loader,
+                "com/windanesz/ancientspellcraft/registry/ASItems");
+        MethodNode register = BytecodeContract.requireMethod(items, "register",
+                "(Lnet/minecraftforge/event/RegistryEvent$Register;)V");
+        String manaArtefact = "com/windanesz/ancientspellcraft/item/ItemManaArtefact";
+        BytecodeContract.requireConstructionAfterString(register,
+                "ring_mana_lesser", manaArtefact);
+        BytecodeContract.requireConstructionAfterString(register,
+                "ring_mana_greater", manaArtefact);
+        BytecodeContract.requireConstructionAfterString(register,
+                "charm_majestic_mana", manaArtefact);
 
         ClassNode everfull = BytecodeContract.read(loader,
                 "com/windanesz/ancientspellcraft/item/ItemEverfullManaFlask");
@@ -50,5 +66,21 @@ public final class AncientSpellcraftMixinContract {
                 "com/windanesz/ancientspellcraft/item/ItemRingManaTransfer");
         BytecodeContract.requireMethod(ring, "onWornTick",
                 "(Lnet/minecraft/item/ItemStack;Lnet/minecraft/entity/EntityLivingBase;)V");
+    }
+
+    static void requireNativeDurabilityInheritance(ClassLoader loader, ClassNode target)
+            throws IOException, BytecodeContract.Violation {
+        String parentName = target.superName;
+        while (parentName != null && !"net/minecraft/item/Item".equals(parentName)) {
+            ClassNode parent = BytecodeContract.read(loader, parentName);
+            BytecodeContract.requireNoMethod(parent,
+                    new String[]{"showDurabilityBar"},
+                    "(Lnet/minecraft/item/ItemStack;)Z");
+            parentName = parent.superName;
+        }
+        if (!"net/minecraft/item/Item".equals(parentName)) {
+            throw new BytecodeContract.Violation(
+                    "ItemManaArtefact hierarchy does not reach net.minecraft.item.Item");
+        }
     }
 }

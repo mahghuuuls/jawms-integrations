@@ -13,8 +13,7 @@
   "client": [
     "MixinItemArtefactClient",
     "MixinItemManaArtefactClient",
-    "MixinItemEverfullManaFlaskClient",
-    "MixinRenderItem"
+    "MixinItemEverfullManaFlaskClient"
   ],
   "server": []
 }

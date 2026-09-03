@@ -2,11 +2,14 @@ package com.mahghuuuls.jawmsintegrations.mixin;
 
 import com.mahghuuuls.jawmsintegrations.integration.EarlyModMetadataScanner;
 import org.objectweb.asm.ClassReader;
+import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldInsnNode;
+import org.objectweb.asm.tree.LdcInsnNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
+import org.objectweb.asm.tree.TypeInsnNode;
 
 import java.io.IOException;
 
@@ -36,6 +39,54 @@ public final class BytecodeContract {
         }
         throw new Violation("missing method " + owner.name.replace('/', '.')
                 + "." + join(names) + descriptor);
+    }
+
+    public static void requireNoMethod(ClassNode owner, String[] names, String descriptor)
+            throws Violation {
+        for (MethodNode method : owner.methods) {
+            if (matches(method.name, names) && descriptor.equals(method.desc)) {
+                throw new Violation("unexpected method " + owner.name.replace('/', '.')
+                        + "." + method.name + descriptor);
+            }
+        }
+    }
+
+    public static void requireConstructionAfterString(MethodNode method,
+                                                      String constant,
+                                                      String constructedOwner)
+            throws Violation {
+        int constants = 0;
+        int matches = 0;
+        for (AbstractInsnNode instruction = method.instructions.getFirst();
+             instruction != null; instruction = instruction.getNext()) {
+            if (!(instruction instanceof LdcInsnNode)
+                    || !constant.equals(((LdcInsnNode) instruction).cst)) {
+                continue;
+            }
+            constants++;
+            int remaining = 16;
+            for (AbstractInsnNode candidate = instruction.getNext();
+                 candidate != null && remaining-- > 0;
+                 candidate = candidate.getNext()) {
+                if (candidate instanceof TypeInsnNode
+                        && candidate.getOpcode() == Opcodes.NEW) {
+                    if (constructedOwner.equals(((TypeInsnNode) candidate).desc)) {
+                        matches++;
+                    }
+                    break;
+                }
+                if (candidate instanceof MethodInsnNode
+                        && candidate.getOpcode() == Opcodes.INVOKESTATIC) {
+                    break;
+                }
+            }
+        }
+        if (constants != 1 || matches != 1) {
+            throw new Violation("expected one " + constructedOwner.replace('/', '.')
+                    + " construction after string '" + constant + "' in "
+                    + method.name + method.desc + " but found constants=" + constants
+                    + ", matches=" + matches);
+        }
     }
 
     public static void requireInvocationCount(MethodNode method, String owner, String[] names,

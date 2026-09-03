@@ -29,7 +29,7 @@ class OptionalIntegrationContractValidatorTest {
 
     @Test
     void pinnedAncientArtifactSatisfiesRuntimeMixinContract() throws Exception {
-        assertCurrentArtifactPasses("jawmsintegrations.contract.ancientSpellcraftJar",
+        assertCurrentArtifactsPass(
                 IntegrationId.ANCIENT_SPELLCRAFT);
     }
 
@@ -66,6 +66,23 @@ class OptionalIntegrationContractValidatorTest {
         File jar = new File(System.getProperty(property));
         try (URLClassLoader loader = new URLClassLoader(
                 new URL[]{jar.toURI().toURL()}, null)) {
+            OptionalIntegrationEvidenceRegistry.Evidence evidence =
+                    OptionalIntegrationContractValidator.validate(
+                            loader,
+                            integration,
+                            OptionalIntegrationEvidenceRegistry.Evidence.supported(
+                                    integration.getMinimumMetadataVersion()));
+            assertEquals(OptionalIntegrationEvidenceRegistry.Decision.SUPPORTED,
+                    evidence.getDecision(), evidence.getDetail());
+        }
+    }
+
+    private static void assertCurrentArtifactsPass(IntegrationId integration) throws Exception {
+        File ancient = new File(System.getProperty(
+                "jawmsintegrations.contract.ancientSpellcraftJar"));
+        File wizardry = new File(System.getProperty("jawmsintegrations.contract.wizardryJar"));
+        try (URLClassLoader loader = new URLClassLoader(
+                new URL[]{ancient.toURI().toURL(), wizardry.toURI().toURL()}, null)) {
             OptionalIntegrationEvidenceRegistry.Evidence evidence =
                     OptionalIntegrationContractValidator.validate(
                             loader,

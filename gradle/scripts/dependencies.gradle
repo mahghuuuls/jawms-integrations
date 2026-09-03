@@ -43,6 +43,11 @@ configurations {
         canBeResolved = true
         transitive = false
     }
+    wizardryContract {
+        canBeConsumed = false
+        canBeResolved = true
+        transitive = false
+    }
     ancientSpellcraftContract {
         canBeConsumed = false
         canBeResolved = true
@@ -93,6 +98,7 @@ dependencies {
     implementation rfg.deobf('curse.maven:just-another-wizardry-mana-system-1643697:8703384')
     jawmsContract 'curse.maven:just-another-wizardry-mana-system-1643697:8703384'
     implementation rfg.deobf('curse.maven:electroblobs-wizardry-265642:8320066')
+    wizardryContract 'curse.maven:electroblobs-wizardry-265642:8320066'
     implementation rfg.deobf('curse.maven:baubles-227083:2518667')
 
     // Optional integrations compile against exact targets but enter only their selected dev runtime.
@@ -193,6 +199,7 @@ if (obfuscationAttribute == null) {
 // RFG requests MCP-transformed artifacts for normal development configurations.
 // Contract tests instead hash and inspect the exact released bytes from CurseMaven.
 [configurations.jawmsContract,
+ configurations.wizardryContract,
  configurations.qualityToolsContract,
  configurations.ancientSpellcraftContract,
  configurations.craftTweakerContract,

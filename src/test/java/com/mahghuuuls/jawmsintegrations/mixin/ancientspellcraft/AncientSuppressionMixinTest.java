@@ -121,27 +121,82 @@ class AncientSuppressionMixinTest {
                 ItemStack.class, net.minecraft.world.World.class, java.util.List.class,
                 net.minecraft.client.util.ITooltipFlag.class, CallbackInfo.class);
         tooltip.setAccessible(true);
-        Method bar = MixinRenderItem.class.getDeclaredMethod(
-                "jawmsIntegrations$hideLegacyChargeBar", Item.class, ItemStack.class);
-        bar.setAccessible(true);
-        CountingBarItem nativeItem = new CountingBarItem();
+        Method bar = MixinItemManaArtefactClient.class.getDeclaredMethod(
+                "showDurabilityBar", ItemStack.class);
+        Item nativeItem = new Item().setMaxDamage(500);
         nativeItem.setRegistryName(AncientReplacement.LESSER_MANA_RING.getRegistryName());
         ItemStack nativeStack = new ItemStack(nativeItem);
+        nativeStack.setItemDamage(100);
+        NBTTagCompound originalTag = new NBTTagCompound();
+        originalTag.setInteger("LegacyCharge", 400);
+        nativeStack.setTagCompound(originalTag);
+        NBTTagCompound before = nativeStack.serializeNBT().copy();
 
         CallbackInfo beforeSnapshot = new CallbackInfo("test", true);
         tooltip.invoke(new TestTooltipMixin(), lesser, null, new ArrayList<>(), null,
                 beforeSnapshot);
         assertFalse(beforeSnapshot.isCancelled());
-        assertTrue((Boolean) bar.invoke(new TestRenderItemMixin(), nativeItem, nativeStack));
-        assertEquals(1, nativeItem.calls);
+        assertTrue((Boolean) bar.invoke(new TestTooltipMixin(), nativeStack));
+        assertEquals(before, nativeStack.serializeNBT());
 
         ClientIntegrationPresentationCache.install(
                 IntegrationPresentationSnapshot.from(false, enabledPolicy()));
         CallbackInfo active = new CallbackInfo("test", true);
         tooltip.invoke(new TestTooltipMixin(), lesser, null, new ArrayList<>(), null, active);
         assertTrue(active.isCancelled());
-        assertFalse((Boolean) bar.invoke(new TestRenderItemMixin(), nativeItem, nativeStack));
-        assertEquals(1, nativeItem.calls);
+        assertFalse((Boolean) bar.invoke(new TestTooltipMixin(), nativeStack));
+        assertEquals(before, nativeStack.serializeNBT());
+    }
+
+    @Test
+    void itemLocalBarDecisionPreservesNativeFallbackForUndamagedAndUnlistedItems()
+            throws Exception {
+        Method bar = MixinItemManaArtefactClient.class.getDeclaredMethod(
+                "showDurabilityBar", ItemStack.class);
+        TestTooltipMixin mixin = new TestTooltipMixin();
+
+        Item storageItem = new Item().setMaxDamage(500);
+        storageItem.setRegistryName(AncientReplacement.GREATER_MANA_RING.getRegistryName());
+        ItemStack undamagedStorage = new ItemStack(storageItem);
+        assertFalse((Boolean) bar.invoke(mixin, undamagedStorage));
+
+        Item unlistedItem = new Item().setMaxDamage(500);
+        unlistedItem.setRegistryName("ancientspellcraft", "unlisted_mana_artefact");
+        ItemStack damagedUnlisted = new ItemStack(unlistedItem);
+        damagedUnlisted.setItemDamage(100);
+        NBTTagCompound unlistedTag = new NBTTagCompound();
+        unlistedTag.setInteger("LegacyCharge", 400);
+        damagedUnlisted.setTagCompound(unlistedTag);
+        NBTTagCompound unlistedBefore = damagedUnlisted.serializeNBT().copy();
+        ClientIntegrationPresentationCache.install(
+                IntegrationPresentationSnapshot.from(false, enabledPolicy()));
+        assertTrue((Boolean) bar.invoke(mixin, damagedUnlisted));
+        assertEquals(unlistedBefore, damagedUnlisted.serializeNBT());
+    }
+
+    @Test
+    void itemLocalBarDecisionCoversEveryStorageReplacementAndIndividualDisable()
+            throws Exception {
+        Method bar = MixinItemManaArtefactClient.class.getDeclaredMethod(
+                "showDurabilityBar", ItemStack.class);
+        TestTooltipMixin mixin = new TestTooltipMixin();
+        for (AncientReplacement replacement : new AncientReplacement[]{
+                AncientReplacement.LESSER_MANA_RING,
+                AncientReplacement.GREATER_MANA_RING,
+                AncientReplacement.MAJESTIC_MANA_CHARM}) {
+            ItemStack stack = damagedStack(replacement);
+            NBTTagCompound before = stack.serializeNBT().copy();
+
+            ClientIntegrationPresentationCache.install(
+                    IntegrationPresentationSnapshot.from(false, enabledPolicy()));
+            assertFalse((Boolean) bar.invoke(mixin, stack), replacement.name());
+            assertEquals(before, stack.serializeNBT(), replacement.name());
+
+            ClientIntegrationPresentationCache.install(
+                    IntegrationPresentationSnapshot.from(false, policyWithDisabled(replacement)));
+            assertTrue((Boolean) bar.invoke(mixin, stack), replacement.name());
+            assertEquals(before, stack.serializeNBT(), replacement.name());
+        }
     }
 
     @Test
@@ -189,6 +244,31 @@ class AncientSuppressionMixinTest {
         return new ItemStack(item);
     }
 
+    private static ItemStack damagedStack(AncientReplacement replacement) {
+        Item item = new Item().setMaxDamage(500);
+        item.setRegistryName(replacement.getRegistryName());
+        ItemStack stack = new ItemStack(item);
+        stack.setItemDamage(100);
+        NBTTagCompound tag = new NBTTagCompound();
+        tag.setInteger("LegacyCharge", 400);
+        stack.setTagCompound(tag);
+        return stack;
+    }
+
+    private static AncientReplacementPolicy policyWithDisabled(AncientReplacement disabled) {
+        IntegrationConfigSnapshot.AncientSpellcraftConfig config =
+                new IntegrationConfigSnapshot.AncientSpellcraftConfig(
+                        true,
+                        new IntegrationConfigSnapshot.ToggleIntConfig(
+                                disabled != AncientReplacement.LESSER_MANA_RING, 8),
+                        new IntegrationConfigSnapshot.ToggleIntConfig(
+                                disabled != AncientReplacement.GREATER_MANA_RING, 12),
+                        new IntegrationConfigSnapshot.ToggleDoubleConfig(
+                                disabled != AncientReplacement.MAJESTIC_MANA_CHARM, 15.0D),
+                        new IntegrationConfigSnapshot.ToggleDoubleConfig(true, 25.0D));
+        return new AncientReplacementPolicy(true, config);
+    }
+
     private static final class TestManaArtefactMixin extends MixinItemManaArtefact {
     }
 
@@ -198,16 +278,4 @@ class AncientSuppressionMixinTest {
     private static final class TestArtefactMixin extends MixinItemArtefactClient {
     }
 
-    private static final class TestRenderItemMixin extends MixinRenderItem {
-    }
-
-    private static final class CountingBarItem extends Item {
-        private int calls;
-
-        @Override
-        public boolean showDurabilityBar(ItemStack stack) {
-            calls++;
-            return true;
-        }
-    }
 }

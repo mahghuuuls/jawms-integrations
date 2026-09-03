@@ -5,8 +5,11 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class AncientMixinConfigurationTest {
@@ -24,11 +27,16 @@ class AncientMixinConfigurationTest {
         assertEquals(1, occurrences(json, "MixinItemManaArtefact\""));
         assertEquals(1, occurrences(json, "MixinItemManaArtefactClient"));
         assertEquals(1, occurrences(json, "MixinItemArtefactClient"));
-        assertEquals(1, occurrences(json, "MixinRenderItem"));
+        assertFalse(json.contains("MixinRenderItem"),
+                "Ancient presentation must not target the global Minecraft renderer");
+        assertFalse(Files.isRegularFile(Paths.get(
+                        "src/main/java/com/mahghuuuls/jawmsintegrations/mixin/"
+                                + "ancientspellcraft/MixinRenderItem.java")),
+                "The obsolete global renderer Mixin source must be deleted");
         assertEquals(1, occurrences(json, "MixinItemEverfullManaFlask\""));
         assertEquals(1, occurrences(json, "MixinItemEverfullManaFlaskClient"));
         assertEquals(1, occurrences(json, "MixinItemRingManaTransfer"));
-        assertEquals(8, occurrences(json, "\"Mixin"));
+        assertEquals(7, occurrences(json, "\"Mixin"));
     }
 
     private static int occurrences(String text, String needle) {

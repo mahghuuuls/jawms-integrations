@@ -16,6 +16,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 final class DependencyContractTest {
 
     private static final String JAWMS_JAR = "jawmsintegrations.contract.jawmsJar";
+    private static final String WIZARDRY_JAR = "jawmsintegrations.contract.wizardryJar";
     private static final String QUALITY_TOOLS_JAR = "jawmsintegrations.contract.qualityToolsJar";
     private static final String ANCIENT_SPELLCRAFT_JAR = "jawmsintegrations.contract.ancientSpellcraftJar";
     private static final String CRAFTTWEAKER_JAR = "jawmsintegrations.contract.craftTweakerJar";
@@ -113,8 +114,15 @@ final class DependencyContractTest {
     @Test
     void ancientSpellcraftReleaseMatchesReplacementSeams() throws IOException {
         Path jar = requiredJar(ANCIENT_SPELLCRAFT_JAR);
+        Path wizardry = requiredJar(WIZARDRY_JAR);
         assertEquals("A47647AD039D1CBFEE94059C508800C4FA956B9A26B570B20C94C48A3961C215",
                 sha256(jar));
+        assertEquals("8A7F94DBCCAC622FEBFF5111F3B3C2BA439E1D2B2C743F2A5C31FDFCD92D241C",
+                sha256(wizardry));
+        JarContract.assertNoMethod(wizardry,
+                "electroblob/wizardry/item/ItemArtefact",
+                "showDurabilityBar",
+                "(Lnet/minecraft/item/ItemStack;)Z");
         JarContract.assertMethod(jar,
                 "com/windanesz/ancientspellcraft/handler/ASEventHandler",
                 "onSpellCastPreEvent",
@@ -150,6 +158,19 @@ final class DependencyContractTest {
                 "func_77624_a",
                 "(Lnet/minecraft/item/ItemStack;Lnet/minecraft/world/World;Ljava/util/List;"
                         + "Lnet/minecraft/client/util/ITooltipFlag;)V");
+        JarContract.assertNoMethod(jar,
+                "com/windanesz/ancientspellcraft/item/ItemManaArtefact",
+                "showDurabilityBar",
+                "(Lnet/minecraft/item/ItemStack;)Z");
+        JarContract.assertMethodInvocationCount(jar,
+                "com/windanesz/ancientspellcraft/registry/ASItems",
+                "register",
+                "(Lnet/minecraftforge/event/RegistryEvent$Register;)V",
+                "com/windanesz/ancientspellcraft/item/ItemManaArtefact",
+                "<init>",
+                "(Lnet/minecraft/item/EnumRarity;"
+                        + "Lelectroblob/wizardry/item/ItemArtefact$Type;I)V",
+                3);
         JarContract.assertMethod(jar,
                 "com/windanesz/ancientspellcraft/item/ItemEverfullManaFlask",
                 "func_77659_a",
