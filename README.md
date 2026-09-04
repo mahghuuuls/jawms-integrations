@@ -10,7 +10,7 @@ JAWMS Integrations adds optional compatibility between [Just Another Wizardry Ma
 
 ## Runtime Scope
 
-- Standard Forge for Minecraft 1.12.2.
+- Standard Forge and Cleanroom runtimes for Minecraft 1.12.2.
 - JAWMS 1.1.0 or newer is required.
 - Quality Tools, Ancient Spellcraft, and CraftTweaker are optional. Each integration activates only when its supported mod is installed and enabled.
 - Install JAWMS Integrations on both the client and server. Gameplay configuration and mana changes are server-authoritative.

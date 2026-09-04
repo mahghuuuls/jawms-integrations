@@ -88,6 +88,6 @@ Adds a server-authoritative ZenScript API for reading coherent JAWMS mana state,
 
 The generated `jawmsintegrations.cfg` can enable or tune each installed integration. Changes require a restart.
 
-JAWMS is required. Install the addon on both the client and server. Supported integration mods are optional.
+JAWMS is required. Install the addon on both the client and server. Standard Forge and Cleanroom are supported. Supported integration mods are optional.
 
 [Source code](https://github.com/mahghuuuls/jawms-integrations)

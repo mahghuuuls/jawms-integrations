@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.1.1
+
+### Fixed
+
+- Fixed a startup crash when the Ancient Spellcraft integration was loaded on Cleanroom.
+- Kept Ancient Spellcraft's legacy charge bars hidden for the Lesser Mana Ring, Greater Mana Ring, and Majestic Mana Charm while their JAWMS replacements are active. The native bars remain available when the integration is disabled.
+
+### Compatibility
+
+- Added Cleanroom support alongside standard Forge for Minecraft 1.12.2.
+
 ## 1.1.0
 
 ### Added
