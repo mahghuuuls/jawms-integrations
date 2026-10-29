@@ -1,0 +1,11 @@
+[
+  {
+    "modid": "jawmsintegrationstest",
+    "name": "JAFS reconciliation observer",
+    "version": "dev",
+    "mcversion": "1.12.2",
+    "description": "Development-only observer for native food changes and accepted mana profiles.",
+    "authorList": ["mahghuuuls"],
+    "useDependencyInformation": false
+  }
+]
