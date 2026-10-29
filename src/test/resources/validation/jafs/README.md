@@ -1,5 +1,9 @@
 # JAFS validation assets
 
+The `lifecycle-*` files and `cyc3_jafs_b_*` bundles belong only to the lifecycle campaign. They are inactive inputs, never automatically installed as foods. The baseline has all15 operations, signed opposite amounts, independent percent foods,30s expiry and two0.5 maximum/5% maximum/-60% delay foods. Reload files preserve native IDs; four skip files exercise native omission of invalid modifiers while valid fields apply. The wrong-shape file reaches whole-file reload failure/retention. The overflow profile contains native-valid2147483648 and two1e308 flat inputs, reaching integer overflow and a non-finite sum while keeping independent valid percentages. The campaign map names which file to copy before each reload.
+
+The development-only observer is built by `jafsValidationJar` into `build/validation`. `runClient -Pintegration_runtime_profile=jafs -Penable_jafs_validation_probe=true` installs it; the ordinary false/absent flag removes its exact managed JAR on the next development-client preparation. It never enters the shipping JAR. `/jafs-probe <0..12000>` bounds its public-read callback/END-tick records;0 stops it. Its synthetic property has no authored modifier or gameplay effect. Final teardown removes the managed JAR and restores native/Toolkit/client settings from backups.
+
 This directory is reserved for controlled native food definitions and their expected results. It is test input only; files here are not shipping food definitions and are not copied into normal play automatically.
 
 Use the `jafs` development runtime profile for isolated checks, or `all` for coexistence checks. Required JAWMS and Wizardry dependencies remain present; the isolated profile omits Quality Tools, Potion Core, Ancient Spellcraft and CraftTweaker.

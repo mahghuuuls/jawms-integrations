@@ -11,10 +11,11 @@ public final class JafsRegistrationBootstrap {
     private JafsRegistrationBootstrap() {
     }
 
-    public static void register(ClassLoader loader, Consumer<String> failure) {
+    public static FoodSourceAccess register(ClassLoader loader, Consumer<String> failure) {
         if (loader == null || failure == null) throw new IllegalArgumentException("JAFS bootstrap inputs required");
         try {
-            Class.forName(ENTRY, true, loader).getMethod("activate", Consumer.class).invoke(null, failure);
+            return (FoodSourceAccess) Class.forName(ENTRY, true, loader)
+                    .getMethod("activate", Consumer.class).invoke(null, failure);
         } catch (ClassNotFoundException | NoSuchMethodException | IllegalAccessException exception) {
             throw new IllegalStateException("JAFS activation entry could not be loaded", exception);
         } catch (InvocationTargetException exception) {

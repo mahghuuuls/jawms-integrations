@@ -13,10 +13,19 @@ import static org.junit.jupiter.api.Assertions.*;
 
 final class JafsOptionalBoundaryTest {
     @Test
-    void bootstrapLoadsWithOnlyJdkTypesAndRequestsItsOptionalProductEntry() throws Exception {
+    void bootstrapAndItsInspectionPortLoadWithoutTheOptionalNativeApi() throws Exception {
         List<String> requested = new ArrayList<>();
         String bootstrapName = JafsRegistrationBootstrap.class.getName();
-        ClassLoader isolated = new ClassLoader(null) {
+        ClassLoader isolated = new ClassLoader(getClass().getClassLoader()) {
+            @Override
+            protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
+                if (name.equals(bootstrapName)) return findClass(name);
+                if (name.equals(JafsRegistrationBootstrap.ENTRY) || name.startsWith("com.mahghuuuls.jafs.")) {
+                    requested.add(name);
+                    throw new ClassNotFoundException(name);
+                }
+                return super.loadClass(name, resolve);
+            }
             @Override
             protected Class<?> findClass(String name) throws ClassNotFoundException {
                 requested.add(name);

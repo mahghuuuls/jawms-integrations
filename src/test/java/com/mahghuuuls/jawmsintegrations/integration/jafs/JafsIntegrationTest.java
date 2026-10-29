@@ -17,6 +17,8 @@ import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
+import net.minecraftforge.fml.common.gameevent.PlayerEvent;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -135,6 +137,41 @@ final class JafsIntegrationTest {
     }
 
     @Test
+    void inspectionDoesNotDirtyLogAcceptOrDisableAndWarningsExpireWithPlayerSessions() {
+        RecordingFoods service = new RecordingFoods();
+        service.maximum = new PropertyValue(0.5, 10, 1);
+        List<String> warnings = new ArrayList<>();
+        List<String> failures = new ArrayList<>();
+        AtomicInteger dirty = new AtomicInteger();
+        JafsIntegration module = JafsIntegration.install(new RecordingRegistration(service),
+                ignored -> dirty.incrementAndGet(), warnings::add, failures::add);
+        EntityPlayerMP first = player();
+        EntityPlayerMP second = player();
+        assertEquals(1, module.inspect(first).getProblems().size());
+        assertEquals(0, dirty.get());
+        assertTrue(warnings.isEmpty());
+        module.getContribution(first);
+        module.getContribution(first);
+        module.getContribution(second);
+        assertEquals(2, warnings.size());
+        assertTrue(warnings.get(0).contains(first.getUniqueID().toString()));
+        assertTrue(warnings.get(1).contains(second.getUniqueID().toString()));
+        module.onLogout(new PlayerEvent.PlayerLoggedOutEvent(first));
+        module.getContribution(first);
+        module.getContribution(second);
+        assertEquals(3, warnings.size());
+        module.clearWarnings();
+        module.getContribution(second);
+        assertEquals(4, warnings.size());
+        service.linkageFailure = new AbstractMethodError();
+        assertThrows(AbstractMethodError.class, () -> module.inspect(first));
+        assertTrue(failures.isEmpty(), "Read-only inspection cannot change activation state");
+        service.linkageFailure = null;
+        assertEquals(10, module.getContribution(first).getMaximumManaIncrease());
+        assertEquals(0, dirty.get());
+    }
+
+    @Test
     void nativeTotalsRemainPlayerSpecific() {
         RecordingFoods service = new RecordingFoods();
         EntityPlayerMP first = player();
@@ -170,11 +207,19 @@ final class JafsIntegrationTest {
             Class<?> unsafeType = Class.forName("sun.misc.Unsafe");
             java.lang.reflect.Field field = unsafeType.getDeclaredField("theUnsafe");
             field.setAccessible(true);
-            return (EntityPlayerMP) unsafeType.getMethod("allocateInstance", Class.class)
-                    .invoke(field.get(null), EntityPlayerMP.class);
+            TestPlayer player = (TestPlayer) unsafeType.getMethod("allocateInstance", Class.class)
+                    .invoke(field.get(null), TestPlayer.class);
+            player.id = UUID.randomUUID();
+            return player;
         } catch (ReflectiveOperationException exception) {
             throw new AssertionError(exception);
         }
+    }
+
+    private static final class TestPlayer extends EntityPlayerMP {
+        private UUID id;
+        private TestPlayer() { super(null, null, null, null); }
+        @Override public UUID getUniqueID() { return id; }
     }
 
     private static final class RecordingFoods implements IFoodService {

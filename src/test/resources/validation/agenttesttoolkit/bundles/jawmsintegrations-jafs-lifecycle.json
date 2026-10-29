@@ -1,0 +1,549 @@
+{
+  "cyc3_jafs_b_setup": {
+    "description": "Disposable JAFS-B world only; baseline definitions, limit2, threshold100, regen base0.",
+    "stopOnFailure": true,
+    "trace": true,
+    "result": true,
+    "commands": [
+      "devtool session start cyc3_jafs_lifecycle",
+      "devtool session operator @s",
+      "devtool capabilities",
+      "devtool mods",
+      "devtool environment",
+      "jafs-probe 12000",
+      "gamerule doMobSpawning false",
+      "gamerule doDaylightCycle false",
+      "gamerule doWeatherCycle false",
+      "gamerule naturalRegeneration false",
+      "gamerule randomTickSpeed 0",
+      "gamerule keepInventory true",
+      "difficulty peaceful",
+      "jafs clear ${operator.name}",
+      {
+        "command": "clear ${operator.name}",
+        "toleratedFailures": [
+          "commands.clear.failure"
+        ]
+      },
+      "gamemode survival ${operator.name}",
+      "jawms-dev mana set ${operator.name} 80",
+      "devtool log item_use on",
+      "jafs inspect ${operator.name}",
+      "jawmsintegrations status ${operator.name}",
+      "jawms-dev state ${operator.name}",
+      "jawms-dev explain ${operator.name}",
+      "devtool mark JAFS_B_BASELINE_READY"
+    ]
+  },
+  "cyc3_jafs_b_all_ready": {
+    "description": "Baseline definitions required. Eat apple, inspect native tooltip.",
+    "stopOnFailure": true,
+    "trace": true,
+    "result": true,
+    "commands": [
+      "jafs-probe 12000",
+      "jafs clear ${operator.name}",
+      {
+        "command": "clear ${operator.name}",
+        "toleratedFailures": [
+          "commands.clear.failure"
+        ]
+      },
+      "gamemode survival ${operator.name}",
+      "give ${operator.name} minecraft:apple 1",
+      "devtool mark JAFS_B_APPLE_READY"
+    ]
+  },
+  "cyc3_jafs_b_opposite_ready": {
+    "description": "Baseline definitions required. Eat bread; negative resource and positive delay.",
+    "stopOnFailure": true,
+    "trace": true,
+    "result": true,
+    "commands": [
+      "jafs-probe 12000",
+      "jafs clear ${operator.name}",
+      {
+        "command": "clear ${operator.name}",
+        "toleratedFailures": [
+          "commands.clear.failure"
+        ]
+      },
+      "gamemode survival ${operator.name}",
+      "give ${operator.name} minecraft:bread 1",
+      "devtool mark JAFS_B_BREAD_READY"
+    ]
+  },
+  "cyc3_jafs_b_stack_ready": {
+    "description": "Baseline definitions, limit2 threshold100. Eat carrot then potato, inspect after each.",
+    "stopOnFailure": true,
+    "trace": true,
+    "result": true,
+    "commands": [
+      "jafs-probe 12000",
+      "jafs clear ${operator.name}",
+      {
+        "command": "clear ${operator.name}",
+        "toleratedFailures": [
+          "commands.clear.failure"
+        ]
+      },
+      "gamemode survival ${operator.name}",
+      "give ${operator.name} minecraft:carrot 1",
+      "give ${operator.name} minecraft:carrot 1",
+      "give ${operator.name} minecraft:potato 1",
+      "devtool mark JAFS_B_CARROT_READY"
+    ]
+  },
+  "cyc3_jafs_b_replacement_ready": {
+    "description": "After carrot refresh, eat beetroot; replaces older potato.30s native expiry.",
+    "stopOnFailure": true,
+    "trace": true,
+    "result": true,
+    "commands": [
+      "jafs-probe 12000",
+      "give ${operator.name} minecraft:beetroot 1",
+      "jafs inspect ${operator.name}",
+      "jawmsintegrations status ${operator.name}",
+      "jawms-dev state ${operator.name}",
+      "jawms-dev explain ${operator.name}",
+      "devtool mark JAFS_B_REPLACEMENT_READY"
+    ]
+  },
+  "cyc3_jafs_b_replacement_expiry": {
+    "description": "Read immediately after beetroot; then wait31s for native expiry, carrot remains.",
+    "stopOnFailure": true,
+    "trace": true,
+    "result": true,
+    "commands": [
+      {
+        "command": "jafs inspect ${operator.name}",
+        "delayTicks": 2
+      },
+      "jawmsintegrations status ${operator.name}",
+      "jawms-dev state ${operator.name}",
+      "jawms-dev explain ${operator.name}",
+      "devtool mark JAFS_B_REPLACEMENT_OBSERVED",
+      {
+        "command": "jafs inspect ${operator.name}",
+        "delayTicks": 620
+      },
+      "jawmsintegrations status ${operator.name}",
+      "jawms-dev state ${operator.name}",
+      "jawms-dev explain ${operator.name}",
+      "devtool mark JAFS_B_EXPIRY_OBSERVED"
+    ]
+  },
+  "cyc3_jafs_b_half_ready": {
+    "description": "Use the native profile named by the card, limit2 threshold100. Eat melon then pumpkin pie; inspect each.",
+    "stopOnFailure": true,
+    "trace": true,
+    "result": true,
+    "commands": [
+      "jafs-probe 12000",
+      "jafs clear ${operator.name}",
+      {
+        "command": "clear ${operator.name}",
+        "toleratedFailures": [
+          "commands.clear.failure"
+        ]
+      },
+      "gamemode survival ${operator.name}",
+      "give ${operator.name} minecraft:melon 1",
+      "give ${operator.name} minecraft:pumpkin_pie 1",
+      "devtool mark JAFS_B_MELON_READY"
+    ]
+  },
+  "cyc3_jafs_b_fraction_remove_ready": {
+    "description": "After both halves, eat cookie to replace older melon; inspect fractional remainder.",
+    "stopOnFailure": true,
+    "trace": true,
+    "result": true,
+    "commands": [
+      "jafs-probe 12000",
+      "give ${operator.name} minecraft:cookie 1",
+      "devtool mark JAFS_B_FRACTION_REMOVE_READY"
+    ]
+  },
+  "cyc3_jafs_b_clear": {
+    "description": "Clear native food; accepted contribution must vanish next tick.",
+    "stopOnFailure": true,
+    "trace": true,
+    "result": true,
+    "commands": [
+      "jafs-probe 12000",
+      "jafs clear ${operator.name}",
+      {
+        "command": "jafs inspect ${operator.name}",
+        "delayTicks": 2
+      },
+      "jawmsintegrations status ${operator.name}",
+      "jawms-dev state ${operator.name}",
+      "jawms-dev explain ${operator.name}",
+      "devtool mark JAFS_B_CLEARED"
+    ]
+  },
+  "cyc3_jafs_b_reload": {
+    "description": "Only after agent stages the explicitly named native test fixture or config.",
+    "stopOnFailure": true,
+    "trace": true,
+    "result": true,
+    "commands": [
+      "jafs-probe 12000",
+      "jafs reload",
+      {
+        "command": "jafs inspect ${operator.name}",
+        "delayTicks": 2
+      },
+      "jawmsintegrations status ${operator.name}",
+      "jawms-dev state ${operator.name}",
+      "jawms-dev explain ${operator.name}",
+      "devtool mark JAFS_B_RELOAD_CHECKED"
+    ]
+  },
+  "cyc3_jafs_b_rebuild": {
+    "description": "No current mana write; unchanged dirty refresh must not drain/refill.",
+    "stopOnFailure": true,
+    "trace": true,
+    "result": true,
+    "commands": [
+      "jafs inspect ${operator.name}",
+      "jawmsintegrations status ${operator.name}",
+      "jawms-dev state ${operator.name}",
+      "jawms-dev explain ${operator.name}",
+      "jawms-dev cache dirty ${operator.name}",
+      {
+        "command": "jafs inspect ${operator.name}",
+        "delayTicks": 2
+      },
+      "jawmsintegrations status ${operator.name}",
+      "jawms-dev state ${operator.name}",
+      "jawms-dev explain ${operator.name}",
+      "devtool mark JAFS_B_REBUILD_CHECKED"
+    ]
+  },
+  "cyc3_jafs_b_rebuild_ready": {
+    "description": "After accepted flat30-only apple reload and max130 confirmation; set above-base120 once.",
+    "stopOnFailure": true,
+    "trace": true,
+    "result": true,
+    "commands": [
+      "jafs inspect ${operator.name}",
+      "jawmsintegrations status ${operator.name}",
+      "jawms-dev state ${operator.name}",
+      "jawms-dev explain ${operator.name}",
+      "jawms-dev mana set ${operator.name} 120",
+      "jafs inspect ${operator.name}",
+      "jawmsintegrations status ${operator.name}",
+      "jawms-dev state ${operator.name}",
+      "jawms-dev explain ${operator.name}",
+      "devtool mark JAFS_B_ABOVE_BASE_REBUILD_READY"
+    ]
+  },
+  "cyc3_jafs_b_overflow_ready": {
+    "description": "Only with lifecycle-overflow.json accepted and empty native foods; eat cookie first.",
+    "stopOnFailure": true,
+    "trace": true,
+    "result": true,
+    "commands": [
+      "jafs-probe 12000",
+      "jafs clear ${operator.name}",
+      {
+        "command": "clear ${operator.name}",
+        "toleratedFailures": [
+          "commands.clear.failure"
+        ]
+      },
+      "gamemode survival ${operator.name}",
+      "give ${operator.name} minecraft:cookie 1",
+      "devtool mark JAFS_B_COOKIE_READY"
+    ]
+  },
+  "cyc3_jafs_b_zero_readonly": {
+    "description": "Native foods clear, no equipment, base regen0. Repeat status without dirty or mana getter between.",
+    "stopOnFailure": true,
+    "trace": true,
+    "result": true,
+    "commands": [
+      "jafs-probe 0",
+      "jafs clear ${operator.name}",
+      {
+        "command": "jawms-dev mana set ${operator.name} 80",
+        "delayTicks": 2
+      },
+      "jawms-dev state ${operator.name}",
+      "jawmsintegrations status ${operator.name}",
+      "jawmsintegrations status ${operator.name}",
+      "jawms-dev state ${operator.name}",
+      "devtool mark JAFS_B_READONLY_CHECKED"
+    ]
+  },
+  "cyc3_jafs_b_portal_ready": {
+    "description": "Eat carrot before walking through the generated vanilla portal; Creative for safe travel.",
+    "stopOnFailure": true,
+    "trace": true,
+    "result": true,
+    "commands": [
+      "jafs-probe 12000",
+      "jafs clear ${operator.name}",
+      {
+        "command": "clear ${operator.name}",
+        "toleratedFailures": [
+          "commands.clear.failure"
+        ]
+      },
+      "gamemode survival ${operator.name}",
+      "give ${operator.name} minecraft:carrot 1",
+      "devtool mark JAFS_B_PORTAL_MEAL_READY"
+    ]
+  },
+  "cyc3_jafs_b_portal_build": {
+    "description": "After meal check: set105 current under110 max; build portal in disposable world.",
+    "stopOnFailure": true,
+    "trace": true,
+    "result": true,
+    "commands": [
+      "jawms-dev mana set ${operator.name} 105",
+      "gamemode creative ${operator.name}",
+      "tp ${operator.name} 0 200 0",
+      "devtool await chunks -4 -4 8 8 400",
+      {
+        "command": "fill -4 200 -4 8 207 8 minecraft:air",
+        "toleratedFailures": [
+          "commands.fill.failed"
+        ]
+      },
+      {
+        "command": "fill -4 199 -4 8 199 8 minecraft:stone",
+        "toleratedFailures": [
+          "commands.fill.failed"
+        ]
+      },
+      "fill 2 199 2 5 203 2 minecraft:obsidian",
+      "fill 3 200 2 4 202 2 minecraft:portal 1",
+      "tp ${operator.name} 0 200 0",
+      "jafs inspect ${operator.name}",
+      "jawmsintegrations status ${operator.name}",
+      "jawms-dev state ${operator.name}",
+      "jawms-dev explain ${operator.name}",
+      "devtool mark JAFS_B_NETHER_READY"
+    ]
+  },
+  "cyc3_jafs_b_death_ready": {
+    "description": "Native keepFoodsOnDeath is named by launch group; no command runs after kill until respawn.",
+    "stopOnFailure": true,
+    "trace": true,
+    "result": true,
+    "commands": [
+      "jafs-probe 12000",
+      "gamemode survival ${operator.name}",
+      "jafs inspect ${operator.name}",
+      "jawmsintegrations status ${operator.name}",
+      "jawms-dev state ${operator.name}",
+      "jawms-dev explain ${operator.name}",
+      "devtool mark JAFS_B_BEFORE_DEATH",
+      "kill ${operator.name}"
+    ]
+  },
+  "cyc3_jafs_b_resume": {
+    "description": "No reset, refill or dirty call. Open inbox after respawn/reconnect before this bundle.",
+    "stopOnFailure": true,
+    "trace": true,
+    "result": true,
+    "commands": [
+      "devtool environment",
+      "jafs inspect ${operator.name}",
+      "jawmsintegrations status ${operator.name}",
+      "jawms-dev state ${operator.name}",
+      "jawms-dev explain ${operator.name}",
+      "devtool mark JAFS_B_RESUME_CHECKED"
+    ]
+  },
+  "cyc3_jafs_b_after_all": {
+    "description": "Read-only observation after the named physical action; no setup/refill/dirty.",
+    "stopOnFailure": true,
+    "trace": true,
+    "result": true,
+    "commands": [
+      {
+        "command": "jafs inspect ${operator.name}",
+        "delayTicks": 2
+      },
+      "jawmsintegrations status ${operator.name}",
+      "jawms-dev state ${operator.name}",
+      "jawms-dev explain ${operator.name}",
+      "devtool mark JAFS_B_ALL_OBSERVED"
+    ]
+  },
+  "cyc3_jafs_b_after_opposite": {
+    "description": "Read-only observation after the named physical action; no setup/refill/dirty.",
+    "stopOnFailure": true,
+    "trace": true,
+    "result": true,
+    "commands": [
+      {
+        "command": "jafs inspect ${operator.name}",
+        "delayTicks": 2
+      },
+      "jawmsintegrations status ${operator.name}",
+      "jawms-dev state ${operator.name}",
+      "jawms-dev explain ${operator.name}",
+      "devtool mark JAFS_B_OPPOSITE_OBSERVED"
+    ]
+  },
+  "cyc3_jafs_b_after_carrot": {
+    "description": "Read-only observation after the named physical action; no setup/refill/dirty.",
+    "stopOnFailure": true,
+    "trace": true,
+    "result": true,
+    "commands": [
+      {
+        "command": "jafs inspect ${operator.name}",
+        "delayTicks": 2
+      },
+      "jawmsintegrations status ${operator.name}",
+      "jawms-dev state ${operator.name}",
+      "jawms-dev explain ${operator.name}",
+      "devtool mark JAFS_B_CARROT_OBSERVED"
+    ]
+  },
+  "cyc3_jafs_b_after_stack": {
+    "description": "Read-only observation after the named physical action; no setup/refill/dirty.",
+    "stopOnFailure": true,
+    "trace": true,
+    "result": true,
+    "commands": [
+      {
+        "command": "jafs inspect ${operator.name}",
+        "delayTicks": 2
+      },
+      "jawmsintegrations status ${operator.name}",
+      "jawms-dev state ${operator.name}",
+      "jawms-dev explain ${operator.name}",
+      "devtool mark JAFS_B_STACK_OBSERVED"
+    ]
+  },
+  "cyc3_jafs_b_after_refresh": {
+    "description": "Read-only observation after the named physical action; no setup/refill/dirty.",
+    "stopOnFailure": true,
+    "trace": true,
+    "result": true,
+    "commands": [
+      {
+        "command": "jafs inspect ${operator.name}",
+        "delayTicks": 2
+      },
+      "jawmsintegrations status ${operator.name}",
+      "jawms-dev state ${operator.name}",
+      "jawms-dev explain ${operator.name}",
+      "devtool mark JAFS_B_REFRESH_OBSERVED"
+    ]
+  },
+  "cyc3_jafs_b_after_half_one": {
+    "description": "Read-only observation after the named physical action; no setup/refill/dirty.",
+    "stopOnFailure": true,
+    "trace": true,
+    "result": true,
+    "commands": [
+      {
+        "command": "jafs inspect ${operator.name}",
+        "delayTicks": 2
+      },
+      "jawmsintegrations status ${operator.name}",
+      "jawms-dev state ${operator.name}",
+      "jawms-dev explain ${operator.name}",
+      "devtool mark JAFS_B_HALF_ONE_OBSERVED"
+    ]
+  },
+  "cyc3_jafs_b_after_half_two": {
+    "description": "Read-only observation after the named physical action; no setup/refill/dirty.",
+    "stopOnFailure": true,
+    "trace": true,
+    "result": true,
+    "commands": [
+      {
+        "command": "jafs inspect ${operator.name}",
+        "delayTicks": 2
+      },
+      "jawmsintegrations status ${operator.name}",
+      "jawms-dev state ${operator.name}",
+      "jawms-dev explain ${operator.name}",
+      "devtool mark JAFS_B_HALF_TWO_OBSERVED"
+    ]
+  },
+  "cyc3_jafs_b_after_fraction": {
+    "description": "Read-only observation after the named physical action; no setup/refill/dirty.",
+    "stopOnFailure": true,
+    "trace": true,
+    "result": true,
+    "commands": [
+      {
+        "command": "jafs inspect ${operator.name}",
+        "delayTicks": 2
+      },
+      "jawmsintegrations status ${operator.name}",
+      "jawms-dev state ${operator.name}",
+      "jawms-dev explain ${operator.name}",
+      "devtool mark JAFS_B_FRACTION_OBSERVED"
+    ]
+  },
+  "cyc3_jafs_b_after_recovered": {
+    "description": "Read-only observation after the named physical action; no setup/refill/dirty.",
+    "stopOnFailure": true,
+    "trace": true,
+    "result": true,
+    "commands": [
+      {
+        "command": "jafs inspect ${operator.name}",
+        "delayTicks": 2
+      },
+      "jawmsintegrations status ${operator.name}",
+      "jawms-dev state ${operator.name}",
+      "jawms-dev explain ${operator.name}",
+      "devtool mark JAFS_B_RECOVERED_OBSERVED"
+    ]
+  },
+  "cyc3_jafs_b_after_dimension": {
+    "description": "Read-only observation after the named physical action; no setup/refill/dirty.",
+    "stopOnFailure": true,
+    "trace": true,
+    "result": true,
+    "commands": [
+      {
+        "command": "jafs inspect ${operator.name}",
+        "delayTicks": 2
+      },
+      "jawmsintegrations status ${operator.name}",
+      "jawms-dev state ${operator.name}",
+      "jawms-dev explain ${operator.name}",
+      "devtool mark JAFS_B_DIMENSION_OBSERVED"
+    ]
+  },
+  "cyc3_jafs_b_after_death": {
+    "description": "Read-only observation after the named physical action; no setup/refill/dirty.",
+    "stopOnFailure": true,
+    "trace": true,
+    "result": true,
+    "commands": [
+      {
+        "command": "jafs inspect ${operator.name}",
+        "delayTicks": 2
+      },
+      "jawmsintegrations status ${operator.name}",
+      "jawms-dev state ${operator.name}",
+      "jawms-dev explain ${operator.name}",
+      "devtool mark JAFS_B_DEATH_OBSERVED"
+    ]
+  },
+  "cyc3_jafs_b_finish": {
+    "description": "Teardown only after final captures; persistent client/config settings restored separately.",
+    "stopOnFailure": true,
+    "trace": true,
+    "result": true,
+    "commands": [
+      "jafs-probe 0",
+      "devtool log item_use off",
+      "devtool mark JAFS_B_FINISHED",
+      "devtool session stop"
+    ]
+  }
+}

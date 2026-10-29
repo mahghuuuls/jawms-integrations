@@ -1,0 +1,196 @@
+[
+  {
+    "id": "jawmsintegrations_b_all",
+    "match": [
+      {
+        "item": "minecraft:apple",
+        "meta": 0
+      }
+    ],
+    "fullDuration": 3600,
+    "priority": 1000,
+    "modifiers": [
+      {
+        "property": "jawmsintegrations:max_mana",
+        "operation": "flat",
+        "amount": 30
+      },
+      {
+        "property": "jawmsintegrations:spell_efficiency",
+        "operation": "flat",
+        "amount": -1
+      }
+    ]
+  },
+  {
+    "id": "jawmsintegrations_b_opposite",
+    "match": [
+      {
+        "item": "minecraft:bread",
+        "meta": 0
+      }
+    ],
+    "fullDuration": 3600,
+    "priority": 1000,
+    "modifiers": [
+      {
+        "property": "jawmsintegrations:max_mana",
+        "operation": "flat",
+        "amount": -8
+      },
+      {
+        "property": "jawmsintegrations:max_mana",
+        "operation": "percent",
+        "amount": -10
+      },
+      {
+        "property": "jawmsintegrations:mana_regen",
+        "operation": "flat",
+        "amount": -1.5
+      },
+      {
+        "property": "jawmsintegrations:mana_regen",
+        "operation": "percent",
+        "amount": -20
+      },
+      {
+        "property": "jawmsintegrations:mana_regen_delay",
+        "operation": "flat",
+        "amount": 1.25
+      },
+      {
+        "property": "jawmsintegrations:mana_regen_delay",
+        "operation": "percent",
+        "amount": 10
+      }
+    ]
+  },
+  {
+    "id": "jawmsintegrations_b_carrot",
+    "match": [
+      {
+        "item": "minecraft:carrot",
+        "meta": 0
+      }
+    ],
+    "fullDuration": 3600,
+    "priority": 1000,
+    "modifiers": [
+      {
+        "property": "jawmsintegrations:max_mana",
+        "operation": "percent",
+        "amount": 10
+      }
+    ]
+  },
+  {
+    "id": "jawmsintegrations_b_potato",
+    "match": [
+      {
+        "item": "minecraft:potato",
+        "meta": 0
+      }
+    ],
+    "fullDuration": 3600,
+    "priority": 1000,
+    "modifiers": [
+      {
+        "property": "jawmsintegrations:max_mana",
+        "operation": "percent",
+        "amount": 10
+      }
+    ]
+  },
+  {
+    "id": "jawmsintegrations_b_expiring",
+    "match": [
+      {
+        "item": "minecraft:beetroot",
+        "meta": 0
+      }
+    ],
+    "fullDuration": 30,
+    "priority": 1000,
+    "modifiers": [
+      {
+        "property": "jawmsintegrations:max_mana",
+        "operation": "percent",
+        "amount": 5
+      }
+    ]
+  },
+  {
+    "id": "jawmsintegrations_b_half_a",
+    "match": [
+      {
+        "item": "minecraft:melon",
+        "meta": 0
+      }
+    ],
+    "fullDuration": 3600,
+    "priority": 1000,
+    "modifiers": [
+      {
+        "property": "jawmsintegrations:max_mana",
+        "operation": "flat",
+        "amount": 0.5
+      },
+      {
+        "property": "jawmsintegrations:max_mana",
+        "operation": "percent",
+        "amount": 5
+      },
+      {
+        "property": "jawmsintegrations:mana_regen_delay",
+        "operation": "percent",
+        "amount": -60
+      }
+    ]
+  },
+  {
+    "id": "jawmsintegrations_b_half_b",
+    "match": [
+      {
+        "item": "minecraft:pumpkin_pie",
+        "meta": 0
+      }
+    ],
+    "fullDuration": 3600,
+    "priority": 1000,
+    "modifiers": [
+      {
+        "property": "jawmsintegrations:max_mana",
+        "operation": "flat",
+        "amount": 0.5
+      },
+      {
+        "property": "jawmsintegrations:max_mana",
+        "operation": "percent",
+        "amount": 5
+      },
+      {
+        "property": "jawmsintegrations:mana_regen_delay",
+        "operation": "percent",
+        "amount": -60
+      }
+    ]
+  },
+  {
+    "id": "jawmsintegrations_b_neutral",
+    "match": [
+      {
+        "item": "minecraft:cookie",
+        "meta": 0
+      }
+    ],
+    "fullDuration": 3600,
+    "priority": 1000,
+    "modifiers": [
+      {
+        "property": "jawmsintegrations:mana_regen",
+        "operation": "flat",
+        "amount": 0
+      }
+    ]
+  }
+]

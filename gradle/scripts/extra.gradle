@@ -3,3 +3,35 @@
 
 // If you wish to use the default helper methods, uncomment the line below
 // apply from: 'gradle/scripts/helpers.gradle'
+
+// Isolated observation mod; neither its classes nor its property enter the distributable.
+sourceSets {
+    jafsValidation {
+        compileClasspath += sourceSets.main.output + sourceSets.main.compileClasspath
+    }
+}
+tasks.register('jafsValidationJar', Jar) {
+    dependsOn tasks.named('jafsValidationClasses')
+    archiveBaseName.set('jawms-integrations-jafs-validation')
+    archiveVersion.set('dev')
+    destinationDirectory.set(layout.buildDirectory.dir('validation'))
+    from sourceSets.jafsValidation.output
+}
+def jafsProbeEnabled = (findProperty('enable_jafs_validation_probe') ?: 'false').toString().toBoolean()
+tasks.register('prepareJafsValidationProbe') {
+    if (jafsProbeEnabled) dependsOn tasks.named('jafsValidationJar')
+    doLast {
+        if (!jafsProbeEnabled) {
+            delete layout.projectDirectory.file('run/mods/jawms-integrations-jafs-validation-dev.jar')
+            return
+        }
+        if (!(propertyString('integration_runtime_profile') in ['jafs', 'all'])) {
+            throw new GradleException('JAFS validation probe requires the jafs or all runtime profile')
+        }
+        copy {
+            from tasks.named('jafsValidationJar').get().archiveFile
+            into layout.projectDirectory.dir('run/mods')
+        }
+    }
+}
+tasks.named('runClient').configure { dependsOn tasks.named('prepareJafsValidationProbe') }

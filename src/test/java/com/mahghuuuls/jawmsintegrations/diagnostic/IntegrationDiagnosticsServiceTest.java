@@ -6,6 +6,11 @@ import com.mahghuuuls.jawmsintegrations.integration.IntegrationCoordinator;
 import com.mahghuuuls.jawmsintegrations.integration.IntegrationId;
 import com.mahghuuuls.jawmsintegrations.integration.JawmsCompatibility;
 import com.mahghuuuls.jawmsintegrations.integration.OptionalIntegrationEvidenceRegistry;
+import com.mahghuuuls.jawmsintegrations.integration.jafs.FoodSourceAccess;
+import com.mahghuuuls.jawmsintegrations.integration.jafs.FoodStatProjection;
+import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.entity.player.EntityPlayerMP;
+import java.util.concurrent.atomic.AtomicInteger;
 import electroblob.wizardry.constants.Element;
 import org.junit.jupiter.api.Test;
 
@@ -100,6 +105,53 @@ class IntegrationDiagnosticsServiceTest {
                         + "spellEfficiency=25.0, elementSpellEfficiency={FIRE=5.0}}",
                 formatted);
         assertTrue(!formatted.contains("@"));
+    }
+
+    @Test
+    void sourceStatusDistinguishesInactiveZeroInvalidValidAndUnavailableWithoutAcceptingMana() throws Exception {
+        IntegrationConfigSnapshot config = IntegrationConfigSnapshot.defaults();
+        IntegrationCoordinator ready = IntegrationCoordinator.initialize(config, ignored -> "1.0.0",
+                ignored -> OptionalIntegrationEvidenceRegistry.Evidence.supported("1.0.0"));
+        IntegrationCoordinator active = ready.withActive(IntegrationId.JAFS, "registered");
+        AtomicInteger calls = new AtomicInteger();
+        FoodStatProjection.Totals[] maximum = {FoodStatProjection.Totals.ZERO};
+        FoodSourceAccess source = new FoodSourceAccess() {
+            @Override public FoodStatProjection.Result inspect(EntityPlayer player) {
+                calls.incrementAndGet();
+                if (maximum[0] == null) throw new IllegalStateException("not available");
+                return FoodStatProjection.project(stat -> stat == FoodStatProjection.Stat.MAX_MANA
+                        ? maximum[0] : FoodStatProjection.Totals.ZERO);
+            }
+            @Override public void clearWarnings() { throw new AssertionError("Inspection cleared warnings"); }
+        };
+        Class<?> unsafe = Class.forName("sun.misc.Unsafe");
+        java.lang.reflect.Field field = unsafe.getDeclaredField("theUnsafe");
+        field.setAccessible(true);
+        EntityPlayer player = (EntityPlayer) unsafe.getMethod("allocateInstance", Class.class)
+                .invoke(field.get(null), NamedPlayer.class);
+        IntegrationDiagnosticsService view = new IntegrationDiagnosticsService(
+                JawmsCompatibility.verify("1.1.0", CompatibleApi.class), config, active, source);
+        assertTrue(view.foodStatus(player).get(0).contains("ZERO"));
+        maximum[0] = new FoodStatProjection.Totals(0.5, 10);
+        List<String> invalid = view.foodStatus(player);
+        assertTrue(invalid.get(0).contains("INVALID FIELDS OMITTED"));
+        assertTrue(invalid.get(0).contains("maximumManaIncrease=10.0"));
+        assertTrue(invalid.stream().anyMatch(line -> line.contains("FRACTIONAL_MAXIMUM")));
+        assertTrue(invalid.stream().anyMatch(line -> line.contains("flat=0.5, percent=10.0")));
+        maximum[0] = new FoodStatProjection.Totals(8, 0);
+        assertTrue(view.foodStatus(player).get(0).contains("VALID"));
+        maximum[0] = null;
+        assertTrue(view.foodStatus(player).get(0).contains("unavailable (IllegalStateException)"));
+        assertEquals(4, calls.get());
+        IntegrationDiagnosticsService inactive = new IntegrationDiagnosticsService(
+                JawmsCompatibility.verify("1.1.0", CompatibleApi.class), config, ready, source);
+        assertTrue(inactive.foodStatus(player).get(0).contains("inactive"));
+        assertEquals(4, calls.get(), "Inactive modules must not query optional API state");
+    }
+
+    private static final class NamedPlayer extends EntityPlayerMP {
+        private NamedPlayer() { super(null, null, null, null); }
+        @Override public String getName() { return "FoodPlayer"; }
     }
 
     public static final class CompatibleApi {

@@ -44,6 +44,20 @@ class IntegrationStatusCommandTest {
     }
 
     @Test
+    void dispatcherRefusesNonOperatorsBeforeReadingAnyStatus() {
+        IntegrationStatusCommand command = new IntegrationStatusCommand(() -> {
+            throw new AssertionError("Refused caller reached diagnostic state");
+        });
+        net.minecraft.command.CommandHandler dispatcher = new net.minecraft.command.CommandHandler() {
+            @Override protected MinecraftServer getServer() { return null; }
+        };
+        dispatcher.registerCommand(command);
+        PermissionSender sender = new PermissionSender(false);
+        assertEquals(0, dispatcher.executeCommand(sender, "jawmsintegrations status"));
+        assertTrue(sender.lines.stream().anyMatch(line -> line.contains("permission")));
+    }
+
+    @Test
     void statusReadsTheCurrentCoordinatorAfterARuntimeModuleFailure() throws Exception {
         IntegrationConfigSnapshot config = IntegrationConfigSnapshot.defaults();
         IntegrationCoordinator coordinator = IntegrationCoordinator.initialize(config,

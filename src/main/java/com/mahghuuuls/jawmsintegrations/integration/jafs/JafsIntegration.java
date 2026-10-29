@@ -15,24 +15,30 @@ import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.fml.common.versioning.DefaultArtifactVersion;
+import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+import net.minecraftforge.fml.common.gameevent.PlayerEvent;
 
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 import java.util.function.Consumer;
 
 /** Owns native food access, guarded registration and bounded source warnings. */
-public final class JafsIntegration implements IContextualManaModifierProvider {
+public final class JafsIntegration implements IContextualManaModifierProvider, FoodSourceAccess {
     public static final ResourceLocation PROVIDER_ID = new ResourceLocation(Tags.MOD_ID, "jafs_foods");
 
     private final IFoodService foods;
     private final Consumer<EntityPlayer> dirty;
     private final Consumer<String> warnings;
     private final Consumer<String> failures;
-    // At most one entry per catalog stat/operation/reason, not a player-state mirror.
-    private final Set<FoodStatProjection.Problem> warned = new HashSet<>();
-    private boolean warnedUnavailable;
+    // Finite stat/operation/reason fingerprints per online player, never food snapshots.
+    private final Map<UUID, Set<FoodStatProjection.Problem>> warned = new HashMap<>();
+    private final Set<UUID> warnedUnavailable = new HashSet<>();
     private volatile boolean enabled;
 
     private JafsIntegration(IFoodService foods, Consumer<EntityPlayer> dirty, Consumer<String> warnings,
@@ -43,9 +49,16 @@ public final class JafsIntegration implements IContextualManaModifierProvider {
         this.failures = failures;
     }
 
-    public static void activate(Consumer<String> failure) {
-        install(new NativeRegistration(), ManaApi::markModifierCacheDirty,
+    public static FoodSourceAccess activate(Consumer<String> failure) {
+        JafsIntegration module = install(new NativeRegistration(), ManaApi::markModifierCacheDirty,
                 message -> JawmsIntegrationsMod.LOGGER.warn(message), failure);
+        try {
+            MinecraftForge.EVENT_BUS.register(module);
+        } catch (RuntimeException | LinkageError exception) {
+            module.enabled = false;
+            throw exception;
+        }
+        return module;
     }
 
     /** Platform registration is irreversible; tests substitute that boundary, not food math. */
@@ -93,28 +106,53 @@ public final class JafsIntegration implements IContextualManaModifierProvider {
         }
         FoodStatProjection.Result result;
         try {
-            result = FoodStatProjection.project(stat -> {
-                PropertyValue value = foods.getPropertyValue((EntityPlayerMP) player, stat.getId());
-                if (value == null) throw new IllegalStateException("JAFS returned no property total");
-                return new FoodStatProjection.Totals(value.flat(), value.percent());
-            });
+            result = inspect(player);
         } catch (LinkageError exception) {
             enabled = false;
             failures.accept("JAFS runtime API linkage failed: " + exception.getClass().getSimpleName()
                     + "; food contribution disabled until restart");
             return ManaContribution.EMPTY;
         } catch (RuntimeException exception) {
-            if (!warnedUnavailable) {
-                warnedUnavailable = true;
-                warnings.accept("JAFS food contribution unavailable: "
+            if (warnedUnavailable.add(player.getUniqueID())) {
+                warnings.accept("JAFS food contribution unavailable for " + player.getUniqueID() + ": "
                         + exception.getClass().getSimpleName() + "; contributing zero");
             }
             return ManaContribution.EMPTY;
         }
+        Set<FoodStatProjection.Problem> playerWarnings = warned.computeIfAbsent(
+                player.getUniqueID(), ignored -> new HashSet<>());
         for (FoodStatProjection.Problem problem : result.getProblems()) {
-            if (warned.add(problem)) warnings.accept("JAFS food field omitted: " + problem);
+            if (playerWarnings.add(problem)) warnings.accept("JAFS food field omitted for "
+                    + player.getUniqueID() + ": " + problem);
         }
         return result.getContribution();
+    }
+
+    @Override
+    public FoodStatProjection.Result inspect(EntityPlayer player) {
+        if (!enabled || !(player instanceof EntityPlayerMP)
+                || player.world != null && player.world.isRemote) {
+            throw new IllegalStateException("JAFS source requires an active server-player module");
+        }
+        return FoodStatProjection.project(stat -> {
+            PropertyValue value = foods.getPropertyValue((EntityPlayerMP) player, stat.getId());
+            if (value == null) throw new IllegalStateException("JAFS returned no property total");
+            return new FoodStatProjection.Totals(value.flat(), value.percent());
+        });
+    }
+
+    @SubscribeEvent
+    public void onLogout(PlayerEvent.PlayerLoggedOutEvent event) {
+        if (event.player != null) {
+            warned.remove(event.player.getUniqueID());
+            warnedUnavailable.remove(event.player.getUniqueID());
+        }
+    }
+
+    @Override
+    public void clearWarnings() {
+        warned.clear();
+        warnedUnavailable.clear();
     }
 
     static void requireRegistration(String apiVersion, boolean bound, boolean foodFrozen,

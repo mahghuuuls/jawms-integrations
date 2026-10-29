@@ -10,6 +10,7 @@ import com.mahghuuuls.jawmsintegrations.integration.IntegrationStatusView;
 import com.mahghuuuls.jawmsintegrations.integration.JawmsCompatibility;
 import com.mahghuuuls.jawmsintegrations.integration.IntegrationId;
 import com.mahghuuuls.jawmsintegrations.integration.jafs.JafsRegistrationBootstrap;
+import com.mahghuuuls.jawmsintegrations.integration.jafs.FoodSourceAccess;
 import com.mahghuuuls.jawmsintegrations.integration.EarlyModMetadataScanner;
 import com.mahghuuuls.jawmsintegrations.integration.OptionalIntegrationEvidenceRegistry;
 import com.mahghuuuls.jawmsintegrations.integration.qualitytools.QualityToolsIntegration;
@@ -31,6 +32,7 @@ import net.minecraftforge.fml.common.event.FMLPostInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLServerStartingEvent;
+import net.minecraftforge.fml.common.event.FMLServerStoppedEvent;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -56,6 +58,7 @@ public final class JawmsIntegrationsMod {
     private IntegrationCoordinator coordinator;
     private IntegrationDiagnosticsService diagnostics;
     private JawmsCompatibility.Status jawms;
+    private FoodSourceAccess foodSource;
 
     @Mod.EventHandler
     public void preInit(FMLPreInitializationEvent event) {
@@ -121,10 +124,10 @@ public final class JawmsIntegrationsMod {
         if (coordinator.getStatus(IntegrationId.JAFS).getState() == IntegrationState.READY) {
             try {
                 ClassLoader loader = Thread.currentThread().getContextClassLoader();
-                JafsRegistrationBootstrap.register(loader == null ? getClass().getClassLoader() : loader,
+                foodSource = JafsRegistrationBootstrap.register(loader == null ? getClass().getClassLoader() : loader,
                         detail -> {
                             coordinator = coordinator.withFailure(IntegrationId.JAFS, detail);
-                            diagnostics = new IntegrationDiagnosticsService(jawms, config, coordinator);
+                            diagnostics = new IntegrationDiagnosticsService(jawms, config, coordinator, foodSource);
                             LOGGER.warn("JAFS integration FAILED: {}", detail);
                         });
                 coordinator = coordinator.withActive(IntegrationId.JAFS,
@@ -161,7 +164,7 @@ public final class JawmsIntegrationsMod {
         FMLCommonHandler.instance().bus().register(new IntegrationPresentationSync(
                 coordinator.getStatus(IntegrationId.QUALITY_TOOLS).getState()
                         == IntegrationState.ACTIVE));
-        diagnostics = new IntegrationDiagnosticsService(jawms, config, coordinator);
+        diagnostics = new IntegrationDiagnosticsService(jawms, config, coordinator, foodSource);
     }
 
     @Mod.EventHandler
@@ -174,6 +177,11 @@ public final class JawmsIntegrationsMod {
     @Mod.EventHandler
     public void serverStarting(FMLServerStartingEvent event) {
         event.registerServerCommand(new IntegrationStatusCommand(() -> diagnostics));
+    }
+
+    @Mod.EventHandler
+    public void serverStopped(FMLServerStoppedEvent event) {
+        if (foodSource != null) foodSource.clearWarnings();
     }
 
     private void emitQualityToolsReloadSummary() {

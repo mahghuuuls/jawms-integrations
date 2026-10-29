@@ -4,7 +4,6 @@ import com.mahghuuuls.jawms.api.ManaApi;
 import com.mahghuuuls.jawms.api.ManaContribution;
 import com.mahghuuuls.jawms.api.ManaContributionExplanation;
 import com.mahghuuuls.jawms.api.ManaProfileExplanation;
-import com.mahghuuuls.jawms.api.ManaPublicState;
 import com.mahghuuuls.jawmsintegrations.Tags;
 import com.mahghuuuls.jawmsintegrations.config.IntegrationConfigSnapshot;
 import com.mahghuuuls.jawmsintegrations.integration.IntegrationCoordinator;
@@ -13,6 +12,8 @@ import com.mahghuuuls.jawmsintegrations.integration.IntegrationState;
 import com.mahghuuuls.jawmsintegrations.integration.IntegrationStatusView;
 import com.mahghuuuls.jawmsintegrations.integration.JawmsCompatibility;
 import com.mahghuuuls.jawmsintegrations.integration.ancientspellcraft.DagorimFlaskService;
+import com.mahghuuuls.jawmsintegrations.integration.jafs.FoodSourceAccess;
+import com.mahghuuuls.jawmsintegrations.integration.jafs.FoodStatProjection;
 import net.minecraft.entity.player.EntityPlayer;
 
 import java.util.ArrayList;
@@ -24,13 +25,22 @@ public final class IntegrationDiagnosticsService {
     private final JawmsCompatibility.Status jawms;
     private final IntegrationConfigSnapshot config;
     private final IntegrationCoordinator coordinator;
+    private final FoodSourceAccess foodSource;
 
     public IntegrationDiagnosticsService(JawmsCompatibility.Status jawms,
                                          IntegrationConfigSnapshot config,
                                          IntegrationCoordinator coordinator) {
+        this(jawms, config, coordinator, null);
+    }
+
+    public IntegrationDiagnosticsService(JawmsCompatibility.Status jawms,
+                                         IntegrationConfigSnapshot config,
+                                         IntegrationCoordinator coordinator,
+                                         FoodSourceAccess foodSource) {
         this.jawms = jawms;
         this.config = config;
         this.coordinator = coordinator;
+        this.foodSource = foodSource;
     }
 
     public String startupSummary() {
@@ -84,13 +94,21 @@ public final class IntegrationDiagnosticsService {
 
     public List<String> playerStatus(EntityPlayer player) {
         List<String> lines = new ArrayList<>();
-        ManaPublicState mana = ManaApi.getManaService().getState(player);
-        lines.add("JAWMS state: mana=" + mana.getCurrentMana() + "/" + mana.getMaximumMana()
-                + ", regeneration=" + mana.getEffectiveRegeneration()
-                + ", lockout=" + mana.getRemainingLockoutTicks()
-                + "/" + mana.getEffectiveLockoutTicks() + " ticks");
+        lines.addAll(foodStatus(player));
+        ManaProfileExplanation profile;
+        try {
+            profile = ManaApi.explainManaProfile(player);
+        } catch (IllegalStateException unavailable) {
+            lines.add("JAWMS last accepted profile for " + player.getName()
+                    + ": unavailable (" + unavailable.getMessage() + ")");
+            return lines;
+        }
+        lines.add("JAWMS last accepted profile: tick=" + profile.getEvaluatedWorldTick()
+                + ", rulesRevision=" + profile.getGameplayRulesRevision()
+                + ", maximumMana=" + profile.getFinalMaximumMana()
+                + ", regeneration=" + profile.getFinalRegeneration()
+                + ", lockout=" + profile.getFinalLockoutTicks() + " ticks");
         lines.add("JAWMS Integrations contributions for " + player.getName() + ":");
-        ManaProfileExplanation profile = ManaApi.explainManaProfile(player);
         int count = 0;
         for (ManaContributionExplanation contribution : profile.getContributions()) {
             if (!Tags.MOD_ID.equals(contribution.getSourceId().getNamespace())) {
@@ -118,6 +136,40 @@ public final class IntegrationDiagnosticsService {
         }
         if (count == 0) {
             lines.add("- none");
+        }
+        return lines;
+    }
+
+    public List<String> foodStatus(EntityPlayer player) {
+        List<String> lines = new ArrayList<>();
+        IntegrationStatusView status = coordinator.getStatus(IntegrationId.JAFS);
+        if (status.getState() != IntegrationState.ACTIVE) {
+            lines.add("JAFS source: inactive (" + status.getState() + ", " + status.getDetail() + ")");
+            return lines;
+        }
+        try {
+            if (foodSource == null) throw new IllegalStateException("source access not installed");
+            FoodStatProjection.Result source = foodSource.inspect(player);
+            boolean nonzero = source.getSourceTotals().values().stream()
+                    .anyMatch(value -> value.getFlat() != 0.0D || value.getPercent() != 0.0D);
+            lines.add("JAFS current source for " + player.getName() + ": "
+                    + (!source.getProblems().isEmpty() ? "INVALID FIELDS OMITTED"
+                    : nonzero ? "VALID" : "ZERO (no authored active contribution)")
+                    + "; projected=" + formatContribution(source.getContribution())
+                    + "; independent of the last accepted JAWMS profile below");
+            for (java.util.Map.Entry<FoodStatProjection.Stat, FoodStatProjection.Totals> entry
+                    : source.getSourceTotals().entrySet()) {
+                FoodStatProjection.Totals total = entry.getValue();
+                if (total.getFlat() != 0.0D || total.getPercent() != 0.0D) {
+                    lines.add("- native " + entry.getKey().getId() + ": flat=" + total.getFlat()
+                            + ", percent=" + total.getPercent());
+                }
+            }
+            for (FoodStatProjection.Problem problem : source.getProblems()) {
+                lines.add("- omitted " + problem);
+            }
+        } catch (RuntimeException | LinkageError unavailable) {
+            lines.add("JAFS current source: unavailable (" + unavailable.getClass().getSimpleName() + ")");
         }
         return lines;
     }
