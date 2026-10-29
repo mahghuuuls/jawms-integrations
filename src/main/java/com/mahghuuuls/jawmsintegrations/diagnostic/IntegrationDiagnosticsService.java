@@ -69,6 +69,7 @@ public final class IntegrationDiagnosticsService {
                 + ", Ancient Spellcraft=" + enabled(config.getAncientSpellcraft().isIntegrationEnabled())
                 + ", Ancient replacements=" + ancientReplacementSummary()
                 + ", CraftTweaker=" + enabled(config.getCraftTweaker().isEnabled())
+                + ", JAFS=" + enabled(config.getJafs().isEnabled())
                 + ", startup diagnostics=" + enabled(config.getDiagnostics().isEnabled()));
         if (config.getDiagnostics().isEnabled()) {
             lines.add("Latest Ring of Dagorim activation: "

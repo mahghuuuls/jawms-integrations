@@ -39,14 +39,16 @@ class IntegrationDiagnosticsServiceTest {
         assertTrue(startup.contains("CraftTweaker=ABSENT"));
         assertTrue(startup.contains("built-in qualities=enabled(12/12)"));
         assertTrue(startup.contains("Ancient replacements=inactive(state=ABSENT)"));
-        assertEquals(5, overall.size());
+        assertEquals(6, overall.size());
         assertTrue(overall.get(1).contains("Quality Tools: ABSENT"));
         assertTrue(overall.get(2).contains("Ancient Spellcraft: ABSENT"));
         assertTrue(overall.get(3).contains("CraftTweaker: ABSENT"));
-        assertTrue(overall.get(4).contains("startup diagnostics=disabled"));
-        assertTrue(overall.get(4).contains("built-in qualities=enabled(12/12)"));
-        assertTrue(overall.get(4).contains("Ancient replacements=inactive(state=ABSENT)"));
-        assertTrue(overall.get(4).contains("CraftTweaker=enabled"));
+        assertTrue(overall.get(4).contains("Just Another Food System: ABSENT"));
+        assertTrue(overall.get(5).contains("startup diagnostics=disabled"));
+        assertTrue(overall.get(5).contains("built-in qualities=enabled(12/12)"));
+        assertTrue(overall.get(5).contains("Ancient replacements=inactive(state=ABSENT)"));
+        assertTrue(overall.get(5).contains("CraftTweaker=enabled"));
+        assertTrue(overall.get(5).contains("JAFS=enabled"));
         assertEquals("Quality Tools reload summary: built-in qualities=enabled(12/12)",
                 diagnostics.qualityToolsReloadSummary());
     }

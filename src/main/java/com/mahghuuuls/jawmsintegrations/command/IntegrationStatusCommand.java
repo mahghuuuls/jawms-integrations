@@ -13,13 +13,14 @@ import net.minecraft.util.text.TextComponentString;
 import javax.annotation.Nullable;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.Supplier;
 
 /** Operator-only, read-only status command. */
 public final class IntegrationStatusCommand extends CommandBase {
 
-    private final IntegrationDiagnosticsService diagnostics;
+    private final Supplier<IntegrationDiagnosticsService> diagnostics;
 
-    public IntegrationStatusCommand(IntegrationDiagnosticsService diagnostics) {
+    public IntegrationStatusCommand(Supplier<IntegrationDiagnosticsService> diagnostics) {
         if (diagnostics == null) {
             throw new IllegalArgumentException("Diagnostics service must not be null");
         }
@@ -45,12 +46,12 @@ public final class IntegrationStatusCommand extends CommandBase {
     public void execute(MinecraftServer server, ICommandSender sender, String[] args)
             throws CommandException {
         if (args.length == 0 || (args.length == 1 && "status".equalsIgnoreCase(args[0]))) {
-            send(sender, diagnostics.overallStatus());
+            send(sender, diagnostics.get().overallStatus());
             return;
         }
         if (args.length == 2 && "status".equalsIgnoreCase(args[0])) {
             EntityPlayerMP player = getPlayer(server, sender, args[1]);
-            send(sender, diagnostics.playerStatus(player));
+            send(sender, diagnostics.get().playerStatus(player));
             return;
         }
         throw new WrongUsageException(getUsage(sender));

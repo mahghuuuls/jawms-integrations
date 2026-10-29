@@ -16,7 +16,8 @@ public enum IntegrationId {
             "1.12-4.1.20.715",
             "1.12-4.1.20.715",
             "4.1.20"
-    );
+    ),
+    JAFS("Just Another Food System", "jafs", "1.0.0", "1.0.0");
 
     private final String displayName;
     private final String modId;
@@ -86,6 +87,8 @@ public enum IntegrationId {
                 break;
             case CRAFTTWEAKER:
                 if (normalized.startsWith("1.12-")) normalized = normalized.substring(5);
+                break;
+            case JAFS:
                 break;
             default:
                 throw new IllegalStateException("Unhandled integration " + this);

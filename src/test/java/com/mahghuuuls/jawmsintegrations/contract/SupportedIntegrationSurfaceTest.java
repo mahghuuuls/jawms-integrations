@@ -18,14 +18,15 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 final class SupportedIntegrationSurfaceTest {
 
     @Test
-    void exposesOnlyTheThreeSupportedIntegrations() {
+    void exposesOnlyTheFourSupportedIntegrations() {
         Path project = Paths.get("").toAbsolutePath();
 
         assertAll(
                 () -> assertArrayEquals(new IntegrationId[] {
                                 IntegrationId.QUALITY_TOOLS,
                                 IntegrationId.ANCIENT_SPELLCRAFT,
-                                IntegrationId.CRAFTTWEAKER
+                                IntegrationId.CRAFTTWEAKER,
+                                IntegrationId.JAFS
                         }, IntegrationId.values()),
                 () -> assertFalse(containsRegularFile(project.resolve(
                         "src/main/java/com/mahghuuuls/jawmsintegrations/integration/arsmagica"))),

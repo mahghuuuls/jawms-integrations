@@ -10,19 +10,29 @@ public final class IntegrationConfigSnapshot {
     private final QualityToolsConfig qualityTools;
     private final AncientSpellcraftConfig ancientSpellcraft;
     private final IntegrationToggleConfig craftTweaker;
+    private final IntegrationToggleConfig jafs;
     private final DiagnosticsConfig diagnostics;
 
     public IntegrationConfigSnapshot(QualityToolsConfig qualityTools,
                                      AncientSpellcraftConfig ancientSpellcraft,
                                      IntegrationToggleConfig craftTweaker,
                                      DiagnosticsConfig diagnostics) {
-        if (qualityTools == null || ancientSpellcraft == null || craftTweaker == null
+        this(qualityTools, ancientSpellcraft, craftTweaker, new IntegrationToggleConfig(true), diagnostics);
+    }
+
+    public IntegrationConfigSnapshot(QualityToolsConfig qualityTools,
+                                     AncientSpellcraftConfig ancientSpellcraft,
+                                     IntegrationToggleConfig craftTweaker,
+                                     IntegrationToggleConfig jafs,
+                                     DiagnosticsConfig diagnostics) {
+        if (qualityTools == null || ancientSpellcraft == null || craftTweaker == null || jafs == null
                 || diagnostics == null) {
             throw new IllegalArgumentException("Configuration sections must not be null");
         }
         this.qualityTools = qualityTools;
         this.ancientSpellcraft = ancientSpellcraft;
         this.craftTweaker = craftTweaker;
+        this.jafs = jafs;
         this.diagnostics = diagnostics;
     }
 
@@ -49,6 +59,10 @@ public final class IntegrationConfigSnapshot {
 
     public DiagnosticsConfig getDiagnostics() {
         return diagnostics;
+    }
+
+    public IntegrationToggleConfig getJafs() {
+        return jafs;
     }
 
     public static final class IntegrationToggleConfig {

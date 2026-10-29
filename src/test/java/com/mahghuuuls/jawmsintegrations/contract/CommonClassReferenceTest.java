@@ -24,6 +24,7 @@ class CommonClassReferenceTest {
             "crafttweaker/runtime/",
             "crafttweaker/mc1120/",
             "stanhebben/zenscript/",
+            "com/mahghuuuls/jafs/",
             "am2/"
     };
 
@@ -47,6 +48,7 @@ class CommonClassReferenceTest {
         return !normalized.contains("/integration/qualitytools/")
                 && !normalized.contains("/integration/ancientspellcraft/")
                 && !normalized.contains("/integration/crafttweaker/")
+                && !normalized.contains("/integration/jafs/")
                 && !normalized.contains("/mixin/qualitytools/")
                 && !normalized.contains("/mixin/ancientspellcraft/");
     }

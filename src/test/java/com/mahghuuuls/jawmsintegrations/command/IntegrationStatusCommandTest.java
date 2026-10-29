@@ -9,7 +9,12 @@ import net.minecraft.command.CommandResultStats;
 import net.minecraft.command.ICommandSender;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.World;
+import net.minecraft.util.text.ITextComponent;
 import org.junit.jupiter.api.Test;
+import com.mahghuuuls.jawmsintegrations.integration.IntegrationId;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -30,12 +35,32 @@ class IntegrationStatusCommandTest {
                 config,
                 coordinator
         );
-        IntegrationStatusCommand command = new IntegrationStatusCommand(diagnostics);
+        IntegrationStatusCommand command = new IntegrationStatusCommand(() -> diagnostics);
 
         assertEquals(2, command.getRequiredPermissionLevel());
         assertEquals("jawmsintegrations", command.getName());
         assertFalse(command.checkPermission(null, new PermissionSender(false)));
         assertTrue(command.checkPermission(null, new PermissionSender(true)));
+    }
+
+    @Test
+    void statusReadsTheCurrentCoordinatorAfterARuntimeModuleFailure() throws Exception {
+        IntegrationConfigSnapshot config = IntegrationConfigSnapshot.defaults();
+        IntegrationCoordinator coordinator = IntegrationCoordinator.initialize(config,
+                modId -> "1.0.0", integration -> OptionalIntegrationEvidenceRegistry.Evidence.supported("1.0.0"));
+        AtomicReference<IntegrationDiagnosticsService> current = new AtomicReference<>(
+                new IntegrationDiagnosticsService(JawmsCompatibility.verify("1.1.0", CompatibleApi.class),
+                        config, coordinator));
+        IntegrationStatusCommand command = new IntegrationStatusCommand(current::get);
+        PermissionSender sender = new PermissionSender(true);
+        command.execute(null, sender, new String[]{"status"});
+        assertTrue(sender.lines.stream().anyMatch(line -> line.contains("Just Another Food System: READY")));
+        current.set(new IntegrationDiagnosticsService(JawmsCompatibility.verify("1.1.0", CompatibleApi.class),
+                config, coordinator.withFailure(IntegrationId.JAFS, "runtime linkage failure")));
+        sender.lines.clear();
+        command.execute(null, sender, new String[]{"status"});
+        assertTrue(sender.lines.stream().anyMatch(line -> line.contains("Just Another Food System: FAILED")
+                && line.contains("runtime linkage failure")));
     }
 
     public static final class CompatibleApi {
@@ -44,6 +69,12 @@ class IntegrationStatusCommandTest {
 
     private static final class PermissionSender implements ICommandSender {
         private final boolean permitted;
+        private final List<String> lines = new ArrayList<>();
+
+        @Override
+        public void sendMessage(ITextComponent message) {
+            lines.add(message.getUnformattedText());
+        }
 
         private PermissionSender(boolean permitted) {
             this.permitted = permitted;

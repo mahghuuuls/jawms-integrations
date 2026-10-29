@@ -15,10 +15,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class IntegrationCoordinatorTest {
 
     @Test
-    void allThreeAbsentOptionalModsRemainIndependentInactiveStates() {
+    void allAbsentOptionalModsRemainIndependentInactiveStates() {
         IntegrationCoordinator coordinator = initialize(
                 IntegrationConfigSnapshot.defaults(), new HashMap<>(), allAbsent());
-        assertEquals(3, coordinator.getStatuses().size());
+        assertEquals(4, coordinator.getStatuses().size());
         for (IntegrationId integration : IntegrationId.values()) {
             assertEquals(IntegrationState.ABSENT, coordinator.getStatus(integration).getState());
         }
@@ -30,6 +30,7 @@ class IntegrationCoordinatorTest {
                 new IntegrationConfigSnapshot.QualityToolsConfig(false, true),
                 new IntegrationConfigSnapshot.AncientSpellcraftConfig(true),
                 new IntegrationConfigSnapshot.IntegrationToggleConfig(false),
+                new IntegrationConfigSnapshot.IntegrationToggleConfig(false),
                 new IntegrationConfigSnapshot.DiagnosticsConfig(false));
         IntegrationCoordinator coordinator = initialize(config, supportedVersions(), allSupported());
         assertEquals(IntegrationState.DISABLED,
@@ -38,6 +39,8 @@ class IntegrationCoordinatorTest {
                 coordinator.getStatus(IntegrationId.ANCIENT_SPELLCRAFT).getState());
         assertEquals(IntegrationState.DISABLED,
                 coordinator.getStatus(IntegrationId.CRAFTTWEAKER).getState());
+        assertEquals(IntegrationState.DISABLED,
+                coordinator.getStatus(IntegrationId.JAFS).getState());
     }
 
     @Test
@@ -124,6 +127,7 @@ class IntegrationCoordinatorTest {
             assertTrue(integration.meetsMinimumMetadataVersion(newerVersion(integration)));
         }
         assertFalse(IntegrationId.QUALITY_TOOLS.meetsMinimumMetadataVersion("1.0.6_for_1.12.2"));
+        assertFalse(IntegrationId.JAFS.meetsMinimumMetadataVersion("0.9.9"));
         assertFalse(IntegrationId.ANCIENT_SPELLCRAFT.meetsMinimumMetadataVersion("1.12.2-1.8.2"));
         assertFalse(IntegrationId.CRAFTTWEAKER.meetsMinimumMetadataVersion("1.12-4.1.20.714"));
 
@@ -227,6 +231,7 @@ class IntegrationCoordinatorTest {
             case QUALITY_TOOLS: return "2.0.0-beta_for_1.12.2";
             case ANCIENT_SPELLCRAFT: return "1.12.2-2.0.0-beta";
             case CRAFTTWEAKER: return "1.12-4.2.0.0";
+            case JAFS: return "2.0.0";
             default: throw new IllegalStateException("Unhandled integration " + integration);
         }
     }

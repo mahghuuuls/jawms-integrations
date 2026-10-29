@@ -17,6 +17,7 @@ public final class IntegrationConfigLoader {
     private static final String QUALITY_TOOLS = "quality_tools";
     private static final String ANCIENT_SPELLCRAFT = "ancient_spellcraft";
     private static final String CRAFTTWEAKER = "crafttweaker";
+    private static final String JAFS = "jafs";
     private static final String DIAGNOSTICS = "diagnostics";
 
     private IntegrationConfigLoader() {
@@ -94,6 +95,11 @@ public final class IntegrationConfigLoader {
                 "Controls whether the JAWMS CraftTweaker scripting integration may activate. Requires restart.",
                 warnings
         );
+        boolean jafsEnabled = readBoolean(
+                configuration, JAFS, "enabled", true,
+                "Enables JAWMS properties for active foods. Food definitions remain pack-authored. Requires restart.",
+                warnings
+        );
         boolean diagnosticsEnabled = readBoolean(
                 configuration,
                 DIAGNOSTICS,
@@ -122,6 +128,7 @@ public final class IntegrationConfigLoader {
                         everfullManaFlask,
                         ringOfDagorim),
                 new IntegrationConfigSnapshot.IntegrationToggleConfig(craftTweakerEnabled),
+                new IntegrationConfigSnapshot.IntegrationToggleConfig(jafsEnabled),
                 new IntegrationConfigSnapshot.DiagnosticsConfig(diagnosticsEnabled)
         );
         return new LoadResult(snapshot, warnings);

@@ -1,0 +1,147 @@
+{
+  "cyc3_jafs_a_setup": {
+    "description": "Disposable world only. Reset food/equipment; freeze regeneration in staged JAWMS config.",
+    "stopOnFailure": true,
+    "trace": true,
+    "result": true,
+    "commands": [
+      "devtool session start cyc3_jafs_first_profile",
+      "devtool session operator @s",
+      "devtool capabilities",
+      "devtool mods",
+      "devtool environment",
+      "gamerule doMobSpawning false",
+      "gamerule doDaylightCycle false",
+      "gamerule doWeatherCycle false",
+      "gamerule naturalRegeneration false",
+      "gamerule randomTickSpeed 0",
+      "difficulty peaceful",
+      "clear ${operator.name}",
+      "jafs clear ${operator.name}",
+      "gamemode survival ${operator.name}",
+      "give ${operator.name} minecraft:apple 1",
+      "jawms-dev mana set ${operator.name} 80",
+      "devtool log item_use on all",
+      "jawms-dev providers",
+      "devtool inspect player ${operator.name}",
+      "jafs inspect ${operator.name}",
+      "jawms-dev state ${operator.name}",
+      "jawms-dev explain ${operator.name}",
+      "devtool mark JAFS_A1_READY"
+    ]
+  },
+  "cyc3_jafs_a_after_eat": {
+    "description": "Read accepted meal and mana, then unchanged dirty refresh without mana mutation.",
+    "stopOnFailure": true,
+    "trace": true,
+    "result": true,
+    "commands": [
+      {
+        "command": "jafs inspect ${operator.name}",
+        "delayTicks": 2
+      },
+      "jawms-dev state ${operator.name}",
+      "jawms-dev explain ${operator.name}",
+      "devtool mark JAFS_A1_AFTER_EAT",
+      "jawms-dev cache dirty ${operator.name}",
+      {
+        "command": "jawms-dev state ${operator.name}",
+        "delayTicks": 2
+      },
+      "jawms-dev explain ${operator.name}",
+      "devtool mark JAFS_A1_REBUILD_CHECKED",
+      "devtool log item_use off"
+    ]
+  },
+  "cyc3_jafs_a_before_relog": {
+    "description": "Only setup for above-base saved current mana. Never run on resume.",
+    "stopOnFailure": true,
+    "trace": true,
+    "result": true,
+    "commands": [
+      "jawms-dev mana set ${operator.name} 110",
+      "devtool inspect player ${operator.name}",
+      "jafs inspect ${operator.name}",
+      "jawms-dev state ${operator.name}",
+      "jawms-dev explain ${operator.name}",
+      "devtool save",
+      "devtool mark JAFS_A2_SAVED"
+    ]
+  },
+  "cyc3_jafs_a_after_relog": {
+    "description": "Read persisted same-save player without setup, mana mutation or forced refresh.",
+    "stopOnFailure": true,
+    "trace": true,
+    "result": true,
+    "commands": [
+      "devtool session operator @s",
+      "devtool session status",
+      "devtool inspect player ${operator.name}",
+      "jafs inspect ${operator.name}",
+      "jawms-dev state ${operator.name}",
+      "jawms-dev explain ${operator.name}",
+      "devtool mark JAFS_A2_RESUMED",
+      "jawms-dev cache dirty ${operator.name}",
+      {"command": "jawms-dev state ${operator.name}", "delayTicks": 2},
+      "jawms-dev explain ${operator.name}",
+      "devtool mark JAFS_A2_REBUILD_CHECKED"
+    ]
+  },
+  "cyc3_jafs_a_before_restart": {
+    "description": "Persist current state and pin the read-only next bundle across real process stop.",
+    "stopOnFailure": true,
+    "trace": true,
+    "result": true,
+    "commands": [
+      "devtool inspect player ${operator.name}",
+      "jafs inspect ${operator.name}",
+      "jawms-dev state ${operator.name}",
+      "jawms-dev explain ${operator.name}",
+      "devtool scenario checkpoint cyc3_jafs_first_profile next cyc3_jafs_a_after_restart clean",
+      "devtool save",
+      "devtool mark JAFS_A3_SAVED"
+    ]
+  },
+  "cyc3_jafs_a_after_restart": {
+    "description": "Scenario restores identity/session; read before any setup/reset/refill.",
+    "stopOnFailure": true,
+    "trace": true,
+    "result": true,
+    "commands": [
+      "devtool session status",
+      "devtool inspect player ${operator.name}",
+      "jafs inspect ${operator.name}",
+      "jawms-dev state ${operator.name}",
+      "jawms-dev explain ${operator.name}",
+      "devtool mark JAFS_A3_RESUMED",
+      "devtool scenario complete cyc3_jafs_first_profile"
+    ]
+  },
+  "cyc3_jafs_a_remove": {
+    "description": "Native clear should remove source then clamp accepted mana once; no manual dirty or mana write.",
+    "stopOnFailure": true,
+    "trace": true,
+    "result": true,
+    "commands": [
+      "jafs clear ${operator.name}",
+      {
+        "command": "jafs inspect ${operator.name}",
+        "delayTicks": 2
+      },
+      "jawms-dev state ${operator.name}",
+      "jawms-dev explain ${operator.name}",
+      "devtool mark JAFS_A4_REMOVED"
+    ]
+  },
+  "cyc3_jafs_a_teardown": {
+    "description": "End temporary observation. Discard the disposable world; agent restores backed-up config.",
+    "stopOnFailure": true,
+    "trace": true,
+    "result": true,
+    "commands": [
+      "devtool log item_use off",
+      "devtool mark JAFS_A_DONE",
+      "devtool session stop"
+    ]
+  }
+}

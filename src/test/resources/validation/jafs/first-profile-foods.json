@@ -1,0 +1,11 @@
+[
+  {
+    "id": "jawmsintegrations_c1_apple",
+    "match": [{"item": "minecraft:apple", "meta": 0}],
+    "fullDuration": 3600,
+    "priority": 1000,
+    "modifiers": [
+      {"property": "jawmsintegrations:max_mana", "operation": "flat", "amount": 20}
+    ]
+  }
+]

@@ -9,6 +9,7 @@ import com.mahghuuuls.jawmsintegrations.integration.IntegrationState;
 import com.mahghuuuls.jawmsintegrations.integration.IntegrationStatusView;
 import com.mahghuuuls.jawmsintegrations.integration.JawmsCompatibility;
 import com.mahghuuuls.jawmsintegrations.integration.IntegrationId;
+import com.mahghuuuls.jawmsintegrations.integration.jafs.JafsRegistrationBootstrap;
 import com.mahghuuuls.jawmsintegrations.integration.EarlyModMetadataScanner;
 import com.mahghuuuls.jawmsintegrations.integration.OptionalIntegrationEvidenceRegistry;
 import com.mahghuuuls.jawmsintegrations.integration.qualitytools.QualityToolsIntegration;
@@ -78,6 +79,10 @@ public final class JawmsIntegrationsMod {
                 IntegrationId.CRAFTTWEAKER,
                 EarlyModMetadataScanner.scan(contextLoader, IntegrationId.CRAFTTWEAKER)
         );
+        OptionalIntegrationEvidenceRegistry.record(
+                IntegrationId.JAFS,
+                EarlyModMetadataScanner.scan(contextLoader, IntegrationId.JAFS)
+        );
 
         IntegrationNetwork.initialize();
 
@@ -113,6 +118,24 @@ public final class JawmsIntegrationsMod {
 
     @Mod.EventHandler
     public void init(FMLInitializationEvent event) {
+        if (coordinator.getStatus(IntegrationId.JAFS).getState() == IntegrationState.READY) {
+            try {
+                ClassLoader loader = Thread.currentThread().getContextClassLoader();
+                JafsRegistrationBootstrap.register(loader == null ? getClass().getClassLoader() : loader,
+                        detail -> {
+                            coordinator = coordinator.withFailure(IntegrationId.JAFS, detail);
+                            diagnostics = new IntegrationDiagnosticsService(jawms, config, coordinator);
+                            LOGGER.warn("JAFS integration FAILED: {}", detail);
+                        });
+                coordinator = coordinator.withActive(IntegrationId.JAFS,
+                        "Active-food JAWMS properties and contextual provider registered");
+            } catch (RuntimeException | LinkageError exception) {
+                coordinator = coordinator.withFailure(IntegrationId.JAFS,
+                        "Activation failed: " + exception.getClass().getSimpleName()
+                                + ": " + exception.getMessage());
+                LOGGER.error("JAFS integration activation failed; no food bonus enabled", exception);
+            }
+        }
         IntegrationState ancientState = coordinator.getStatus(
                 IntegrationId.ANCIENT_SPELLCRAFT).getState();
         if (ancientState == IntegrationState.READY) {
@@ -150,7 +173,7 @@ public final class JawmsIntegrationsMod {
 
     @Mod.EventHandler
     public void serverStarting(FMLServerStartingEvent event) {
-        event.registerServerCommand(new IntegrationStatusCommand(diagnostics));
+        event.registerServerCommand(new IntegrationStatusCommand(() -> diagnostics));
     }
 
     private void emitQualityToolsReloadSummary() {
