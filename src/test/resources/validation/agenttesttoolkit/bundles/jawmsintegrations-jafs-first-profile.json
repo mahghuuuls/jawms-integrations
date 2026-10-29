@@ -21,7 +21,7 @@
       "gamemode survival ${operator.name}",
       "give ${operator.name} minecraft:apple 1",
       "jawms-dev mana set ${operator.name} 80",
-      "devtool log item_use on all",
+      "devtool log item_use on",
       "jawms-dev providers",
       "devtool inspect player ${operator.name}",
       "jafs inspect ${operator.name}",
