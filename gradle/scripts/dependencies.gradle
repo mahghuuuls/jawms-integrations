@@ -1,4 +1,6 @@
 import org.gradle.api.attributes.Attribute
+import groovy.json.JsonSlurper
+import java.util.jar.JarFile
 
 apply from: 'gradle/scripts/helpers.gradle'
 
@@ -58,6 +60,11 @@ configurations {
         canBeResolved = true
         transitive = false
     }
+    jafsContract {
+        canBeConsumed = false
+        canBeResolved = true
+        transitive = false
+    }
     ancientSpellcraftRuntimeMods {
         canBeConsumed = false
         canBeResolved = true
@@ -77,7 +84,7 @@ configurations {
 
 def integrationRuntimeProfile = propertyString('integration_runtime_profile').toLowerCase(Locale.ROOT)
 def supportedIntegrationRuntimeProfiles = [
-        'none', 'qualitytools', 'ancientspellcraft', 'crafttweaker', 'both', 'all'
+        'none', 'qualitytools', 'ancientspellcraft', 'crafttweaker', 'jafs', 'both', 'all'
 ]
 if (!supportedIntegrationRuntimeProfiles.contains(integrationRuntimeProfile)) {
     throw new GradleException("Unsupported integration_runtime_profile '${integrationRuntimeProfile}'. "
@@ -87,6 +94,22 @@ if (!supportedIntegrationRuntimeProfiles.contains(integrationRuntimeProfile)) {
 def qualityToolsRuntimeEnabled = integrationRuntimeProfile in ['qualitytools', 'both', 'all']
 def ancientSpellcraftRuntimeEnabled = integrationRuntimeProfile in ['ancientspellcraft', 'both', 'all']
 def craftTweakerRuntimeEnabled = integrationRuntimeProfile in ['crafttweaker', 'all']
+def jafsRuntimeEnabled = integrationRuntimeProfile in ['jafs', 'all']
+def jafsCoordinate = 'curse.maven:just-another-food-system-1758738:9283113'
+
+def verifiedDevelopmentTool = { String label, String pathProperty, String checksumProperty ->
+    def toolJar = file(propertyString(pathProperty))
+    if (!toolJar.isFile()) {
+        throw new GradleException("${label} JAR not found: ${toolJar.absolutePath}")
+    }
+    def actual = java.security.MessageDigest.getInstance('SHA-256')
+            .digest(toolJar.bytes).encodeHex().toString().toUpperCase(Locale.ROOT)
+    def expected = propertyString(checksumProperty).toUpperCase(Locale.ROOT)
+    if (actual != expected) {
+        throw new GradleException("${label} SHA-256 mismatch: expected ${expected}, found ${actual}")
+    }
+    toolJar
+}
 
 dependencies {
     // Include StripLatestForgeRequirements by default for the dev env, saves everyone a hassle
@@ -136,19 +159,21 @@ dependencies {
 
     testImplementation 'org.ow2.asm:asm:5.2'
 
+    compileOnly rfg.deobf(jafsCoordinate)
+    testImplementation rfg.deobf(jafsCoordinate)
+    jafsContract jafsCoordinate
+    if (jafsRuntimeEnabled) {
+        runtimeOnly rfg.deobf(jafsCoordinate)
+        optionalPackagedRuntimeMods jafsCoordinate
+    }
+
     if (propertyBool('enable_agent_test_toolkit')) {
-        def toolkitJar = file(propertyString('agent_test_toolkit_path'))
-        if (!toolkitJar.isFile()) {
-            throw new GradleException("Agent Test Toolkit JAR not found: ${toolkitJar.absolutePath}")
-        }
-        def actualToolkitSha256 = java.security.MessageDigest.getInstance('SHA-256')
-                .digest(toolkitJar.bytes).encodeHex().toString().toUpperCase(Locale.ROOT)
-        def expectedToolkitSha256 = propertyString('agent_test_toolkit_sha256').toUpperCase(Locale.ROOT)
-        if (actualToolkitSha256 != expectedToolkitSha256) {
-            throw new GradleException("Agent Test Toolkit SHA-256 mismatch: expected "
-                    + "${expectedToolkitSha256}, found ${actualToolkitSha256}")
-        }
-        runtimeOnly rfg.deobf(files(toolkitJar))
+        runtimeOnly rfg.deobf(files(verifiedDevelopmentTool('Agent Test Toolkit',
+                'agent_test_toolkit_path', 'agent_test_toolkit_sha256')))
+    }
+    if (propertyBool('enable_jawms_developer_tools')) {
+        runtimeOnly rfg.deobf(files(verifiedDevelopmentTool('JAWMS Developer Tools',
+                'jawms_developer_tools_path', 'jawms_developer_tools_sha256')))
     }
 
     // Example - Dependency descriptor:
@@ -203,6 +228,7 @@ if (obfuscationAttribute == null) {
  configurations.qualityToolsContract,
  configurations.ancientSpellcraftContract,
  configurations.craftTweakerContract,
+ configurations.jafsContract,
  configurations.optionalPackagedRuntimeMods,
  configurations.ancientSpellcraftPackagedRuntimeMods].each { configuration ->
     configuration.attributes {
@@ -212,25 +238,103 @@ if (obfuscationAttribute == null) {
     }
 }
 
+tasks.register('verifyJafsContractArtifact') {
+    group = 'jawms integrations verification'
+    description = 'Verifies the exact released JAFS input used by the optional compile and runtime profiles.'
+    inputs.files configurations.jafsContract
+    inputs.property 'expectedSha256', propertyString('jafs_contract_sha256')
+    doLast {
+        def artifact = configurations.jafsContract.singleFile
+        def actual = java.security.MessageDigest.getInstance('SHA-256')
+                .digest(artifact.bytes).encodeHex().toString().toUpperCase(Locale.ROOT)
+        if (actual != propertyString('jafs_contract_sha256').toUpperCase(Locale.ROOT)) {
+            throw new GradleException("JAFS contract SHA-256 mismatch: ${artifact.name}, found ${actual}")
+        }
+        logger.lifecycle("Verified exact JAFS release input ${artifact.name}")
+    }
+}
+tasks.named('check').configure { dependsOn tasks.named('verifyJafsContractArtifact') }
+
+// Read declared identities so a renamed optional JAR cannot mask its presence.
+def declaredModIds = { File artifact ->
+    if (!artifact.isFile() || !artifact.name.toLowerCase(Locale.ROOT).endsWith('.jar')) {
+        return [] as Set
+    }
+    def archive = new JarFile(artifact)
+    try {
+        def entry = archive.getJarEntry('mcmod.info')
+        if (entry == null) return [] as Set
+        def metadata = archive.getInputStream(entry).withCloseable { stream ->
+            new JsonSlurper().parse(stream)
+        }
+        def records = metadata instanceof List ? metadata : metadata.modList
+        (records ?: []).collect { it.modid?.toString() }.findAll { it != null } as Set
+    } finally {
+        archive.close()
+    }
+}
+def managedArtifactRules = [
+        qualityTools: [id: 'qualitytools', names: ['qualitytools', 'quality-tools']],
+        potionCore: [id: 'potioncore', names: ['potioncore', 'potion-core']],
+        ancientSpellcraft: [id: 'ancientspellcraft', names: ['ancientspellcraft', 'ancient-spellcraft']],
+        wizardryUtils: [id: 'wizardryutils', names: ['wizardryutils']],
+        craftTweaker: [id: 'crafttweaker', names: ['crafttweaker']],
+        jafs: [id: 'jafs', names: ['jafs-', 'jafs.', 'just-another-food-system']],
+        toolkit: [id: 'agenttesttoolkit', names: ['agenttesttoolkit']],
+        developerTools: [id: 'jawms_devtools', names: ['jawms-devtools']],
+        jawms: [id: 'jawms', names: ['jawms-', 'just-another-wizardry']],
+        product: [id: 'jawmsintegrations', names: ['jawms-integrations']],
+        rejectedArsPrototype: [id: 'arsmagica2', names: ['ars-magica', 'arsmagica']]
+]
+def managedArtifactKinds = { File artifact ->
+    if (!artifact.isFile() || !artifact.name.toLowerCase(Locale.ROOT).endsWith('.jar')) {
+        return [] as Set
+    }
+    def ids = declaredModIds(artifact)
+    def name = artifact.name.toLowerCase(Locale.ROOT)
+    // Published metadata is authoritative; filename fallback identifies older
+    // managed files that carry no metadata, without misclassifying an addon.
+    managedArtifactRules.findAll { kind, rule ->
+        ids.empty ? rule.names.any { name.contains(it) } : ids.contains(rule.id)
+    }.keySet()
+}
+def managedRuntimeCounts = { Collection<File> files ->
+    def kinds = files.collect { managedArtifactKinds(it) }
+    managedArtifactRules.collectEntries { kind, rule ->
+        [(kind): kinds.count { it.contains(kind) }]
+    }
+}
+def runtimeMismatches = { Map counts, boolean requireComplete, boolean packaged ->
+    def expected = [
+            qualityTools: ['Quality Tools', qualityToolsRuntimeEnabled],
+            potionCore: ['Potion Core', qualityToolsRuntimeEnabled],
+            ancientSpellcraft: ['Ancient Spellcraft', ancientSpellcraftRuntimeEnabled],
+            wizardryUtils: ['WizardryUtils', ancientSpellcraftRuntimeEnabled],
+            craftTweaker: ['CraftTweaker', craftTweakerRuntimeEnabled],
+            jafs: ['JAFS', jafsRuntimeEnabled],
+            toolkit: ['Agent Test Toolkit', propertyBool('enable_agent_test_toolkit')],
+            developerTools: ['JAWMS Developer Tools', propertyBool('enable_jawms_developer_tools')],
+            jawms: ['JAWMS', true],
+            product: ['JAWMS Integrations', packaged],
+            rejectedArsPrototype: ['Rejected Ars prototype artifact', false]
+    ]
+    def mismatches = []
+    expected.each { kind, selection ->
+        int wanted = selection[1] ? 1 : 0
+        int actual = counts[kind]
+        if (actual > wanted || (requireComplete && actual != wanted)) {
+            mismatches << selection[0] + ' count=' + actual
+        }
+    }
+    mismatches
+}
 tasks.register('cleanManagedPackagedRuntimeArtifacts') {
     group = 'jawms integrations verification'
     description = 'Removes generated product and known integration artifacts before preparing an isolated packaged profile.'
     doLast {
         def managedFiles = fileTree(layout.projectDirectory.dir('run/obfuscated/mods')) {
             include '**/*.jar'
-        }.files.findAll { file ->
-            def name = file.name.toLowerCase(Locale.ROOT)
-            name.contains('jawms-integrations')
-                    || name.contains('just-another-wizardry')
-                    || name.contains('qualitytools') || name.contains('quality-tools')
-                    || name.contains('potioncore') || name.contains('potion-core')
-                    || name.contains('ancientspellcraft') || name.contains('ancient-spellcraft')
-                    || name.contains('wizardryutils')
-                    || name.contains('crafttweaker')
-                    || name.contains('agenttesttoolkit')
-                    // Remove artifacts left by the abandoned prototype; this is not a supported profile.
-                    || name.contains('ars-magica') || name.contains('arsmagica')
-        }
+        }.files.findAll { !managedArtifactKinds(it).empty }
         delete managedFiles
         delete layout.projectDirectory.dir('run/obfuscated/config/devtool')
         delete layout.projectDirectory.file(
@@ -240,53 +344,16 @@ tasks.register('cleanManagedPackagedRuntimeArtifacts') {
 }
 
 def packagedRuntimeCounts = {
-    def runtimeNames = fileTree(layout.projectDirectory.dir('run/obfuscated/mods')) {
+    managedRuntimeCounts(fileTree(layout.projectDirectory.dir('run/obfuscated/mods')) {
         include '**/*.jar'
-    }.files.collect { it.name.toLowerCase(Locale.ROOT) }
-    def countMatches = { Closure<Boolean> predicate -> runtimeNames.count(predicate) }
-    [
-            qualityTools: countMatches { it.contains('qualitytools') || it.contains('quality-tools') },
-            potionCore: countMatches { it.contains('potioncore') || it.contains('potion-core') },
-            ancientSpellcraft: countMatches {
-                it.contains('ancientspellcraft') || it.contains('ancient-spellcraft')
-            },
-            wizardryUtils: countMatches { it.contains('wizardryutils') },
-            craftTweaker: countMatches { it.contains('crafttweaker') },
-            toolkit: countMatches { it.contains('agenttesttoolkit') },
-            rejectedArsPrototype: countMatches {
-                it.contains('ars-magica') || it.contains('arsmagica')
-            },
-            jawms: countMatches { it.contains('just-another-wizardry') },
-            product: countMatches { it.contains('jawms-integrations') }
-    ]
+    }.files)
 }
-
-def packagedRuntimeMismatches = { Map counts, boolean requireComplete ->
-    def mismatches = []
-    def check = { String label, int actual, boolean enabled ->
-        int maximum = enabled ? 1 : 0
-        if (actual > maximum || (requireComplete && actual != maximum)) {
-            mismatches << "${label} count=${actual}"
-        }
-    }
-    check('JAWMS', counts.jawms, true)
-    check('JAWMS Integrations', counts.product, true)
-    check('Quality Tools', counts.qualityTools, qualityToolsRuntimeEnabled)
-    check('Potion Core', counts.potionCore, qualityToolsRuntimeEnabled)
-    check('Ancient Spellcraft', counts.ancientSpellcraft, ancientSpellcraftRuntimeEnabled)
-    check('WizardryUtils', counts.wizardryUtils, ancientSpellcraftRuntimeEnabled)
-    check('CraftTweaker', counts.craftTweaker, craftTweakerRuntimeEnabled)
-    check('Agent Test Toolkit', counts.toolkit, propertyBool('enable_agent_test_toolkit'))
-    check('Rejected Ars prototype artifact', counts.rejectedArsPrototype, false)
-    mismatches
-}
-
 tasks.register('verifyNoStalePackagedRuntimeArtifacts') {
     group = 'jawms integrations verification'
     description = 'Fails before preparation when stale or duplicate managed packaged artifacts are present.'
     inputs.property 'integrationRuntimeProfile', integrationRuntimeProfile
     doLast {
-        def mismatches = packagedRuntimeMismatches(packagedRuntimeCounts(), false)
+        def mismatches = runtimeMismatches(packagedRuntimeCounts(), false, true)
         if (!mismatches.empty) {
             throw new GradleException("Packaged runtime profile '${integrationRuntimeProfile}' contains stale "
                     + "or duplicate managed artifacts before preparation: ${mismatches.join('; ')}. "
@@ -321,14 +388,24 @@ tasks.register('verifyPackagedRuntimeProfile') {
     inputs.property 'integrationRuntimeProfile', integrationRuntimeProfile
     dependsOn tasks.named('prepareObfModsFolder')
     dependsOn tasks.named('preparePackagedAgentTestToolkitRuntime')
+    dependsOn tasks.named('preparePackagedJawmsDeveloperToolsRuntime')
     doLast {
-        def mismatches = packagedRuntimeMismatches(packagedRuntimeCounts(), true)
+        def mismatches = runtimeMismatches(packagedRuntimeCounts(), true, true)
         if (!mismatches.empty) {
             throw new GradleException("Packaged runtime profile '${integrationRuntimeProfile}' is invalid: "
                     + mismatches.join('; '))
         }
         logger.lifecycle("Verified packaged runtime profile '${integrationRuntimeProfile}'")
     }
+}
+
+tasks.register('preparePackagedJawmsDeveloperToolsRuntime', Copy) {
+    group = 'jawms integrations verification'
+    description = 'Installs the opt-in, checksum-verified public mana test tools into the packaged runtime.'
+    onlyIf { propertyBool('enable_jawms_developer_tools') }
+    dependsOn tasks.named('verifyNoStalePackagedRuntimeArtifacts')
+    from file(propertyString('jawms_developer_tools_path'))
+    into layout.projectDirectory.dir('run/obfuscated/mods')
 }
 
 ['runObfClient', 'runObfServer'].each { taskName ->
@@ -461,59 +538,22 @@ tasks.register('verifyDevelopmentRuntimeProfile') {
     description = 'Verifies that the selected optional integration runtime contains exactly its intended mods.'
     inputs.property 'integrationRuntimeProfile', integrationRuntimeProfile
     inputs.property 'enableAgentTestToolkit', propertyBool('enable_agent_test_toolkit')
+    inputs.property 'enableJawmsDeveloperTools', propertyBool('enable_jawms_developer_tools')
     dependsOn tasks.named('prepareIntegrationRuntimeMods')
     doLast {
         def runtimeFiles = new LinkedHashSet<File>(configurations.runtimeClasspath.files)
         runtimeFiles.addAll(fileTree(layout.projectDirectory.dir('run/mods')) {
             include '**/*.jar'
         }.files)
-        def runtimeNames = runtimeFiles.collect { it.name.toLowerCase(Locale.ROOT) }
-        def countMatches = { Closure<Boolean> predicate -> runtimeNames.count(predicate) }
-        def qualityToolsCount = countMatches { it.contains('qualitytools') || it.contains('quality-tools') }
-        def potionCoreCount = countMatches { it.contains('potioncore') || it.contains('potion-core') }
-        def ancientSpellcraftCount = countMatches {
-            it.contains('ancientspellcraft') || it.contains('ancient-spellcraft')
-        }
-        def wizardryUtilsCount = countMatches { it.contains('wizardryutils') }
-        def toolkitCount = countMatches { it.contains('agenttesttoolkit') }
-        def jawmsCount = countMatches { it.contains('just-another-wizardry') }
-        def craftTweakerCount = countMatches { it.contains('crafttweaker') }
-        def rejectedArsPrototypeCount = countMatches {
-            it.contains('ars-magica') || it.contains('arsmagica')
-        }
-
-        def mismatches = []
-        if (jawmsCount != 1) mismatches << "JAWMS count=${jawmsCount}"
-        if (qualityToolsCount != (qualityToolsRuntimeEnabled ? 1 : 0)) {
-            mismatches << "Quality Tools count=${qualityToolsCount}"
-        }
-        if (potionCoreCount != (qualityToolsRuntimeEnabled ? 1 : 0)) {
-            mismatches << "Potion Core count=${potionCoreCount}"
-        }
-        if (ancientSpellcraftCount != (ancientSpellcraftRuntimeEnabled ? 1 : 0)) {
-            mismatches << "Ancient Spellcraft count=${ancientSpellcraftCount}"
-        }
-        if (wizardryUtilsCount != (ancientSpellcraftRuntimeEnabled ? 1 : 0)) {
-            mismatches << "WizardryUtils count=${wizardryUtilsCount}"
-        }
-        if (craftTweakerCount != (craftTweakerRuntimeEnabled ? 1 : 0)) {
-            mismatches << "CraftTweaker count=${craftTweakerCount}"
-        }
-        if (rejectedArsPrototypeCount != 0) {
-            mismatches << "Rejected Ars prototype artifact count=${rejectedArsPrototypeCount}"
-        }
-        if (toolkitCount != (propertyBool('enable_agent_test_toolkit') ? 1 : 0)) {
-            mismatches << "Agent Test Toolkit count=${toolkitCount}"
-        }
+        def mismatches = runtimeMismatches(managedRuntimeCounts(runtimeFiles), true, false)
         if (!mismatches.empty) {
-            throw new GradleException("Development runtime profile '${integrationRuntimeProfile}' is invalid: "
+            throw new GradleException("Development runtime profile '" + integrationRuntimeProfile + "' is invalid: "
                     + mismatches.join('; '))
         }
-        logger.lifecycle("Verified development runtime profile '${integrationRuntimeProfile}' "
-                + "(toolkit=${propertyBool('enable_agent_test_toolkit')})")
+        logger.lifecycle("Verified development runtime profile '" + integrationRuntimeProfile
+                + "' (toolkit=" + propertyBool('enable_agent_test_toolkit') + ")")
     }
 }
-
 // Need reobfJar to use uber jars, so dependencies that are shaded in are present
 // Only redirect reobfJar through shadowJar when there's actually something to shade
 if (!configurations.shade.dependencies.empty) {
