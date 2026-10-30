@@ -4,6 +4,7 @@ import com.mahghuuuls.jawms.api.ManaContribution;
 import com.mahghuuuls.jawmsintegrations.config.IntegrationConfigSnapshot;
 import com.mahghuuuls.jawmsintegrations.integration.IntegrationCoordinator;
 import com.mahghuuuls.jawmsintegrations.integration.IntegrationId;
+import com.mahghuuuls.jawmsintegrations.integration.IntegrationState;
 import com.mahghuuuls.jawmsintegrations.integration.JawmsCompatibility;
 import com.mahghuuuls.jawmsintegrations.integration.OptionalIntegrationEvidenceRegistry;
 import com.mahghuuuls.jawmsintegrations.integration.jafs.FoodSourceAccess;
@@ -20,6 +21,34 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class IntegrationDiagnosticsServiceTest {
+
+    @Test
+    void disabledMetadataStatusNeverQueriesFoodAndPreservesReadOnlyAttribution() {
+        IntegrationConfigSnapshot defaults = IntegrationConfigSnapshot.defaults();
+        IntegrationConfigSnapshot config = new IntegrationConfigSnapshot(defaults.getQualityTools(),
+                defaults.getAncientSpellcraft(), defaults.getCraftTweaker(),
+                new IntegrationConfigSnapshot.IntegrationToggleConfig(false), defaults.getDiagnostics());
+        IntegrationCoordinator coordinator = IntegrationCoordinator.initialize(config,
+                id -> IntegrationId.JAFS.getModId().equals(id) ? "1.0.0" : null,
+                id -> OptionalIntegrationEvidenceRegistry.Evidence.supported("1.0.0"));
+        coordinator = coordinator.withDisabledDetail(IntegrationId.JAFS,
+                "Property metadata available; mana effects disabled; no food contribution applied");
+        FoodSourceAccess forbidden = new FoodSourceAccess() {
+            @Override public FoodStatProjection.Result inspect(EntityPlayer player) {
+                throw new AssertionError("Disabled diagnostics queried native player foods");
+            }
+            @Override public void clearWarnings() { throw new AssertionError("Read-only diagnostics cleared warnings"); }
+        };
+        IntegrationDiagnosticsService view = new IntegrationDiagnosticsService(
+                JawmsCompatibility.verify("1.1.0", CompatibleApi.class), config, coordinator, forbidden);
+        for (int i = 0; i < 3; i++) {
+            assertTrue(view.foodStatus(null).get(0).contains("DISABLED"));
+            assertTrue(view.foodStatus(null).get(0).contains("metadata available"));
+            assertTrue(view.foodStatus(null).get(0).contains("no food contribution applied"));
+            assertTrue(view.overallStatus().stream().anyMatch(line -> line.contains("metadata available")));
+        }
+        assertEquals(IntegrationState.DISABLED, coordinator.getStatus(IntegrationId.JAFS).getState());
+    }
 
     @Test
     void boundedStartupAndOverallOutputUseAuthoritativeAbsentStates() {

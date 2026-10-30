@@ -9,6 +9,11 @@ import com.mahghuuuls.jafs.api.PropertySpec;
 import com.mahghuuuls.jafs.api.PropertyValue;
 import com.mahghuuuls.jawms.api.IContextualManaModifierProvider;
 import com.mahghuuuls.jawms.api.ManaContribution;
+import com.mahghuuuls.jawmsintegrations.config.IntegrationConfigSnapshot;
+import com.mahghuuuls.jawmsintegrations.integration.IntegrationCoordinator;
+import com.mahghuuuls.jawmsintegrations.integration.IntegrationId;
+import com.mahghuuuls.jawmsintegrations.integration.IntegrationState;
+import com.mahghuuuls.jawmsintegrations.integration.OptionalIntegrationEvidenceRegistry;
 import net.minecraft.entity.player.EntityPlayerMP;
 import org.junit.jupiter.api.Test;
 
@@ -24,6 +29,145 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.junit.jupiter.api.Assertions.*;
 
 final class JafsIntegrationTest {
+    @Test
+    void disabledCommonStartupRetainsMetadataWithoutRequestingAnyEffectBoundary() {
+        IntegrationConfigSnapshot defaults = IntegrationConfigSnapshot.defaults();
+        IntegrationConfigSnapshot config = new IntegrationConfigSnapshot(defaults.getQualityTools(),
+                defaults.getAncientSpellcraft(), defaults.getCraftTweaker(),
+                new IntegrationConfigSnapshot.IntegrationToggleConfig(false), defaults.getDiagnostics());
+        IntegrationCoordinator coordinator = IntegrationCoordinator.initialize(config,
+                id -> IntegrationId.JAFS.getModId().equals(id) ? "1.0.0" : null,
+                id -> OptionalIntegrationEvidenceRegistry.Evidence.supported("1.0.0"));
+        RecordingFoods service = new RecordingFoods();
+        RecordingRegistration registration = new RecordingRegistration(service);
+        registration.rejectService = true;
+        AtomicInteger entryCalls = new AtomicInteger();
+        EntityPlayerMP player = player();
+        JafsRegistrationBootstrap.Result result = JafsRegistrationBootstrap.initialize(coordinator, effects -> {
+            entryCalls.incrementAndGet();
+            assertFalse(effects);
+            JafsIntegration module = JafsIntegration.install(effects, registration,
+                    ignored -> fail("Disabled callback dirtied mana"),
+                    ignored -> fail("Disabled callback warned"), ignored -> fail("Disabled callback failed"));
+            assertSame(ManaContribution.EMPTY, module.getContribution(player));
+            assertThrows(IllegalStateException.class, () -> module.inspect(player));
+            for (IPropertyApplier applier : registration.appliers.values()) {
+                applier.apply(player, 20, 10);
+                applier.apply(null, 0, 0);
+            }
+            return null;
+        });
+        assertEquals(1, entryCalls.get(), "Compatible disabled startup must not skip metadata");
+        assertEquals(12, registration.appliers.size());
+        assertEquals(15, registration.specs.stream().mapToInt(spec -> spec.operations().size()).sum());
+        assertEquals(1, registration.metadataChecks);
+        assertEquals(0, registration.serviceCalls);
+        assertNull(registration.provider);
+        assertEquals(0, registration.hookCalls);
+        assertEquals(0, service.reads);
+        assertNull(result.getFoodSource());
+        assertEquals(IntegrationState.DISABLED, result.getCoordinator().getStatus(IntegrationId.JAFS).getState());
+        assertTrue(result.getCoordinator().getStatus(IntegrationId.JAFS).getDetail().contains("metadata available"));
+        assertEquals("Disabled by configuration", coordinator.getStatus(IntegrationId.JAFS).getDetail(),
+                "Coordinator transition must not mutate an earlier snapshot");
+    }
+
+    @Test
+    void enabledAndDisabledUseTheSameNativeSpecsAndEnabledEffectsOpenOnlyAfterHooks() {
+        RecordingFoods service = new RecordingFoods();
+        service.maximum = new PropertyValue(20, 0, 1);
+        RecordingRegistration enabled = new RecordingRegistration(service);
+        AtomicInteger dirty = new AtomicInteger();
+        EntityPlayerMP player = player();
+        enabled.duringPublish = () -> {
+            for (IPropertyApplier applier : enabled.appliers.values()) applier.apply(player, 99, 99);
+            if (enabled.provider != null) assertSame(ManaContribution.EMPTY, enabled.provider.getContribution(player));
+            assertEquals(0, dirty.get());
+            assertEquals(0, service.reads);
+        };
+        JafsIntegration active = JafsIntegration.install(true, enabled, ignored -> dirty.incrementAndGet(),
+                ignored -> {}, ignored -> {});
+        assertEquals("metadata", enabled.order.get(0));
+        assertEquals("service", enabled.order.get(1));
+        assertEquals("provider", enabled.order.get(14));
+        assertEquals("hooks", enabled.order.get(15));
+        assertEquals(1, enabled.hookCalls);
+        enabled.appliers.values().iterator().next().apply(player, 99, 99);
+        assertEquals(1, dirty.get());
+        assertEquals(20, active.getContribution(player).getFlatMaximumMana());
+        RecordingRegistration disabled = new RecordingRegistration(null);
+        disabled.rejectService = true;
+        JafsIntegration.install(false, disabled, ignored -> fail("dirty"), ignored -> {}, ignored -> {});
+        for (int i = 0; i < enabled.specs.size(); i++) {
+            PropertySpec expected = enabled.specs.get(i);
+            PropertySpec actual = disabled.specs.get(i);
+            assertEquals(expected.id(), actual.id());
+            assertEquals(expected.displayNameKey(), actual.displayNameKey());
+            assertEquals(expected.unit(), actual.unit());
+            assertEquals(expected.operations(), actual.operations());
+            for (PropertyOperation operation : expected.operations()) {
+                assertEquals(expected.range(operation).min(), actual.range(operation).min());
+                assertEquals(expected.range(operation).max(), actual.range(operation).max());
+            }
+        }
+    }
+
+    @Test
+    void modePrerequisitesFailBeforeAnyIrreversibleWrite() {
+        for (boolean effects : new boolean[]{false, true}) {
+            RecordingRegistration invalid = new RecordingRegistration(new RecordingFoods());
+            invalid.apiVersion = "0.9";
+            assertThrows(IllegalStateException.class, () -> JafsIntegration.install(effects, invalid,
+                    ignored -> fail("dirty"), ignored -> {}, ignored -> {}));
+            assertTrue(invalid.appliers.isEmpty());
+            assertNull(invalid.provider);
+            assertEquals(0, invalid.serviceCalls);
+            assertEquals(0, invalid.hookCalls);
+        }
+        for (boolean missingService : new boolean[]{false, true}) {
+            RecordingRegistration invalid = new RecordingRegistration(missingService ? null : new RecordingFoods());
+            invalid.serviceFailure = missingService ? null : new IllegalStateException("mana registry frozen");
+            assertThrows(IllegalStateException.class, () -> JafsIntegration.install(true, invalid,
+                    ignored -> fail("dirty"), ignored -> {}, ignored -> {}));
+            assertTrue(invalid.appliers.isEmpty());
+            assertNull(invalid.provider);
+            assertEquals(0, invalid.hookCalls);
+        }
+    }
+
+    @Test
+    void everyPartialMetadataFailureAndBothEffectPublicationFailuresStayInert() {
+        EntityPlayerMP player = player();
+        for (boolean effects : new boolean[]{false, true}) {
+            for (int position = 0; position < 12; position++) {
+                RecordingFoods service = new RecordingFoods();
+                RecordingRegistration registration = new RecordingRegistration(service);
+                registration.failAt = position;
+                assertThrows(IllegalStateException.class, () -> JafsIntegration.install(effects, registration,
+                        ignored -> fail("Partial metadata callback dirtied mana"), ignored -> {}, ignored -> {}));
+                assertEquals(position, registration.appliers.size());
+                assertNull(registration.provider);
+                for (IPropertyApplier applier : registration.appliers.values()) applier.apply(player, 20, 0);
+                assertEquals(0, registration.hookCalls);
+                assertEquals(0, service.reads);
+            }
+        }
+        for (boolean failAtProvider : new boolean[]{true, false}) {
+            RecordingFoods service = new RecordingFoods();
+            RecordingRegistration registration = new RecordingRegistration(service);
+            registration.providerFailure = failAtProvider;
+            registration.hookFailure = !failAtProvider;
+            assertThrows(IllegalStateException.class, () -> JafsIntegration.install(true, registration,
+                    ignored -> fail("Failed activation callback dirtied mana"), ignored -> {}, ignored -> {}));
+            assertEquals(12, registration.appliers.size());
+            assertNotNull(registration.provider);
+            assertSame(ManaContribution.EMPTY, registration.provider.getContribution(player));
+            for (IPropertyApplier applier : registration.appliers.values()) applier.apply(player, 20, 0);
+            assertEquals(failAtProvider ? 0 : 1, registration.hookCalls);
+            assertEquals(0, service.reads);
+        }
+    }
+
     @Test
     void registersTheExactTwelveNativePropertiesAndFifteenOperations() {
         List<PropertySpec> specs = JafsIntegration.propertySpecs();
@@ -55,7 +199,7 @@ final class JafsIntegrationTest {
         EntityPlayerMP player = player();
         RecordingRegistration registration = new RecordingRegistration(service);
         AtomicInteger dirty = new AtomicInteger();
-        JafsIntegration module = JafsIntegration.install(registration, ignored -> dirty.incrementAndGet(),
+        JafsIntegration module = JafsIntegration.install(true, registration, ignored -> dirty.incrementAndGet(),
                 ignored -> {}, ignored -> {});
         assertEquals(20, module.getContribution(player).getFlatMaximumMana());
         assertEquals(12, service.reads);
@@ -70,16 +214,16 @@ final class JafsIntegrationTest {
     }
 
     @Test
-    void partialRegistrationLeavesAnInertProviderAndCallbacks() {
+    void partialMetadataRegistrationLeavesNoProviderAndInertCallbacks() {
         RecordingFoods service = new RecordingFoods();
         RecordingRegistration registration = new RecordingRegistration(service);
         registration.failAt = 4;
         AtomicInteger dirty = new AtomicInteger();
-        assertThrows(IllegalStateException.class, () -> JafsIntegration.install(registration,
+        assertThrows(IllegalStateException.class, () -> JafsIntegration.install(true, registration,
                 ignored -> dirty.incrementAndGet(), ignored -> {}, ignored -> {}));
-        assertNotNull(registration.provider);
+        assertNull(registration.provider, "Metadata failure must precede provider publication");
         EntityPlayerMP player = player();
-        assertSame(ManaContribution.EMPTY, registration.provider.getContribution(player));
+        assertEquals(0, registration.hookCalls);
         for (IPropertyApplier applier : registration.appliers.values()) applier.apply(player, 20, 0);
         assertEquals(0, dirty.get());
         assertEquals(0, service.reads);
@@ -92,7 +236,7 @@ final class JafsIntegrationTest {
         service.maximum = new PropertyValue(20, 0, 1);
         EntityPlayerMP player = player();
         List<String> warnings = new ArrayList<>();
-        JafsIntegration module = JafsIntegration.install(new RecordingRegistration(service),
+        JafsIntegration module = JafsIntegration.install(true, new RecordingRegistration(service),
                 ignored -> {}, warnings::add, ignored -> {});
         assertEquals(20, module.getContribution(player).getFlatMaximumMana());
         service.failure = new IllegalStateException("not available");
@@ -111,7 +255,7 @@ final class JafsIntegrationTest {
         List<String> failures = new ArrayList<>();
         AtomicInteger dirty = new AtomicInteger();
         RecordingRegistration registration = new RecordingRegistration(service);
-        JafsIntegration module = JafsIntegration.install(registration, ignored -> dirty.incrementAndGet(),
+        JafsIntegration module = JafsIntegration.install(true, registration, ignored -> dirty.incrementAndGet(),
                 ignored -> {}, failures::add);
         EntityPlayerMP player = player();
         assertTrue(module.getContribution(player).isEmpty());
@@ -127,7 +271,7 @@ final class JafsIntegrationTest {
         RecordingFoods service = new RecordingFoods();
         service.maximum = new PropertyValue(0.5, 10, 1);
         List<String> warnings = new ArrayList<>();
-        JafsIntegration module = JafsIntegration.install(new RecordingRegistration(service),
+        JafsIntegration module = JafsIntegration.install(true, new RecordingRegistration(service),
                 ignored -> {}, warnings::add, ignored -> {});
         EntityPlayerMP player = player();
         assertEquals(10, module.getContribution(player).getMaximumManaIncrease());
@@ -143,7 +287,7 @@ final class JafsIntegrationTest {
         List<String> warnings = new ArrayList<>();
         List<String> failures = new ArrayList<>();
         AtomicInteger dirty = new AtomicInteger();
-        JafsIntegration module = JafsIntegration.install(new RecordingRegistration(service),
+        JafsIntegration module = JafsIntegration.install(true, new RecordingRegistration(service),
                 ignored -> dirty.incrementAndGet(), warnings::add, failures::add);
         EntityPlayerMP first = player();
         EntityPlayerMP second = player();
@@ -178,7 +322,7 @@ final class JafsIntegrationTest {
         EntityPlayerMP second = player();
         service.players.put(first, new PropertyValue(8, 0, 1));
         service.players.put(second, new PropertyValue(12, 0, 1));
-        JafsIntegration module = JafsIntegration.install(new RecordingRegistration(service),
+        JafsIntegration module = JafsIntegration.install(true, new RecordingRegistration(service),
                 ignored -> {}, ignored -> {}, ignored -> {});
         assertEquals(8, module.getContribution(first).getFlatMaximumMana());
         assertEquals(12, module.getContribution(second).getFlatMaximumMana());
@@ -186,19 +330,18 @@ final class JafsIntegrationTest {
     }
 
     @Test
-    void readinessRequiresBothOpenRegistriesAndTheMinimumApiWithoutAnUpperBound() {
-        assertDoesNotThrow(() -> JafsIntegration.requireRegistration("1.0", true, false, false));
-        assertDoesNotThrow(() -> JafsIntegration.requireRegistration("2.3", true, false, false));
+    void metadataRequiresItsOpenRegistryAndTheMinimumApiWithoutAnUpperBound() {
+        assertDoesNotThrow(() -> JafsIntegration.requireMetadataRegistration("1.0", true, false));
+        assertDoesNotThrow(() -> JafsIntegration.requireMetadataRegistration("2.3", true, false));
         assertThrows(IllegalStateException.class,
-                () -> JafsIntegration.requireRegistration("0.9", true, false, false));
+                () -> JafsIntegration.requireMetadataRegistration("0.9", true, false));
         assertThrows(IllegalStateException.class,
-                () -> JafsIntegration.requireRegistration("unknown", true, false, false));
+                () -> JafsIntegration.requireMetadataRegistration("unknown", true, false));
         assertThrows(IllegalStateException.class,
-                () -> JafsIntegration.requireRegistration("1.0", false, false, false));
+                () -> JafsIntegration.requireMetadataRegistration("1.0", false, false));
         assertThrows(IllegalStateException.class,
-                () -> JafsIntegration.requireRegistration("1.0", true, true, false));
-        assertThrows(IllegalStateException.class,
-                () -> JafsIntegration.requireRegistration("1.0", true, false, true));
+                () -> JafsIntegration.requireMetadataRegistration("1.0", true, true));
+
     }
 
     private static EntityPlayerMP player() {
@@ -257,16 +400,52 @@ final class JafsIntegrationTest {
         private IContextualManaModifierProvider provider;
         private final Map<String, IPropertyApplier> appliers = new LinkedHashMap<>();
         private int failAt = -1;
+        private final List<PropertySpec> specs = new ArrayList<>();
+        private final List<String> order = new ArrayList<>();
+        private int metadataChecks;
+        private int serviceCalls;
+        private int hookCalls;
+        private boolean rejectService;
+        private String apiVersion = "1.0";
+        private RuntimeException serviceFailure;
+        private boolean providerFailure;
+        private boolean hookFailure;
+        private Runnable duringPublish;
 
         private RecordingRegistration(IFoodService service) {
             this.service = service;
         }
 
-        @Override public IFoodService validatedService() { return service; }
-        @Override public void contextual(IContextualManaModifierProvider provider) { this.provider = provider; }
+        @Override public void validateMetadata() {
+            metadataChecks++;
+            order.add("metadata");
+            JafsIntegration.requireMetadataRegistration(apiVersion, true, false);
+        }
+        @Override public IFoodService validatedService() {
+            serviceCalls++;
+            order.add("service");
+            if (rejectService) throw new AssertionError("Disabled initialization requested effect prerequisites");
+            if (serviceFailure != null) throw serviceFailure;
+            return service;
+        }
+        @Override public void contextual(IContextualManaModifierProvider provider) {
+            order.add("provider");
+            this.provider = provider;
+            if (duringPublish != null) duringPublish.run();
+            if (providerFailure) throw new IllegalStateException("injected provider fault");
+        }
         @Override public void property(PropertySpec spec, IPropertyApplier applier) {
             if (appliers.size() == failAt) throw new IllegalStateException("injected registry fault");
+            order.add("property:" + spec.id());
+            specs.add(spec);
             appliers.put(spec.id(), applier);
+            if (duringPublish != null) duringPublish.run();
+        }
+        @Override public void hooks(JafsIntegration module) {
+            hookCalls++;
+            order.add("hooks");
+            if (duringPublish != null) duringPublish.run();
+            if (hookFailure) throw new IllegalStateException("injected hook fault");
         }
     }
 }

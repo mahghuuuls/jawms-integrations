@@ -49,39 +49,40 @@ public final class JafsIntegration implements IContextualManaModifierProvider, F
         this.failures = failures;
     }
 
-    public static FoodSourceAccess activate(Consumer<String> failure) {
-        JafsIntegration module = install(new NativeRegistration(), ManaApi::markModifierCacheDirty,
+    public static FoodSourceAccess initialize(boolean effectsEnabled, Consumer<String> failure) {
+        JafsIntegration module = install(effectsEnabled, new NativeRegistration(), ManaApi::markModifierCacheDirty,
                 message -> JawmsIntegrationsMod.LOGGER.warn(message), failure);
-        try {
-            MinecraftForge.EVENT_BUS.register(module);
-        } catch (RuntimeException | LinkageError exception) {
-            module.enabled = false;
-            throw exception;
-        }
-        return module;
+        return effectsEnabled ? module : null;
     }
 
     /** Platform registration is irreversible; tests substitute that boundary, not food math. */
     interface Registration {
+        void validateMetadata();
         IFoodService validatedService();
         void contextual(IContextualManaModifierProvider provider);
         void property(PropertySpec spec, IPropertyApplier applier);
+        void hooks(JafsIntegration module);
     }
 
-    static JafsIntegration install(Registration registration, Consumer<EntityPlayer> dirty,
+    static JafsIntegration install(boolean effectsEnabled, Registration registration, Consumer<EntityPlayer> dirty,
                                    Consumer<String> warnings, Consumer<String> failures) {
-        IFoodService foods = registration.validatedService();
-        if (foods == null) throw new IllegalStateException("JAFS food service is unavailable");
+        // Validate every required contract before the first irreversible registry write.
         List<PropertySpec> specs = propertySpecs();
+        registration.validateMetadata();
+        IFoodService foods = effectsEnabled ? registration.validatedService() : null;
+        if (effectsEnabled && foods == null) throw new IllegalStateException("JAFS food service is unavailable");
         JafsIntegration module = new JafsIntegration(foods, dirty, warnings, failures);
-        registration.contextual(module);
         for (PropertySpec spec : specs) {
             registration.property(spec, (player, flat, percent) -> {
                 // Callbacks are refresh notifications, never an aggregate-state mirror.
                 if (module.enabled && player != null) module.dirty.accept(player);
             });
         }
-        module.enabled = true;
+        if (effectsEnabled) {
+            registration.contextual(module);
+            registration.hooks(module);
+            module.enabled = true;
+        }
         return module;
     }
 
@@ -155,21 +156,20 @@ public final class JafsIntegration implements IContextualManaModifierProvider, F
         warnedUnavailable.clear();
     }
 
-    static void requireRegistration(String apiVersion, boolean bound, boolean foodFrozen,
-                                    boolean manaFrozen) {
+    static void requireMetadataRegistration(String apiVersion, boolean bound, boolean foodFrozen) {
         if (apiVersion == null || !apiVersion.matches("[0-9]+\\.[0-9]+(?:\\.[0-9]+)*(?:[-+].+)?")
                 || new DefaultArtifactVersion(apiVersion).compareTo(new DefaultArtifactVersion("1.0")) < 0) {
             throw new IllegalStateException("JAFS API 1.0 or newer is required");
         }
         if (!bound) throw new IllegalStateException("JAFS public API is not bound");
-        if (foodFrozen || manaFrozen) {
-            throw new IllegalStateException("Food/mana provider registration is already frozen");
+        if (foodFrozen) {
+            throw new IllegalStateException("Food property registration is already frozen");
         }
     }
 
     private static final class NativeRegistration implements Registration {
         @Override
-        public IFoodService validatedService() {
+        public void validateMetadata() {
             String version;
             try {
                 // Read the actual runtime field; a direct constant access would be inlined.
@@ -177,8 +177,14 @@ public final class JafsIntegration implements IContextualManaModifierProvider, F
             } catch (ReflectiveOperationException exception) {
                 throw new IllegalStateException("JAFS public API version is unavailable", exception);
             }
-            requireRegistration(version, JafsApi.isBound(), JafsApi.isRegistrationFrozen(),
-                    ManaApi.isProviderRegistrationFrozen());
+            requireMetadataRegistration(version, JafsApi.isBound(), JafsApi.isRegistrationFrozen());
+        }
+
+        @Override
+        public IFoodService validatedService() {
+            if (ManaApi.isProviderRegistrationFrozen()) {
+                throw new IllegalStateException("Mana provider registration is already frozen");
+            }
             return JafsApi.getFoodService();
         }
 
@@ -190,6 +196,11 @@ public final class JafsIntegration implements IContextualManaModifierProvider, F
         @Override
         public void property(PropertySpec spec, IPropertyApplier applier) {
             JafsApi.registerProperty(spec, applier);
+        }
+
+        @Override
+        public void hooks(JafsIntegration module) {
+            MinecraftForge.EVENT_BUS.register(module);
         }
     }
 }

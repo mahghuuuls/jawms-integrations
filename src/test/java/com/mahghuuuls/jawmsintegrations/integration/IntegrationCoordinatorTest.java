@@ -15,6 +15,30 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class IntegrationCoordinatorTest {
 
     @Test
+    void disabledAvailabilityDetailCannotActivateOrRelabelOtherStates() {
+        IntegrationConfigSnapshot defaults = IntegrationConfigSnapshot.defaults();
+        IntegrationConfigSnapshot config = new IntegrationConfigSnapshot(defaults.getQualityTools(),
+                defaults.getAncientSpellcraft(), defaults.getCraftTweaker(),
+                new IntegrationConfigSnapshot.IntegrationToggleConfig(false), defaults.getDiagnostics());
+        IntegrationCoordinator disabled = initialize(config, supportedVersions(), allSupported());
+        IntegrationCoordinator updated = disabled.withDisabledDetail(IntegrationId.JAFS, "metadata available");
+        assertEquals(IntegrationState.DISABLED, updated.getStatus(IntegrationId.JAFS).getState());
+        assertEquals("metadata available", updated.getStatus(IntegrationId.JAFS).getDetail());
+        assertEquals(disabled.getStatus(IntegrationId.JAFS).getDetectedVersion(),
+                updated.getStatus(IntegrationId.JAFS).getDetectedVersion());
+        assertEquals("Disabled by configuration", disabled.getStatus(IntegrationId.JAFS).getDetail());
+        assertEquals(disabled.getStatus(IntegrationId.QUALITY_TOOLS), updated.getStatus(IntegrationId.QUALITY_TOOLS));
+        assertThrows(IllegalStateException.class,
+                () -> updated.withActive(IntegrationId.JAFS, "must not activate"));
+        assertThrows(IllegalStateException.class,
+                () -> updated.withDisabledDetail(IntegrationId.QUALITY_TOOLS, "must not disable"));
+        assertThrows(IllegalArgumentException.class, () -> updated.withDisabledDetail(IntegrationId.JAFS, " "));
+        IntegrationCoordinator absent = initialize(config, new HashMap<>(), allAbsent());
+        assertThrows(IllegalStateException.class,
+                () -> absent.withDisabledDetail(IntegrationId.JAFS, "must not claim metadata"));
+    }
+
+    @Test
     void allAbsentOptionalModsRemainIndependentInactiveStates() {
         IntegrationCoordinator coordinator = initialize(
                 IntegrationConfigSnapshot.defaults(), new HashMap<>(), allAbsent());

@@ -121,23 +121,22 @@ public final class JawmsIntegrationsMod {
 
     @Mod.EventHandler
     public void init(FMLInitializationEvent event) {
-        if (coordinator.getStatus(IntegrationId.JAFS).getState() == IntegrationState.READY) {
-            try {
-                ClassLoader loader = Thread.currentThread().getContextClassLoader();
-                foodSource = JafsRegistrationBootstrap.register(loader == null ? getClass().getClassLoader() : loader,
-                        detail -> {
-                            coordinator = coordinator.withFailure(IntegrationId.JAFS, detail);
-                            diagnostics = new IntegrationDiagnosticsService(jawms, config, coordinator, foodSource);
-                            LOGGER.warn("JAFS integration FAILED: {}", detail);
-                        });
-                coordinator = coordinator.withActive(IntegrationId.JAFS,
-                        "Active-food JAWMS properties and contextual provider registered");
-            } catch (RuntimeException | LinkageError exception) {
-                coordinator = coordinator.withFailure(IntegrationId.JAFS,
-                        "Activation failed: " + exception.getClass().getSimpleName()
-                                + ": " + exception.getMessage());
-                LOGGER.error("JAFS integration activation failed; no food bonus enabled", exception);
-            }
+        try {
+            ClassLoader loader = Thread.currentThread().getContextClassLoader();
+            JafsRegistrationBootstrap.Result initialized = JafsRegistrationBootstrap.initialize(coordinator,
+                    loader == null ? getClass().getClassLoader() : loader,
+                    detail -> {
+                        coordinator = coordinator.withFailure(IntegrationId.JAFS, detail);
+                        diagnostics = new IntegrationDiagnosticsService(jawms, config, coordinator, foodSource);
+                        LOGGER.warn("JAFS integration FAILED: {}", detail);
+                    });
+            foodSource = initialized.getFoodSource();
+            coordinator = initialized.getCoordinator();
+        } catch (RuntimeException | LinkageError exception) {
+            coordinator = coordinator.withFailure(IntegrationId.JAFS,
+                    "Initialization failed: " + exception.getClass().getSimpleName()
+                            + ": " + exception.getMessage());
+            LOGGER.error("JAFS integration initialization failed; no food bonus enabled", exception);
         }
         IntegrationState ancientState = coordinator.getStatus(
                 IntegrationId.ANCIENT_SPELLCRAFT).getState();

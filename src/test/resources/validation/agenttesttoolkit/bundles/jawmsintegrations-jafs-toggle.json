@@ -1,0 +1,82 @@
+{
+  "cyc3_jafs_c_toggle_prepare": {
+    "description": "Disposable world only, enabled JAFS and long-lived compatibility apple; prepares one initial meal. Never run on resume.",
+    "stopOnFailure": true,
+    "trace": true,
+    "result": true,
+    "commands": [
+      "devtool run cyc3_jafs_c_setup",
+      "jawms-dev providers",
+      "devtool mark JAFS_C_TOGGLE_MEAL_READY"
+    ]
+  },
+  "cyc3_jafs_c_toggle_seed": {
+    "description": "Only after after_food observations independently confirm one accepted apple and max120; seeds110 once before first persistence boundary.",
+    "stopOnFailure": true,
+    "trace": true,
+    "result": true,
+    "commands": [
+      "jawms-dev mana set ${operator.name} 110",
+      "jafs inspect ${operator.name}",
+      "jawmsintegrations status ${operator.name}",
+      "jawms-dev state ${operator.name}",
+      "jawms-dev explain ${operator.name}",
+      "jawms-dev providers",
+      "devtool inspect inventory ${operator.name}",
+      "devtool mark JAFS_C_TOGGLE_SEEDED"
+    ]
+  },
+  "cyc3_jafs_c_toggle_resume": {
+    "description": "First observation after a full process restart; binds session but never clears food, eats, reloads definitions, refreshes cache or refills mana.",
+    "stopOnFailure": true,
+    "trace": true,
+    "result": true,
+    "commands": [
+      "devtool run cyc3_jafs_c_discovery",
+      { "command": "jafs inspect ${operator.name}", "delayTicks": 2 },
+      "jawmsintegrations status ${operator.name}",
+      "jawms-dev state ${operator.name}",
+      "jawms-dev explain ${operator.name}",
+      "jawms-dev providers",
+      "devtool inspect inventory ${operator.name}",
+      "devtool mark JAFS_C_TOGGLE_RESUMED"
+    ]
+  },
+  "cyc3_jafs_c_toggle_disabled": {
+    "description": "Restart with installed compatible JAFS and master off, same save/definition. Expect native food retained, metadata available, no food provider,100/100; tooltip values may remain.",
+    "stopOnFailure": true,
+    "trace": true,
+    "result": true,
+    "commands": [
+      "devtool run cyc3_jafs_c_toggle_resume",
+      "devtool mark JAFS_C_TOGGLE_DISABLED_OBSERVED"
+    ]
+  },
+  "cyc3_jafs_c_toggle_save": {
+    "description": "After the preceding observation passed; saves current food/player state without refreshing duration or mana. Owner then closes the actual client process.",
+    "stopOnFailure": true,
+    "trace": true,
+    "result": true,
+    "commands": [
+      "devtool log all off",
+      "devtool save",
+      "devtool mark JAFS_C_TOGGLE_SAVED",
+      "devtool session stop"
+    ]
+  },
+  "cyc3_jafs_c_toggle_remove": {
+    "description": "Only after re-enabled observation confirms same food/current100/max120; native clear must remove the single bonus without refund.",
+    "stopOnFailure": true,
+    "trace": true,
+    "result": true,
+    "commands": [
+      "jafs clear ${operator.name}",
+      { "command": "jafs inspect ${operator.name}", "delayTicks": 2 },
+      "jawmsintegrations status ${operator.name}",
+      "jawms-dev state ${operator.name}",
+      "jawms-dev explain ${operator.name}",
+      "jawms-dev providers",
+      "devtool mark JAFS_C_TOGGLE_REMOVED"
+    ]
+  }
+}

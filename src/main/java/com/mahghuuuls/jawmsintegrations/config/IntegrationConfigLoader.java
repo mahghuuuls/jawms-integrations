@@ -97,7 +97,8 @@ public final class IntegrationConfigLoader {
         );
         boolean jafsEnabled = readBoolean(
                 configuration, JAFS, "enabled", true,
-                "Enables JAWMS properties for active foods. Food definitions remain pack-authored. Requires restart.",
+                "Enables mana effects from active foods. Property metadata remains available while disabled. "
+                        + "Food definitions remain pack-authored. Requires restart.",
                 warnings
         );
         boolean diagnosticsEnabled = readBoolean(

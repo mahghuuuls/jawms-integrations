@@ -1,0 +1,207 @@
+{
+  "cyc3_jafs_c_discovery": {
+    "description": "Run after EACH process start before placeholders; does not reset world, food or mana.",
+    "stopOnFailure": true,
+    "trace": true,
+    "result": true,
+    "commands": [
+      "devtool session start cyc3_jafs_compatibility",
+      "devtool session operator @s",
+      "devtool capabilities",
+      "devtool mods",
+      "devtool environment",
+      "jawmsintegrations status",
+      "devtool inspect player ${operator.name}",
+      "devtool mark JAFS_C_DISCOVERY_READY"
+    ]
+  },
+  "cyc3_jafs_c_setup": {
+    "description": "Disposable world only, enabled JAFS profile and compatibility-foods.json required; initial neutral state.",
+    "stopOnFailure": true,
+    "trace": true,
+    "result": true,
+    "commands": [
+      "devtool run cyc3_jafs_c_discovery",
+      "gamerule keepInventory true",
+      "gamerule doMobSpawning false",
+      "gamerule doDaylightCycle false",
+      "gamerule doWeatherCycle false",
+      "gamerule naturalRegeneration false",
+      "gamerule randomTickSpeed 0",
+      "difficulty peaceful",
+      "jafs clear ${operator.name}",
+      {
+        "command": "clear ${operator.name}",
+        "toleratedFailures": [
+          "commands.clear.failure"
+        ]
+      },
+      "replaceitem entity ${operator.name} slot.armor.head minecraft:air",
+      "replaceitem entity ${operator.name} slot.armor.chest minecraft:air",
+      "replaceitem entity ${operator.name} slot.armor.legs minecraft:air",
+      "replaceitem entity ${operator.name} slot.armor.feet minecraft:air",
+      "devtool baubles clear all ${operator.name}",
+      "gamemode survival ${operator.name}",
+      "jawms-dev mana set ${operator.name} 80",
+      "devtool log item_use on",
+      {
+        "command": "jafs inspect ${operator.name}",
+        "delayTicks": 2
+      },
+      "jawmsintegrations status ${operator.name}",
+      "jawms-dev state ${operator.name}",
+      "jawms-dev explain ${operator.name}",
+      "devtool inspect inventory ${operator.name}",
+      "give ${operator.name} minecraft:apple 1",
+      "devtool mark JAFS_C_APPLE_READY"
+    ]
+  },
+  "cyc3_jafs_c_after_food": {
+    "description": "After eating apple; no setup/refill/dirty.",
+    "stopOnFailure": true,
+    "trace": true,
+    "result": true,
+    "commands": [
+      {
+        "command": "jafs inspect ${operator.name}",
+        "delayTicks": 2
+      },
+      "jawmsintegrations status ${operator.name}",
+      "jawms-dev state ${operator.name}",
+      "jawms-dev explain ${operator.name}",
+      "devtool inspect inventory ${operator.name}",
+      "devtool mark JAFS_C_FOOD_OBSERVED"
+    ]
+  },
+  "cyc3_jafs_c_coexist_equip": {
+    "description": "After active+20 apple/base100; all modules enabled, no other equipment. Adds QT10percent and Ancient lesser8.",
+    "stopOnFailure": true,
+    "trace": true,
+    "result": true,
+    "commands": [
+      "replaceitem entity ${operator.name} slot.armor.head minecraft:iron_helmet 1 0 {Quality:{Name:\"C3 Mana Weave\",Color:\"aqua\",Slots:[\"head\"],AttributeModifiers:[{AttributeName:\"jawmsintegrations.max_mana_percent\",Name:\"qualitytools\",Amount:10.0d,Operation:0,UUIDMost:31901L,UUIDLeast:31901L}]}}",
+      "devtool baubles set 1 ancientspellcraft:ring_mana_lesser 1 100 ${operator.name}",
+      {
+        "command": "jafs inspect ${operator.name}",
+        "delayTicks": 20
+      },
+      "jawmsintegrations status ${operator.name}",
+      "jawms-dev state ${operator.name}",
+      "jawms-dev explain ${operator.name}",
+      "devtool inspect inventory ${operator.name}",
+      "devtool mark JAFS_C_COEXIST_OBSERVED"
+    ]
+  },
+  "cyc3_jafs_c_remove_quality": {
+    "description": "After coexist; remove only QT iron helmet, keep food and Ancient ring.",
+    "stopOnFailure": true,
+    "trace": true,
+    "result": true,
+    "commands": [
+      "replaceitem entity ${operator.name} slot.armor.head minecraft:air",
+      {
+        "command": "jafs inspect ${operator.name}",
+        "delayTicks": 20
+      },
+      "jawmsintegrations status ${operator.name}",
+      "jawms-dev state ${operator.name}",
+      "jawms-dev explain ${operator.name}",
+      "devtool inspect inventory ${operator.name}",
+      "devtool mark JAFS_C_QUALITY_REMOVED"
+    ]
+  },
+  "cyc3_jafs_c_remove_ring": {
+    "description": "After helmet removal; remove only Ancient ring, keep food.",
+    "stopOnFailure": true,
+    "trace": true,
+    "result": true,
+    "commands": [
+      "devtool baubles clear 1 ${operator.name}",
+      {
+        "command": "jafs inspect ${operator.name}",
+        "delayTicks": 20
+      },
+      "jawmsintegrations status ${operator.name}",
+      "jawms-dev state ${operator.name}",
+      "jawms-dev explain ${operator.name}",
+      "devtool inspect inventory ${operator.name}",
+      "devtool mark JAFS_C_RING_REMOVED"
+    ]
+  },
+  "cyc3_jafs_c_remove_food": {
+    "description": "After equipment removal; remove native food, no mana write.",
+    "stopOnFailure": true,
+    "trace": true,
+    "result": true,
+    "commands": [
+      "jafs clear ${operator.name}",
+      {
+        "command": "jafs inspect ${operator.name}",
+        "delayTicks": 2
+      },
+      "jawmsintegrations status ${operator.name}",
+      "jawms-dev state ${operator.name}",
+      "jawms-dev explain ${operator.name}",
+      "devtool inspect inventory ${operator.name}",
+      "devtool mark JAFS_C_FOOD_REMOVED"
+    ]
+  },
+  "cyc3_jafs_c_disabled": {
+    "description": "Installed JAFS but integration disabled at process start; observes existing food data without clearing/reloading.",
+    "stopOnFailure": true,
+    "trace": true,
+    "result": true,
+    "commands": [
+      {
+        "command": "jafs inspect ${operator.name}",
+        "delayTicks": 2
+      },
+      "jawmsintegrations status ${operator.name}",
+      "jawms-dev state ${operator.name}",
+      "jawms-dev explain ${operator.name}",
+      "devtool inspect inventory ${operator.name}",
+      "devtool mark JAFS_C_DISABLED_OBSERVED"
+    ]
+  },
+  "cyc3_jafs_c_script_ready": {
+    "description": "All modules/CT validation script loaded; inactive test rod for one owner right-click in air.",
+    "stopOnFailure": true,
+    "trace": true,
+    "result": true,
+    "commands": [
+      "replaceitem entity ${operator.name} slot.hotbar.0 minecraft:blaze_rod 1 0 {display:{Name:\"C3 Script Check\"}}",
+      {
+        "command": "jafs inspect ${operator.name}",
+        "delayTicks": 2
+      },
+      "jawmsintegrations status ${operator.name}",
+      "jawms-dev state ${operator.name}",
+      "jawms-dev explain ${operator.name}",
+      "devtool inspect inventory ${operator.name}",
+      "devtool mark JAFS_C_SCRIPT_READY"
+    ]
+  },
+  "cyc3_jafs_c_finish": {
+    "description": "Final observation/quiet teardown; leaves data for declared next-launch persistence when applicable.",
+    "stopOnFailure": true,
+    "trace": true,
+    "result": true,
+    "commands": [
+      "devtool log all off",
+      "devtool mark JAFS_C_FINISHED",
+      "devtool session stop"
+    ]
+  },
+  "cyc3_jafs_c_server_stop": {
+    "description": "After all dedicated checks while owner remains connected; explicit stop is the final command. Inspect console/process for shutdown.",
+    "result": true,
+    "stopOnFailure": true,
+    "trace": true,
+    "commands": [
+      "devtool log all off",
+      "devtool mark JAFS_C_DEDICATED_STOPPING",
+      "devtool session stop",
+      "stop"
+    ]
+  }
+}

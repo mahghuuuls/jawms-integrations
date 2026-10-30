@@ -146,6 +146,21 @@ public final class IntegrationCoordinator {
         return new IntegrationCoordinator(active);
     }
 
+    public IntegrationCoordinator withDisabledDetail(IntegrationId integration, String detail) {
+        if (integration == null || detail == null || detail.trim().isEmpty()) {
+            throw new IllegalArgumentException("Disabled integration and detail must be provided");
+        }
+        IntegrationStatusView current = getStatus(integration);
+        if (current.getState() != IntegrationState.DISABLED) {
+            throw new IllegalStateException("Only a DISABLED integration can update its disabled detail: "
+                    + integration);
+        }
+        Map<IntegrationId, IntegrationStatusView> updated = new EnumMap<>(statuses);
+        updated.put(integration, new IntegrationStatusView(integration, IntegrationState.DISABLED,
+                current.getDetectedVersion(), detail));
+        return new IntegrationCoordinator(updated);
+    }
+
     @FunctionalInterface
     public interface ModVersionSource {
         /** Returns the raw Forge metadata version, or null when the mod is absent. */
