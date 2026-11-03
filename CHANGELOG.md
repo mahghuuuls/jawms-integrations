@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.2.0
+
+### Added
+
+- Added optional Just Another Food System support. Pack makers can configure active foods to modify maximum mana, mana regeneration, global and school-specific Spell Efficiency, and post-cast regeneration delay.
+- Added the JAWMS Integrations icon to the in-game mod list.
+
+### Compatibility
+
+- Turning off the food mana integration preserves existing food definitions and active food timers.
+- Use JAWMS 1.1.1 or newer on Cleanroom for compatibility with its built-in MixinBooter support.
+
 ## 1.1.1
 
 ### Fixed

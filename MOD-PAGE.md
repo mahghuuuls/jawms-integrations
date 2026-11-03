@@ -7,6 +7,7 @@ Currently includes integrations for:
 - [Quality Tools](https://www.curseforge.com/minecraft/mc-mods/quality-tools)
 - [Ancient Spellcraft](https://www.curseforge.com/minecraft/mc-mods/ancient-spellcraft)
 - [CraftTweaker](https://www.curseforge.com/minecraft/mc-mods/crafttweaker)
+- [Just Another Food System](https://www.curseforge.com/minecraft/mc-mods/just-another-food-system)
 
 <span style="color:#d6a100">**AI usage disclaimer:** This mod was developed with AI-agent assistance using [this agent workflow](https://github.com/mahghuuuls/minecraft-1.12.2-mod-agent-workflow). The project owner reviewed the work during development.</span>
 
@@ -84,10 +85,41 @@ Reworks selected mana-related baubles to use JAWMS mana. This includes:
 
 Adds a server-authoritative ZenScript API for reading coherent JAWMS mana state, setting or restoring mana, exact consumption, bounded draining, and starting the current post-cast regeneration delay.
 
+## [Just Another Food System](https://www.curseforge.com/minecraft/mc-mods/just-another-food-system)
+
+Pack makers can give foods bonuses to maximum mana, mana regeneration, Spell Efficiency, and the delay before mana starts regenerating after a cast. Bonuses last while the food is active. The pack maker chooses which foods grant them and how much each food gives.
+
+### For Modpack Creators
+
+In `config/jafs/foods.json`, add JAWMS properties to a food definition's `modifiers` array. Each modifier takes a `property` ID, an `operation`, and an `amount`. Prefix each property below with `jawmsintegrations:`.
+
+- **Maximum mana (`max_mana`).** Use `flat` for whole mana or `percent` for a percentage change.
+- **Mana regeneration (`mana_regen`).** Use `flat` for mana per second or `percent` for a percentage change.
+- **Post-cast regeneration delay (`mana_regen_delay`).** Use `flat` for seconds or `percent` for a percentage change. Negative values shorten the delay and positive values lengthen it.
+- **Spell Efficiency (`spell_efficiency`).** Use `flat` for non-negative points across all schools.
+- **School Spell Efficiency.** Use `flat` for non-negative points with `spell_efficiency_magic`, `spell_efficiency_fire`, `spell_efficiency_ice`, `spell_efficiency_lightning`, `spell_efficiency_necromancy`, `spell_efficiency_earth`, `spell_efficiency_sorcery`, or `spell_efficiency_healing`.
+
+For `percent`, an amount of `10` means 10%. Percentage reductions can go down to `-100`. Positive amounts increase maximum mana or regeneration, and negative amounts reduce them.
+
+This example apple grants **+20 maximum mana** and a **10% shorter post-cast regeneration delay** for **five minutes**. Add the object to your existing food list, or add its modifiers to the apple definition you already use.
+
+```json
+{
+  "id": "mana_apple",
+  "match": [{"item": "minecraft:apple", "meta": 0}],
+  "fullDuration": 300,
+  "priority": 0,
+  "modifiers": [
+    {"property": "jawmsintegrations:max_mana", "operation": "flat", "amount": 20},
+    {"property": "jawmsintegrations:mana_regen_delay", "operation": "percent", "amount": -10}
+  ]
+}
+```
+
 ## Configuration And Installation
 
 The generated `jawmsintegrations.cfg` can enable or tune each installed integration. Changes require a restart.
 
-JAWMS is required. Install the addon on both the client and server. Standard Forge and Cleanroom are supported. Supported integration mods are optional.
+JAWMS is required. Use JAWMS 1.1.1 or newer on Cleanroom. Install the addon on both the client and server.
 
 [Source code](https://github.com/mahghuuuls/jawms-integrations)

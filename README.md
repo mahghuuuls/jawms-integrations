@@ -12,7 +12,8 @@ JAWMS Integrations adds optional compatibility between [Just Another Wizardry Ma
 
 - Standard Forge and Cleanroom runtimes for Minecraft 1.12.2.
 - JAWMS 1.1.0 or newer is required.
-- Quality Tools, Ancient Spellcraft, and CraftTweaker are optional. Each integration activates only when its supported mod is installed and enabled.
+- Use JAWMS 1.1.1 or newer on Cleanroom for its built-in MixinBooter compatibility.
+- Quality Tools, Ancient Spellcraft, CraftTweaker, and Just Another Food System are optional. Each integration's gameplay effects activate when its supported mod is installed and enabled.
 - Install JAWMS Integrations on both the client and server. Gameplay configuration and mana changes are server-authoritative.
 
 ## Quality Tools Integration
@@ -53,6 +54,30 @@ Ancient Spellcraft items with unrelated self-contained bauble mana remain unchan
 ## CraftTweaker Integration
 
 Pack authors can inspect coherent JAWMS mana state, set or restore mana, perform atomic exact consumption or bounded draining, and start the current post-cast regeneration lockout from ZenScript. See the [CraftTweaker scripting API](docs/CRAFTTWEAKER.md) for the stable names, units, results, errors, and examples.
+
+## Just Another Food System
+
+[Just Another Food System](https://www.curseforge.com/minecraft/mc-mods/just-another-food-system) food definitions can grant maximum mana, mana regeneration, Spell Efficiency by school or across all schools, and changes to the post-cast regeneration delay. Each bonus lasts while its food is active. Define the bonuses in `config/jafs/foods.json`. For example, this modifier adds 20 maximum mana to a food:
+
+```json
+{"property":"jawmsintegrations:max_mana","operation":"flat","amount":20}
+```
+
+Use the `jawmsintegrations:` prefix for these properties:
+
+| Property suffix | Operations and units |
+| --- | --- |
+| `max_mana` | `flat` in whole mana or `percent` in percentage points |
+| `mana_regen` | `flat` in mana per second or `percent` in percentage points |
+| `mana_regen_delay` | `flat` in seconds or `percent` in percentage points. Negative values shorten the delay. |
+| `spell_efficiency` | `flat` in non-negative Spell Efficiency points across all schools |
+| `spell_efficiency_<school>` | `flat` in non-negative points for `magic`, `fire`, `ice`, `lightning`, `necromancy`, `earth`, `sorcery`, or `healing` |
+
+For percent modifiers, `10` means 10% and reductions are limited to 100%.
+
+Set `jafs.enabled` to `false` in `config/jawmsintegrations.cfg` and restart to turn off food mana effects while preserving the food definitions and timers.
+
+If your pack uses JAFS, consider setting `demonic_seal.enabled` to `false` in `config/jawms/jawms.cfg`. JAFS keeps hunger fixed, which can replenish the hunger that Demonic Seal spends to cover a mana shortfall.
 
 ## Configuration And Diagnostics
 
