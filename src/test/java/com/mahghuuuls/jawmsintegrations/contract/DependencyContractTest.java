@@ -16,6 +16,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 final class DependencyContractTest {
 
     private static final String JAWMS_JAR = "jawmsintegrations.contract.jawmsJar";
+    private static final String JASS_JAR = "jawmsintegrations.contract.jassJar";
     private static final String WIZARDRY_JAR = "jawmsintegrations.contract.wizardryJar";
     private static final String QUALITY_TOOLS_JAR = "jawmsintegrations.contract.qualityToolsJar";
     private static final String ANCIENT_SPELLCRAFT_JAR = "jawmsintegrations.contract.ancientSpellcraftJar";
@@ -24,7 +25,7 @@ final class DependencyContractTest {
     @Test
     void jawmsReleaseMatchesRequiredApiFoundation() throws IOException {
         Path jar = requiredJar(JAWMS_JAR);
-        assertEquals("3BB68BCEA775B4E42534865C2E788A01ECB363A0AD6247F540E781DBB79FED98",
+        assertEquals("239D05A9DF5C0FCF473A8CDCEDC6D8AF6607F59C668ABA55DA9008BC7AA04592",
                 sha256(jar));
         JarContract.assertField(jar,
                 "com/mahghuuuls/jawms/api/ManaApiVersion", "CURRENT", "Ljava/lang/String;");
@@ -63,6 +64,37 @@ final class DependencyContractTest {
                 "consumeMana",
                 "(Lnet/minecraft/entity/player/EntityPlayer;ILnet/minecraft/util/ResourceLocation;)"
                         + "Lcom/mahghuuuls/jawms/api/ManaMutationResult;", 0);
+    }
+
+    @Test
+    void publishedProvidersExposeSpellStaminaContracts() throws IOException {
+        Path jawms = requiredJar(JAWMS_JAR);
+        Path jass = requiredJar(JASS_JAR);
+        assertEquals("BCFBC779CBA6B6A9B625D381C3AB16DE5687C6717AD8EA3374285D6F5E16F1E1",
+                sha256(jass));
+        JarContract.assertMethod(jawms, "com/mahghuuuls/jawms/api/ManaApi",
+                "registerCastCostParticipant",
+                "(Lnet/minecraft/util/ResourceLocation;Lcom/mahghuuuls/jawms/api/ICastCostParticipant;)V");
+        JarContract.assertMethod(jawms, "com/mahghuuuls/jawms/api/ICastCostParticipant",
+                "prepare",
+                "(Lcom/mahghuuuls/jawms/api/CastAttemptContext;)Lcom/mahghuuuls/jawms/api/CastCostPreparation;");
+        JarContract.assertField(jass, "com/mahghuuuls/jass/api/JassApi",
+                "API_VERSION", "Ljava/lang/String;");
+        String actionParameters = "(Lnet/minecraft/entity/player/EntityPlayer;"
+                + "Lnet/minecraft/util/ResourceLocation;";
+        String itemParameters = "Lnet/minecraft/item/ItemStack;Lnet/minecraft/util/EnumHand;)";
+        String preparation = actionParameters + "DZ" + itemParameters
+                + "Lcom/mahghuuuls/jass/api/PreparedStaminaAction;";
+        JarContract.assertMethod(jass, "com/mahghuuuls/jass/api/IStaminaService",
+                "prepareDiscreteAction", preparation);
+        JarContract.assertMethod(jass, "com/mahghuuuls/jass/api/IStaminaService",
+                "prepareContinuousTick", preparation);
+        JarContract.assertMethod(jass, "com/mahghuuuls/jass/api/IStaminaService",
+                "checkActionStart", actionParameters + itemParameters + "Z");
+        JarContract.assertMethod(jass, "com/mahghuuuls/jass/api/PreparedStaminaAction",
+                "getPayableAmount", "()D");
+        JarContract.assertMethod(jass, "com/mahghuuuls/jass/api/IItemValueProvider",
+                "ownsBowUse", "(Lnet/minecraft/item/ItemStack;)Z");
     }
 
     @Test
