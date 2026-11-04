@@ -53,6 +53,15 @@ public final class IntegrationCoordinator {
             return new IntegrationStatusView(integration, IntegrationState.ABSENT, null,
                     "Optional dependency is not installed");
         }
+        if (integration == IntegrationId.SPELL_STAMINA) {
+            if (!integration.meetsMinimumMetadataVersion(detectedVersion)) {
+                return new IntegrationStatusView(integration, IntegrationState.UNSUPPORTED, detectedVersion,
+                        "Requires JASS " + integration.getMinimumVersion() + " or newer");
+            }
+            return new IntegrationStatusView(integration,
+                    enabled ? IntegrationState.READY : IntegrationState.DISABLED, detectedVersion,
+                    enabled ? "Installed JASS version meets the minimum" : "Disabled by configuration");
+        }
         if (gate.getDecision() == OptionalIntegrationEvidenceRegistry.Decision.ERROR) {
             return new IntegrationStatusView(integration, IntegrationState.FAILED, detectedVersion,
                     gate.getDetail());
@@ -104,6 +113,8 @@ public final class IntegrationCoordinator {
                 return config.getCraftTweaker().isEnabled();
             case JAFS:
                 return config.getJafs().isEnabled();
+            case SPELL_STAMINA:
+                return config.getSpellStamina().isEnabled();
             default:
                 throw new IllegalStateException("Unhandled integration " + integration);
         }
@@ -122,12 +133,20 @@ public final class IntegrationCoordinator {
     }
 
     public IntegrationCoordinator withFailure(IntegrationId integration, String detail) {
+        return withUnavailable(integration, IntegrationState.FAILED, detail);
+    }
+
+    public IntegrationCoordinator withUnsupported(IntegrationId integration, String detail) {
+        return withUnavailable(integration, IntegrationState.UNSUPPORTED, detail);
+    }
+
+    private IntegrationCoordinator withUnavailable(IntegrationId integration, IntegrationState state, String detail) {
         if (integration == null || detail == null || detail.trim().isEmpty()) {
             throw new IllegalArgumentException("Failure integration and detail must be provided");
         }
         Map<IntegrationId, IntegrationStatusView> failed = new EnumMap<>(statuses);
         IntegrationStatusView current = getStatus(integration);
-        failed.put(integration, new IntegrationStatusView(integration, IntegrationState.FAILED,
+        failed.put(integration, new IntegrationStatusView(integration, state,
                 current.getDetectedVersion(), detail));
         return new IntegrationCoordinator(failed);
     }

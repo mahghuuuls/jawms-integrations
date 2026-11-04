@@ -11,6 +11,7 @@ public final class IntegrationConfigSnapshot {
     private final AncientSpellcraftConfig ancientSpellcraft;
     private final IntegrationToggleConfig craftTweaker;
     private final IntegrationToggleConfig jafs;
+    private final SpellStaminaConfig spellStamina;
     private final DiagnosticsConfig diagnostics;
 
     public IntegrationConfigSnapshot(QualityToolsConfig qualityTools,
@@ -25,14 +26,24 @@ public final class IntegrationConfigSnapshot {
                                      IntegrationToggleConfig craftTweaker,
                                      IntegrationToggleConfig jafs,
                                      DiagnosticsConfig diagnostics) {
+        this(qualityTools, ancientSpellcraft, craftTweaker, jafs, SpellStaminaConfig.defaults(), diagnostics);
+    }
+
+    public IntegrationConfigSnapshot(QualityToolsConfig qualityTools,
+                                     AncientSpellcraftConfig ancientSpellcraft,
+                                     IntegrationToggleConfig craftTweaker,
+                                     IntegrationToggleConfig jafs,
+                                     SpellStaminaConfig spellStamina,
+                                     DiagnosticsConfig diagnostics) {
         if (qualityTools == null || ancientSpellcraft == null || craftTweaker == null || jafs == null
-                || diagnostics == null) {
+                || spellStamina == null || diagnostics == null) {
             throw new IllegalArgumentException("Configuration sections must not be null");
         }
         this.qualityTools = qualityTools;
         this.ancientSpellcraft = ancientSpellcraft;
         this.craftTweaker = craftTweaker;
         this.jafs = jafs;
+        this.spellStamina = spellStamina;
         this.diagnostics = diagnostics;
     }
 
@@ -63,6 +74,37 @@ public final class IntegrationConfigSnapshot {
 
     public IntegrationToggleConfig getJafs() {
         return jafs;
+    }
+
+    public SpellStaminaConfig getSpellStamina() {
+        return spellStamina;
+    }
+
+    public static final class SpellStaminaConfig {
+        public static final double DEFAULT_DISCRETE_COST = 12.0D;
+        public static final double DEFAULT_CONTINUOUS_COST_PER_SECOND = 8.0D;
+
+        private final boolean enabled;
+        private final double discreteCost;
+        private final double continuousCostPerSecond;
+
+        public SpellStaminaConfig(boolean enabled, double discreteCost, double continuousCostPerSecond) {
+            if (!Double.isFinite(discreteCost) || discreteCost < 0
+                    || !Double.isFinite(continuousCostPerSecond) || continuousCostPerSecond < 0) {
+                throw new IllegalArgumentException("Spell stamina costs must be finite and non-negative");
+            }
+            this.enabled = enabled;
+            this.discreteCost = discreteCost;
+            this.continuousCostPerSecond = continuousCostPerSecond;
+        }
+
+        public static SpellStaminaConfig defaults() {
+            return new SpellStaminaConfig(true, DEFAULT_DISCRETE_COST, DEFAULT_CONTINUOUS_COST_PER_SECOND);
+        }
+
+        public boolean isEnabled() { return enabled; }
+        public double getDiscreteCost() { return discreteCost; }
+        public double getContinuousCostPerSecond() { return continuousCostPerSecond; }
     }
 
     public static final class IntegrationToggleConfig {

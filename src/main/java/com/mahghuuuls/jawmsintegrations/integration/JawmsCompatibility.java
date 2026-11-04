@@ -57,7 +57,7 @@ public final class JawmsCompatibility {
         return value == null ? "<missing>" : "'" + value + "'";
     }
 
-    private static boolean meetsMinimum(String detected, String minimum) {
+    public static boolean meetsMinimum(String detected, String minimum) {
         int[] detectedParts = parseNumericVersion(detected);
         int[] minimumParts = parseNumericVersion(minimum);
         if (detectedParts == null || minimumParts == null) return false;

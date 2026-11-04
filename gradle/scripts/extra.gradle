@@ -9,6 +9,9 @@ sourceSets {
     jafsValidation {
         compileClasspath += sourceSets.main.output + sourceSets.main.compileClasspath
     }
+    spellStaminaValidation {
+        compileClasspath += sourceSets.main.output + sourceSets.main.compileClasspath
+    }
 }
 tasks.register('jafsValidationJar', Jar) {
     dependsOn tasks.named('jafsValidationClasses')
@@ -35,3 +38,11 @@ tasks.register('prepareJafsValidationProbe') {
     }
 }
 tasks.named('runClient').configure { dependsOn tasks.named('prepareJafsValidationProbe') }
+
+tasks.register('spellStaminaValidationJar', Jar) {
+    dependsOn tasks.named('spellStaminaValidationClasses')
+    archiveBaseName.set('jawms-integrations-stamina-validation')
+    archiveVersion.set('dev')
+    destinationDirectory.set(layout.buildDirectory.dir('validation'))
+    from sourceSets.spellStaminaValidation.output
+}

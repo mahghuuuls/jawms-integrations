@@ -42,7 +42,7 @@ class IntegrationCoordinatorTest {
     void allAbsentOptionalModsRemainIndependentInactiveStates() {
         IntegrationCoordinator coordinator = initialize(
                 IntegrationConfigSnapshot.defaults(), new HashMap<>(), allAbsent());
-        assertEquals(4, coordinator.getStatuses().size());
+        assertEquals(5, coordinator.getStatuses().size());
         for (IntegrationId integration : IntegrationId.values()) {
             assertEquals(IntegrationState.ABSENT, coordinator.getStatus(integration).getState());
         }
@@ -154,6 +154,7 @@ class IntegrationCoordinatorTest {
         assertFalse(IntegrationId.JAFS.meetsMinimumMetadataVersion("0.9.9"));
         assertFalse(IntegrationId.ANCIENT_SPELLCRAFT.meetsMinimumMetadataVersion("1.12.2-1.8.2"));
         assertFalse(IntegrationId.CRAFTTWEAKER.meetsMinimumMetadataVersion("1.12-4.1.20.714"));
+        assertFalse(IntegrationId.SPELL_STAMINA.meetsMinimumMetadataVersion("1.1.0"));
 
         Map<String, String> versions = supportedVersions();
         Map<IntegrationId, OptionalIntegrationEvidenceRegistry.Evidence> evidence = allSupported();
@@ -256,6 +257,7 @@ class IntegrationCoordinatorTest {
             case ANCIENT_SPELLCRAFT: return "1.12.2-2.0.0-beta";
             case CRAFTTWEAKER: return "1.12-4.2.0.0";
             case JAFS: return "2.0.0";
+            case SPELL_STAMINA: return "2.0.0";
             default: throw new IllegalStateException("Unhandled integration " + integration);
         }
     }

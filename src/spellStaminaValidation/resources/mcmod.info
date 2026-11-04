@@ -1,0 +1,9 @@
+[
+  {
+    "modid": "spellstaminafixture",
+    "name": "Spell stamina validation",
+    "version": "dev",
+    "mcversion": "1.12.2",
+    "description": "Development-only wand fixtures and receipt observations."
+  }
+]

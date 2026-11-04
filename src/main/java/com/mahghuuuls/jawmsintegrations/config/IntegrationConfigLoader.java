@@ -18,6 +18,7 @@ public final class IntegrationConfigLoader {
     private static final String ANCIENT_SPELLCRAFT = "ancient_spellcraft";
     private static final String CRAFTTWEAKER = "crafttweaker";
     private static final String JAFS = "jafs";
+    private static final String SPELL_STAMINA = "spell_stamina";
     private static final String DIAGNOSTICS = "diagnostics";
 
     private IntegrationConfigLoader() {
@@ -106,9 +107,23 @@ public final class IntegrationConfigLoader {
                 DIAGNOSTICS,
                 "enabled",
                 false,
-                "Writes one detailed integration summary during startup. Requires restart.",
+                "Writes integration summaries and bounded gameplay diagnostics. Requires restart.",
                 warnings
         );
+        IntegrationConfigSnapshot.SpellStaminaConfig spellStamina =
+                new IntegrationConfigSnapshot.SpellStaminaConfig(
+                        readBoolean(configuration, SPELL_STAMINA, "enabled", true,
+                                "Uses JASS stamina for wand casting when supported. Requires restart.", warnings),
+                        readBoundedDouble(configuration, SPELL_STAMINA, "discreteCost",
+                                IntegrationConfigSnapshot.SpellStaminaConfig.DEFAULT_DISCRETE_COST,
+                                0.0D, Double.MAX_VALUE,
+                                "Base stamina per successful wand cast. Zero keeps the JASS start check. Requires restart.",
+                                warnings),
+                        readBoundedDouble(configuration, SPELL_STAMINA, "continuousCostPerSecond",
+                                IntegrationConfigSnapshot.SpellStaminaConfig.DEFAULT_CONTINUOUS_COST_PER_SECOND,
+                                0.0D, Double.MAX_VALUE,
+                                "Base stamina per game second of continuous wand casting. Zero keeps the JASS start check. Requires restart.",
+                                warnings));
 
         if (configuration.hasChanged()) {
             configuration.save();
@@ -130,6 +145,7 @@ public final class IntegrationConfigLoader {
                         ringOfDagorim),
                 new IntegrationConfigSnapshot.IntegrationToggleConfig(craftTweakerEnabled),
                 new IntegrationConfigSnapshot.IntegrationToggleConfig(jafsEnabled),
+                spellStamina,
                 new IntegrationConfigSnapshot.DiagnosticsConfig(diagnosticsEnabled)
         );
         return new LoadResult(snapshot, warnings);

@@ -1,0 +1,449 @@
+{
+  "spell_stamina_open": {
+    "description": "Bind the operator and prepare the disposable spell testing world",
+    "result": true,
+    "stopOnFailure": true,
+    "commands": [
+      "devtool capabilities",
+      "devtool environment",
+      "devtool mods",
+      "devtool session start spell_stamina",
+      "devtool session operator @s",
+      "gamerule doMobSpawning false",
+      "gamerule keepInventory true",
+      "difficulty peaceful",
+      {
+        "delayTicks": 5,
+        "command": "kill @e[type=minecraft:item,r=32]"
+      },
+      "kill @e[type=minecraft:xp_orb,r=32]",
+      "effect @s minecraft:instant_health 1 8 true",
+      "difficulty normal",
+      "gamemode survival @s",
+      "clear @s",
+      "devtool mark SPELL_STAMINA_WORLD_READY"
+    ]
+  },
+  "spell_stamina_resume": {
+    "description": "Bind the operator again after reconnect without resetting player data",
+    "result": true,
+    "stopOnFailure": true,
+    "commands": [
+      "devtool session start spell_stamina_resume",
+      "devtool session operator @s",
+      "stamina inspect",
+      "spellstamina-fixture status",
+      "spellstamina-fixture observe",
+      "devtool mark SPELL_STAMINA_REJOIN_READY"
+    ]
+  },
+  "spell_stamina_snapshot": {
+    "description": "Record fixture counters and the current provider state",
+    "result": true,
+    "stopOnFailure": true,
+    "commands": [
+      "spellstamina-fixture snapshot",
+      "stamina inspect"
+    ]
+  },
+  "spell_stamina_clear": {
+    "description": "Disarm the fixture without writing either resource",
+    "result": true,
+    "stopOnFailure": true,
+    "commands": [
+      "spellstamina-fixture clear"
+    ]
+  },
+  "spell_stamina_throw": {
+    "description": "Invoke a throwing effect through the real wand path and catch only the fixture exception",
+    "result": true,
+    "stopOnFailure": true,
+    "commands": [
+      "spellstamina-fixture throw"
+    ]
+  },
+  "spell_stamina_status": {
+    "description": "Read the existing integration status without changing gameplay",
+    "result": true,
+    "stopOnFailure": true,
+    "commands": [
+      "spellstamina-fixture status",
+      "stamina inspect"
+    ]
+  },
+  "spell_stamina_a0": {
+    "description": "Prepare a0 and record effective input",
+    "result": true,
+    "stopOnFailure": true,
+    "commands": [
+      "gamemode survival @s",
+      "tp @s ~ ~ ~ ~ -80",
+      "spellstamina-fixture setup A0_probe probe main 40 40 NORMAL",
+      {
+        "delayTicks": 85,
+        "command": "stamina inspect"
+      },
+      "devtool mark A0_READY"
+    ]
+  },
+  "spell_stamina_a1_builtin": {
+    "description": "Prepare a1_builtin and record effective input",
+    "result": true,
+    "stopOnFailure": true,
+    "commands": [
+      "gamemode survival @s",
+      "tp @s ~ ~ ~ ~ -80",
+      "spellstamina-fixture setup A1_builtin missile main 40 40 NORMAL",
+      {
+        "delayTicks": 85,
+        "command": "stamina inspect"
+      },
+      "devtool mark A1_BUILTIN_READY"
+    ]
+  },
+  "spell_stamina_a1_addon": {
+    "description": "Prepare a1_addon and record effective input",
+    "result": true,
+    "stopOnFailure": true,
+    "commands": [
+      "gamemode survival @s",
+      "tp @s ~ ~ ~ ~ -80",
+      "spellstamina-fixture setup A1_addon probe off 40 40 NORMAL",
+      {
+        "delayTicks": 85,
+        "command": "stamina inspect"
+      },
+      "devtool mark A1_ADDON_READY"
+    ]
+  },
+  "spell_stamina_a1_free_mana": {
+    "description": "Prepare a1_free_mana and record effective input",
+    "result": true,
+    "stopOnFailure": true,
+    "commands": [
+      "gamemode survival @s",
+      "tp @s ~ ~ ~ ~ -80",
+      "spellstamina-fixture setup A1_free_mana free main 40 0 NORMAL",
+      {
+        "delayTicks": 85,
+        "command": "stamina inspect"
+      },
+      "devtool mark A1_FREE_MANA_READY"
+    ]
+  },
+  "spell_stamina_a1_debt": {
+    "description": "Prepare a1_debt and record effective input",
+    "result": true,
+    "stopOnFailure": true,
+    "commands": [
+      "gamemode survival @s",
+      "tp @s ~ ~ ~ ~ -80",
+      "spellstamina-fixture setup A1_debt probe main 5 40 NORMAL",
+      {
+        "delayTicks": 85,
+        "command": "stamina inspect"
+      },
+      "devtool mark A1_DEBT_READY"
+    ]
+  },
+  "spell_stamina_a1_cancel_price": {
+    "description": "Prepare a1_cancel_price and record effective input",
+    "result": true,
+    "stopOnFailure": true,
+    "commands": [
+      "gamemode survival @s",
+      "tp @s ~ ~ ~ ~ -80",
+      "spellstamina-fixture setup A1_cancel_price probe main 40 40 FREE_PRICE",
+      {
+        "delayTicks": 85,
+        "command": "stamina inspect"
+      },
+      "devtool mark A1_CANCEL_PRICE_READY"
+    ]
+  },
+  "spell_stamina_a2_mana": {
+    "description": "Prepare a2_mana and record effective input",
+    "result": true,
+    "stopOnFailure": true,
+    "commands": [
+      "gamemode survival @s",
+      "tp @s ~ ~ ~ ~ -80",
+      "spellstamina-fixture setup A2_mana probe main 40 0 NORMAL",
+      {
+        "delayTicks": 85,
+        "command": "stamina inspect"
+      },
+      "devtool mark A2_MANA_READY"
+    ]
+  },
+  "spell_stamina_a2_stamina": {
+    "description": "Prepare a2_stamina and record effective input",
+    "result": true,
+    "stopOnFailure": true,
+    "commands": [
+      "gamemode survival @s",
+      "tp @s ~ ~ ~ ~ -80",
+      "spellstamina-fixture setup A2_stamina probe main 0 40 NORMAL",
+      {
+        "delayTicks": 85,
+        "command": "stamina inspect"
+      },
+      "devtool mark A2_STAMINA_READY"
+    ]
+  },
+  "spell_stamina_a2_scroll": {
+    "description": "Prepare a2_scroll and record effective input",
+    "result": true,
+    "stopOnFailure": true,
+    "commands": [
+      "gamemode survival @s",
+      "tp @s ~ ~ ~ ~ -80",
+      "spellstamina-fixture setup A2_scroll scroll main 0 40 NORMAL",
+      {
+        "delayTicks": 85,
+        "command": "stamina inspect"
+      },
+      "devtool mark A2_SCROLL_READY"
+    ]
+  },
+  "spell_stamina_a2_charged": {
+    "description": "Prepare a2_charged and record effective input",
+    "result": true,
+    "stopOnFailure": true,
+    "commands": [
+      "gamemode survival @s",
+      "tp @s ~ ~ ~ ~ -80",
+      "spellstamina-fixture setup A2_charged charged main 40 40 NORMAL",
+      {
+        "delayTicks": 85,
+        "command": "stamina inspect"
+      },
+      "devtool mark A2_CHARGED_READY"
+    ]
+  },
+  "spell_stamina_a3_cancel": {
+    "description": "Prepare a3_cancel and record effective input",
+    "result": true,
+    "stopOnFailure": true,
+    "commands": [
+      "gamemode survival @s",
+      "tp @s ~ ~ ~ ~ -80",
+      "spellstamina-fixture setup A3_cancel probe main 40 40 CANCEL_CAST",
+      {
+        "delayTicks": 85,
+        "command": "stamina inspect"
+      },
+      "devtool mark A3_CANCEL_READY"
+    ]
+  },
+  "spell_stamina_a3_false": {
+    "description": "Prepare a3_false and record effective input",
+    "result": true,
+    "stopOnFailure": true,
+    "commands": [
+      "gamemode survival @s",
+      "tp @s ~ ~ ~ ~ -80",
+      "spellstamina-fixture setup A3_false probe main 40 40 FALSE",
+      {
+        "delayTicks": 85,
+        "command": "stamina inspect"
+      },
+      "devtool mark A3_FALSE_READY"
+    ]
+  },
+  "spell_stamina_a3_throw": {
+    "description": "Prepare a3_throw and record effective input",
+    "result": true,
+    "stopOnFailure": true,
+    "commands": [
+      "gamemode survival @s",
+      "tp @s ~ ~ ~ ~ -80",
+      "spellstamina-fixture setup A3_throw probe main 40 40 THROW",
+      {
+        "delayTicks": 85,
+        "command": "stamina inspect"
+      },
+      "devtool mark A3_THROW_READY"
+    ]
+  },
+  "spell_stamina_a4_protected": {
+    "description": "Prepare a4_protected and record effective input",
+    "result": true,
+    "stopOnFailure": true,
+    "commands": [
+      "gamemode survival @s",
+      "tp @s ~ ~ ~ ~ -80",
+      "spellstamina-fixture setup A4_protected probe main 20 40 SPEND",
+      {
+        "delayTicks": 85,
+        "command": "stamina inspect"
+      },
+      "devtool mark A4_PROTECTED_READY"
+    ]
+  },
+  "spell_stamina_a4_invalidate": {
+    "description": "Prepare a4_invalidate and record effective input",
+    "result": true,
+    "stopOnFailure": true,
+    "commands": [
+      "gamemode survival @s",
+      "tp @s ~ ~ ~ ~ -80",
+      "spellstamina-fixture setup A4_invalidate probe main 40 40 INVALIDATE",
+      {
+        "delayTicks": 85,
+        "command": "stamina inspect"
+      },
+      "devtool mark A4_INVALIDATE_READY"
+    ]
+  },
+  "spell_stamina_a4_partial": {
+    "description": "Prepare a4_partial and record effective input",
+    "result": true,
+    "stopOnFailure": true,
+    "commands": [
+      "gamemode survival @s",
+      "tp @s ~ ~ ~ ~ -80",
+      "spellstamina-fixture setup A4_partial probe main 40 40 INVALIDATE_ON_MANA",
+      {
+        "delayTicks": 85,
+        "command": "stamina inspect"
+      },
+      "devtool mark A4_PARTIAL_READY"
+    ]
+  },
+  "spell_stamina_a5_terminal": {
+    "description": "Prepare a5_terminal and record effective input",
+    "result": true,
+    "stopOnFailure": true,
+    "commands": [
+      "gamemode survival @s",
+      "tp @s ~ ~ ~ ~ -80",
+      "spellstamina-fixture setup A5_terminal channel main 8.15 40 NORMAL",
+      {
+        "delayTicks": 85,
+        "command": "stamina inspect"
+      },
+      "devtool mark A5_TERMINAL_READY"
+    ]
+  },
+  "spell_stamina_a5_release": {
+    "description": "Prepare a5_release and record effective input",
+    "result": true,
+    "stopOnFailure": true,
+    "commands": [
+      "gamemode survival @s",
+      "tp @s ~ ~ ~ ~ -80",
+      "spellstamina-fixture setup A5_release channel main 40 40 NORMAL",
+      {
+        "delayTicks": 85,
+        "command": "stamina inspect"
+      },
+      "devtool mark A5_RELEASE_READY"
+    ]
+  },
+  "spell_stamina_a6_discrete": {
+    "description": "Prepare a6_discrete and record effective input",
+    "result": true,
+    "stopOnFailure": true,
+    "commands": [
+      "gamemode survival @s",
+      "tp @s ~ ~ ~ ~ -80",
+      "spellstamina-fixture setup A6_discrete probe main 40 40 REPRICE",
+      {
+        "delayTicks": 85,
+        "command": "stamina inspect"
+      },
+      "devtool mark A6_DISCRETE_READY"
+    ]
+  },
+  "spell_stamina_a6_continuous": {
+    "description": "Prepare a6_continuous and record effective input",
+    "result": true,
+    "stopOnFailure": true,
+    "commands": [
+      "gamemode survival @s",
+      "tp @s ~ ~ ~ ~ -80",
+      "spellstamina-fixture setup A6_continuous channel main 40 40 REPRICE",
+      {
+        "delayTicks": 85,
+        "command": "stamina inspect"
+      },
+      "devtool mark A6_CONTINUOUS_READY"
+    ]
+  },
+  "spell_stamina_a6_discrete_refuse": {
+    "description": "Prepare a6_discrete_refuse and record effective input",
+    "result": true,
+    "stopOnFailure": true,
+    "commands": [
+      "gamemode survival @s",
+      "tp @s ~ ~ ~ ~ -80",
+      "spellstamina-fixture setup A6_discrete_refuse probe main 0 40 REPRICE",
+      {
+        "delayTicks": 85,
+        "command": "stamina inspect"
+      },
+      "devtool mark A6_DISCRETE_REFUSE_READY"
+    ]
+  },
+  "spell_stamina_a6_continuous_refuse": {
+    "description": "Prepare a6_continuous_refuse and record effective input",
+    "result": true,
+    "stopOnFailure": true,
+    "commands": [
+      "gamemode survival @s",
+      "tp @s ~ ~ ~ ~ -80",
+      "spellstamina-fixture setup A6_continuous_refuse channel main 0 40 REPRICE",
+      {
+        "delayTicks": 85,
+        "command": "stamina inspect"
+      },
+      "devtool mark A6_CONTINUOUS_REFUSE_READY"
+    ]
+  },
+  "spell_stamina_a6_creative": {
+    "description": "Prepare a6_creative and record effective input",
+    "result": true,
+    "stopOnFailure": true,
+    "commands": [
+      "gamemode creative @s",
+      "tp @s ~ ~ ~ ~ -80",
+      "spellstamina-fixture setup A6_creative probe main 0 40 REPRICE",
+      {
+        "delayTicks": 85,
+        "command": "stamina inspect"
+      },
+      "devtool mark A6_CREATIVE_READY"
+    ]
+  },
+  "spell_stamina_a5_abandon": {
+    "description": "Prepare a continuous effect that fails after preparation",
+    "result": true,
+    "stopOnFailure": true,
+    "commands": [
+      "gamemode survival @s",
+      "tp @s ~ ~ ~ ~ -80",
+      "spellstamina-fixture setup A5_abandon channel main 40 40 FALSE",
+      {
+        "command": "stamina inspect",
+        "delayTicks": 85
+      },
+      "devtool mark A5_ABANDON_READY"
+    ]
+  },
+  "spell_stamina_a4_floor_drop": {
+    "description": "Change the stamina maximum inside the effect after a protected competing spend",
+    "result": true,
+    "stopOnFailure": true,
+    "commands": [
+      "gamemode survival @s",
+      "tp @s ~ ~ ~ ~ -80",
+      "spellstamina-fixture setup A4_floor_drop probe main 20 40 FLOOR_DROP",
+      {
+        "delayTicks": 85,
+        "command": "stamina inspect"
+      },
+      "devtool mark A4_FLOOR_DROP_READY"
+    ]
+  }
+}

@@ -11,6 +11,8 @@ import com.mahghuuuls.jawmsintegrations.integration.JawmsCompatibility;
 import com.mahghuuuls.jawmsintegrations.integration.IntegrationId;
 import com.mahghuuuls.jawmsintegrations.integration.jafs.JafsRegistrationBootstrap;
 import com.mahghuuuls.jawmsintegrations.integration.jafs.FoodSourceAccess;
+import com.mahghuuuls.jawmsintegrations.integration.jass.SpellStaminaAccess;
+import com.mahghuuuls.jawmsintegrations.integration.jass.SpellStaminaBootstrap;
 import com.mahghuuuls.jawmsintegrations.integration.EarlyModMetadataScanner;
 import com.mahghuuuls.jawmsintegrations.integration.OptionalIntegrationEvidenceRegistry;
 import com.mahghuuuls.jawmsintegrations.integration.qualitytools.QualityToolsIntegration;
@@ -59,6 +61,7 @@ public final class JawmsIntegrationsMod {
     private IntegrationDiagnosticsService diagnostics;
     private JawmsCompatibility.Status jawms;
     private FoodSourceAccess foodSource;
+    private SpellStaminaAccess spellStamina;
 
     @Mod.EventHandler
     public void preInit(FMLPreInitializationEvent event) {
@@ -127,7 +130,8 @@ public final class JawmsIntegrationsMod {
                     loader == null ? getClass().getClassLoader() : loader,
                     detail -> {
                         coordinator = coordinator.withFailure(IntegrationId.JAFS, detail);
-                        diagnostics = new IntegrationDiagnosticsService(jawms, config, coordinator, foodSource);
+                        diagnostics = new IntegrationDiagnosticsService(jawms, config, coordinator, foodSource,
+                                spellStamina);
                         LOGGER.warn("JAFS integration FAILED: {}", detail);
                     });
             foodSource = initialized.getFoodSource();
@@ -163,7 +167,10 @@ public final class JawmsIntegrationsMod {
         FMLCommonHandler.instance().bus().register(new IntegrationPresentationSync(
                 coordinator.getStatus(IntegrationId.QUALITY_TOOLS).getState()
                         == IntegrationState.ACTIVE));
-        diagnostics = new IntegrationDiagnosticsService(jawms, config, coordinator, foodSource);
+        SpellStaminaBootstrap.Result initialized = SpellStaminaBootstrap.initialize(coordinator, config, jawms);
+        coordinator = initialized.getCoordinator();
+        spellStamina = initialized.getAccess();
+        diagnostics = new IntegrationDiagnosticsService(jawms, config, coordinator, foodSource, spellStamina);
     }
 
     @Mod.EventHandler
@@ -181,6 +188,7 @@ public final class JawmsIntegrationsMod {
     @Mod.EventHandler
     public void serverStopped(FMLServerStoppedEvent event) {
         if (foodSource != null) foodSource.clearWarnings();
+        if (spellStamina != null) spellStamina.serverStopped();
     }
 
     private void emitQualityToolsReloadSummary() {

@@ -40,6 +40,9 @@ class IntegrationConfigLoaderTest {
         assertTrue(snapshot.getAncientSpellcraft().isIntegrationEnabled());
         assertTrue(snapshot.getCraftTweaker().isEnabled());
         assertTrue(snapshot.getJafs().isEnabled());
+        assertTrue(snapshot.getSpellStamina().isEnabled());
+        assertEquals(12.0D, snapshot.getSpellStamina().getDiscreteCost());
+        assertEquals(8.0D, snapshot.getSpellStamina().getContinuousCostPerSecond());
         assertTrue(snapshot.getAncientSpellcraft().getLesserManaRing().isEnabled());
         assertEquals(8, snapshot.getAncientSpellcraft().getLesserManaRing().getValue());
         assertTrue(snapshot.getAncientSpellcraft().getGreaterManaRing().isEnabled());
@@ -83,7 +86,36 @@ class IntegrationConfigLoaderTest {
         assertTrue(generated.contains("ancient_spellcraft"));
         assertTrue(generated.contains("crafttweaker"));
         assertTrue(generated.contains("jafs"));
+        assertTrue(generated.contains("spell_stamina"));
         assertFalse(generated.toLowerCase().contains("ars_magica"));
+    }
+
+    @Test
+    void spellStaminaPricesAcceptZeroAndFractionsAndFallBackIndependently() throws Exception {
+        Path configPath = temporaryDirectory.resolve("stamina.cfg");
+        Field minecraftHome = FMLInjectionData.class.getDeclaredField("minecraftHome");
+        minecraftHome.setAccessible(true);
+        Object originalHome = minecraftHome.get(null);
+        try {
+            minecraftHome.set(null, temporaryDirectory.toFile());
+            Files.write(configPath, ("spell_stamina {\n B:enabled=false\n D:discreteCost=NaN\n"
+                    + " D:continuousCostPerSecond=0.125\n}\n").getBytes(StandardCharsets.UTF_8));
+            IntegrationConfigLoader.LoadResult loaded = IntegrationConfigLoader.load(configPath.toFile());
+            IntegrationConfigSnapshot.SpellStaminaConfig prices = loaded.getSnapshot().getSpellStamina();
+            assertFalse(prices.isEnabled());
+            assertEquals(12.0D, prices.getDiscreteCost());
+            assertEquals(0.125D, prices.getContinuousCostPerSecond());
+            assertEquals(1, loaded.getWarnings().size());
+            assertTrue(loaded.getWarnings().get(0).contains("spell_stamina.discreteCost"));
+
+            Files.write(configPath, ("spell_stamina {\n D:discreteCost=0\n"
+                    + " D:continuousCostPerSecond=-2\n}\n").getBytes(StandardCharsets.UTF_8));
+            prices = IntegrationConfigLoader.load(configPath.toFile()).getSnapshot().getSpellStamina();
+            assertEquals(0.0D, prices.getDiscreteCost());
+            assertEquals(8.0D, prices.getContinuousCostPerSecond());
+        } finally {
+            minecraftHome.set(null, originalHome);
+        }
     }
 
     @Test

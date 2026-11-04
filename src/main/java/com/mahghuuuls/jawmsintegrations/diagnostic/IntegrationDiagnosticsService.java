@@ -14,6 +14,7 @@ import com.mahghuuuls.jawmsintegrations.integration.JawmsCompatibility;
 import com.mahghuuuls.jawmsintegrations.integration.ancientspellcraft.DagorimFlaskService;
 import com.mahghuuuls.jawmsintegrations.integration.jafs.FoodSourceAccess;
 import com.mahghuuuls.jawmsintegrations.integration.jafs.FoodStatProjection;
+import com.mahghuuuls.jawmsintegrations.integration.jass.SpellStaminaAccess;
 import net.minecraft.entity.player.EntityPlayer;
 
 import java.util.ArrayList;
@@ -26,6 +27,7 @@ public final class IntegrationDiagnosticsService {
     private final IntegrationConfigSnapshot config;
     private final IntegrationCoordinator coordinator;
     private final FoodSourceAccess foodSource;
+    private final SpellStaminaAccess spellStamina;
 
     public IntegrationDiagnosticsService(JawmsCompatibility.Status jawms,
                                          IntegrationConfigSnapshot config,
@@ -37,10 +39,19 @@ public final class IntegrationDiagnosticsService {
                                          IntegrationConfigSnapshot config,
                                          IntegrationCoordinator coordinator,
                                          FoodSourceAccess foodSource) {
+        this(jawms, config, coordinator, foodSource, null);
+    }
+
+    public IntegrationDiagnosticsService(JawmsCompatibility.Status jawms,
+                                         IntegrationConfigSnapshot config,
+                                         IntegrationCoordinator coordinator,
+                                         FoodSourceAccess foodSource,
+                                         SpellStaminaAccess spellStamina) {
         this.jawms = jawms;
         this.config = config;
         this.coordinator = coordinator;
         this.foodSource = foodSource;
+        this.spellStamina = spellStamina;
     }
 
     public String startupSummary() {
@@ -60,7 +71,8 @@ public final class IntegrationDiagnosticsService {
         result.append("; built-in qualities=")
                 .append(builtInSummary())
                 .append("; Ancient replacements=")
-                .append(ancientReplacementSummary());
+                .append(ancientReplacementSummary())
+                .append("; ").append(spellStaminaSettings());
         return result.toString();
     }
 
@@ -81,6 +93,7 @@ public final class IntegrationDiagnosticsService {
                 + ", CraftTweaker=" + enabled(config.getCraftTweaker().isEnabled())
                 + ", JAFS=" + enabled(config.getJafs().isEnabled())
                 + ", startup diagnostics=" + enabled(config.getDiagnostics().isEnabled()));
+        lines.add(spellStaminaSettings());
         if (config.getDiagnostics().isEnabled()) {
             lines.add("Latest Ring of Dagorim activation: "
                     + DagorimFlaskService.active().latestActivationSummary());
@@ -95,6 +108,7 @@ public final class IntegrationDiagnosticsService {
     public List<String> playerStatus(EntityPlayer player) {
         List<String> lines = new ArrayList<>();
         lines.addAll(foodStatus(player));
+        lines.add(spellStaminaPlayerStatus(player));
         ManaProfileExplanation profile;
         try {
             profile = ManaApi.explainManaProfile(player);
@@ -138,6 +152,26 @@ public final class IntegrationDiagnosticsService {
             lines.add("- none");
         }
         return lines;
+    }
+
+    private String spellStaminaSettings() {
+        IntegrationConfigSnapshot.SpellStaminaConfig prices = config.getSpellStamina();
+        boolean active = coordinator.getStatus(IntegrationId.SPELL_STAMINA).getState() == IntegrationState.ACTIVE;
+        return "Spell stamina prices (" + (active ? "effective" : "configured, inactive") + "): "
+                + prices.getDiscreteCost() + " per discrete cast, "
+                + prices.getContinuousCostPerSecond() + " per continuous second";
+    }
+
+    private String spellStaminaPlayerStatus(EntityPlayer player) {
+        if (spellStamina == null) {
+            return "Spell stamina: unavailable (" + coordinator.getStatus(IntegrationId.SPELL_STAMINA).getState()
+                    + ")";
+        }
+        try {
+            return "Spell stamina: " + spellStamina.inspect(player);
+        } catch (RuntimeException | LinkageError unavailable) {
+            return "Spell stamina: unavailable (" + unavailable.getClass().getSimpleName() + ")";
+        }
     }
 
     public List<String> foodStatus(EntityPlayer player) {
