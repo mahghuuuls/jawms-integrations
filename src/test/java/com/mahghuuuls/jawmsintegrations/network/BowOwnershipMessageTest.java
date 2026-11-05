@@ -82,10 +82,11 @@ class BowOwnershipMessageTest {
             assertFalse(ClientBowOwnership.isEnabled(first));
             clientThread.remove().run();
             assertTrue(ClientBowOwnership.isEnabled(first));
-            ClientBowOwnership.receive(first, true, current::get, clientThread::add);
+            ClientBowOwnership.receive(first, false, current::get, clientThread::add);
             current.set(second);
             assertFalse(ClientBowOwnership.isEnabled(second));
             clientThread.remove().run();
+            assertTrue(ClientBowOwnership.isEnabled(first));
             assertFalse(ClientBowOwnership.isEnabled(second));
             ClientBowOwnership.receive(first, false, current::get, Runnable::run);
             assertTrue(ClientBowOwnership.isEnabled(first));
