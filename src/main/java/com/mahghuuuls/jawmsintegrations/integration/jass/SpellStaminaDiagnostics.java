@@ -68,7 +68,7 @@ public final class SpellStaminaDiagnostics {
     void resolved(CastAttemptOutcome outcome) {
         CastParticipantOutcome receipt = null;
         for (CastParticipantOutcome candidate : outcome.getParticipants()) {
-            if (SpellStaminaIntegration.ID.equals(candidate.getParticipantId())) {
+            if (SpellStaminaBowOwnership.ID.equals(candidate.getParticipantId())) {
                 receipt = candidate;
                 break;
             }

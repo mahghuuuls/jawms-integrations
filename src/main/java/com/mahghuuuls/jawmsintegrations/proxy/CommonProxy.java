@@ -1,6 +1,7 @@
 package com.mahghuuuls.jawmsintegrations.proxy;
 
 import com.mahghuuuls.jawmsintegrations.network.IntegrationPresentationSnapshot;
+import net.minecraft.network.NetworkManager;
 import net.minecraft.util.ResourceLocation;
 
 /** Dedicated-server-safe boundary for optional client presentation. */
@@ -16,6 +17,14 @@ public class CommonProxy {
 
     public void acceptPresentationSnapshot(IntegrationPresentationSnapshot snapshot) {
         // S2C messages are handled only by the physical client proxy.
+    }
+
+    public void acceptBowOwnership(NetworkManager origin, boolean enabled) {
+        // S2C messages are handled only by the physical client proxy.
+    }
+
+    public boolean isClientBowOwnershipEnabled() {
+        return false;
     }
 
     public boolean isServerReplacementActive(ResourceLocation registryName) {

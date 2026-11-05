@@ -17,10 +17,10 @@ import com.mahghuuuls.jawms.api.CastParticipantOutcome;
 import com.mahghuuuls.jawms.api.ICastCostParticipant;
 import com.mahghuuuls.jawms.api.ICastCostReservation;
 import com.mahghuuuls.jawms.api.ManaApi;
+import com.mahghuuuls.jawmsintegrations.JawmsIntegrationsMod;
 import com.mahghuuuls.jawmsintegrations.Tags;
 import com.mahghuuuls.jawmsintegrations.config.IntegrationConfigSnapshot;
 import com.mahghuuuls.jawmsintegrations.config.IntegrationConfigSnapshot.SpellStaminaConfig;
-import electroblob.wizardry.item.ItemWand;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.item.ItemStack;
@@ -28,40 +28,43 @@ import net.minecraft.util.EnumHand;
 import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.common.util.FakePlayer;
-import net.minecraftforge.fml.common.FMLCommonHandler;
-import net.minecraftforge.fml.relauncher.Side;
 
 import java.util.function.Consumer;
-import java.util.function.Supplier;
+import java.util.function.BooleanSupplier;
 import java.util.List;
 import java.util.UUID;
 
 /** Adapts a single accepted Wizardry wand effect to its JASS preparation and actual receipt. */
 public final class SpellStaminaIntegration implements ICastCostParticipant, SpellStaminaAccess {
-    static final ResourceLocation ID = new ResourceLocation(Tags.MOD_ID, "spell_stamina");
     private static final ResourceLocation DISCRETE = new ResourceLocation(Tags.MOD_ID, "wand_cast");
     private static final ResourceLocation CONTINUOUS = new ResourceLocation(Tags.MOD_ID, "wand_channel");
 
     private final IStaminaService stamina;
     private final SpellStaminaConfig config;
     private final SpellStaminaDiagnostics diagnostics;
+    private final Consumer<LinkageError> contractLoss;
     private volatile boolean active;
 
-    SpellStaminaIntegration(IStaminaService stamina, SpellStaminaConfig config, boolean verbose) {
+    SpellStaminaIntegration(IStaminaService stamina, SpellStaminaConfig config, boolean verbose,
+                            Consumer<LinkageError> contractLoss) {
         this.stamina = stamina;
         this.config = config;
         this.diagnostics = new SpellStaminaDiagnostics(stamina, verbose);
+        this.contractLoss = contractLoss;
     }
 
-    public static SpellStaminaAccess initialize(IntegrationConfigSnapshot config) throws ReflectiveOperationException {
+    public static SpellStaminaAccess initialize(IntegrationConfigSnapshot config, Consumer<LinkageError> contractLoss)
+            throws ReflectiveOperationException {
         IStaminaService stamina = JassApi.getStaminaService();
         verifyContract(stamina);
         SpellStaminaIntegration integration =
-                new SpellStaminaIntegration(stamina, config.getSpellStamina(), config.getDiagnostics().isEnabled());
+                new SpellStaminaIntegration(stamina, config.getSpellStamina(),
+                        config.getDiagnostics().isEnabled(), contractLoss);
         integration.register(
-                participant -> ManaApi.registerCastCostParticipant(ID, participant),
-                provider -> JassApi.registerItemValueProvider(ID, provider),
-                FMLCommonHandler.instance()::getEffectiveSide,
+                participant -> ManaApi.registerCastCostParticipant(SpellStaminaBowOwnership.ID, participant),
+                provider -> JassApi.registerItemValueProvider(SpellStaminaBowOwnership.ID, provider),
+                SpellStaminaBowOwnership::isServerThread,
+                JawmsIntegrationsMod.PROXY::isClientBowOwnershipEnabled,
                 () -> {
                     if (config.getDiagnostics().isEnabled()) MinecraftForge.EVENT_BUS.register(integration.diagnostics);
                 });
@@ -73,7 +76,7 @@ public final class SpellStaminaIntegration implements ICastCostParticipant, Spel
             throw new IllegalStateException("The JASS provider registration window is already closed");
         }
         verifyClaimContract(PreparedStaminaAction.class, SettlementResult.class);
-        requireMethod(IItemValueProvider.class, "ownsBowUse", boolean.class, ItemStack.class);
+        SpellStaminaBowOwnership.verifyContract();
         requireMethod(IStaminaService.class, "getState", StaminaPublicState.class, EntityPlayer.class);
         requireMethod(StaminaPublicState.class, "getStamina", double.class);
         requireMethod(StaminaPublicState.class, "getMaximumStamina", double.class);
@@ -164,14 +167,10 @@ public final class SpellStaminaIntegration implements ICastCostParticipant, Spel
     }
 
     void register(Consumer<ICastCostParticipant> registerCast, Consumer<IItemValueProvider> registerItems,
-                  Supplier<Side> effectiveSide, Runnable registerDiagnostics) {
+                  BooleanSupplier onServerThread, BooleanSupplier clientEnabled, Runnable registerDiagnostics) {
         registerCast.accept(this);
-        registerItems.accept(new IItemValueProvider() {
-            @Override
-            public boolean ownsBowUse(ItemStack stack) {
-                return active && effectiveSide.get() == Side.SERVER && isWand(stack);
-            }
-        });
+        new SpellStaminaBowOwnership(onServerThread, () -> active,
+                () -> active && clientEnabled.getAsBoolean(), this::disable).register(registerItems);
         registerDiagnostics.run();
         // A provider may retain its callback even if a later registration fails.
         active = true;
@@ -184,7 +183,7 @@ public final class SpellStaminaIntegration implements ICastCostParticipant, Spel
             return CastCostPreparation.notApplicable();
         }
         ItemStack stack = context.getStack();
-        if (!isWand(stack)) return CastCostPreparation.notApplicable();
+        if (!SpellStaminaBowOwnership.isWand(stack)) return CastCostPreparation.notApplicable();
 
         return prepareWand(context, stack);
     }
@@ -198,7 +197,7 @@ public final class SpellStaminaIntegration implements ICastCostParticipant, Spel
             if (price == 0) {
                 boolean allowed = stamina.checkActionStart(context.getPlayer(), action, stack, context.getHand());
                 diagnostics.permission(observation, allowed ? "zero_price" : "zero_price_refused", 0);
-                return allowed ? CastCostPreparation.accepted(new Reservation(null, 0, null))
+                return allowed ? CastCostPreparation.accepted(new Reservation(null, 0, null, this::disable))
                         : CastCostPreparation.refused("stamina_start_refused");
             }
             PreparedStaminaAction prepared = continuous
@@ -216,28 +215,26 @@ public final class SpellStaminaIntegration implements ICastCostParticipant, Spel
                         result == PreparationResult.FREE ? "jass_free_or_exempt" : "accepted", payable);
                 String attemptId = context.getAttemptId();
                 CastCostPreparation accepted = CastCostPreparation.accepted(new Reservation(prepared, payable,
-                        detail -> diagnostics.unexpectedSettlement(attemptId, detail)));
+                        detail -> diagnostics.unexpectedSettlement(attemptId, detail), this::disable));
                 handedOff = true;
                 return accepted;
             } finally {
                 if (!handedOff) prepared.release();
             }
         } catch (LinkageError incompatible) {
+            disable(incompatible);
             throw new IllegalStateException("JASS preparation API became unavailable", incompatible);
         }
     }
 
-    private static boolean isWand(ItemStack stack) {
-        return !stack.isEmpty() && stack.getItem() instanceof ItemWand;
-    }
-
     @Override
     public void onAttemptResolved(CastAttemptOutcome outcome) {
-        if (active) diagnostics.resolved(outcome);
+        diagnostics.resolved(outcome);
     }
 
     @Override
     public String inspect(EntityPlayer player) {
+        if (!active) return "unavailable (provider contract lost)";
         StaminaPublicState state = stamina.getState(player);
         return state == null ? "unavailable (no JASS session)"
                 : "current=" + state.getStamina() + ", maximum=" + state.getMaximumStamina()
@@ -249,15 +246,25 @@ public final class SpellStaminaIntegration implements ICastCostParticipant, Spel
         diagnostics.serverStopped();
     }
 
+    private void disable(LinkageError cause) {
+        if (active) {
+            active = false;
+            contractLoss.accept(cause);
+        }
+    }
+
     static final class Reservation implements ICastCostReservation {
         private final PreparedStaminaAction prepared;
         private final double payable;
         private final Consumer<String> reportFault;
+        private final Consumer<LinkageError> contractLoss;
 
-        Reservation(PreparedStaminaAction prepared, double payable, Consumer<String> reportFault) {
+        Reservation(PreparedStaminaAction prepared, double payable, Consumer<String> reportFault,
+                    Consumer<LinkageError> contractLoss) {
             this.prepared = prepared;
             this.payable = payable;
             this.reportFault = reportFault;
+            this.contractLoss = contractLoss;
         }
 
         @Override
@@ -265,6 +272,7 @@ public final class SpellStaminaIntegration implements ICastCostParticipant, Spel
             try {
                 return prepared == null || prepared.isValid();
             } catch (LinkageError incompatible) {
+                contractLoss.accept(incompatible);
                 throw new IllegalStateException("JASS claim validation API became unavailable", incompatible);
             }
         }
@@ -292,6 +300,7 @@ public final class SpellStaminaIntegration implements ICastCostParticipant, Spel
                         throw new IllegalStateException("Unknown JASS settlement " + result.getOutcome());
                 }
             } catch (LinkageError incompatible) {
+                contractLoss.accept(incompatible);
                 throw new IllegalStateException("JASS settlement API became unavailable", incompatible);
             }
         }
@@ -320,6 +329,7 @@ public final class SpellStaminaIntegration implements ICastCostParticipant, Spel
                 try {
                     prepared.release();
                 } catch (LinkageError incompatible) {
+                    contractLoss.accept(incompatible);
                     throw new IllegalStateException("JASS release API became unavailable", incompatible);
                 }
             }

@@ -6,14 +6,18 @@ import com.mahghuuuls.jawmsintegrations.integration.IntegrationCoordinator;
 import com.mahghuuuls.jawmsintegrations.integration.IntegrationId;
 import com.mahghuuuls.jawmsintegrations.integration.IntegrationState;
 import com.mahghuuuls.jawmsintegrations.integration.JawmsCompatibility;
+import net.minecraftforge.fml.common.FMLCommonHandler;
 
 import java.lang.reflect.InvocationTargetException;
+import java.util.function.Consumer;
 
 /** Keeps optional API classes out of the common lifecycle. */
 public final class SpellStaminaBootstrap {
     private static final IntegrationId ID = IntegrationId.SPELL_STAMINA;
     private static final String ENTRY =
             "com.mahghuuuls.jawmsintegrations.integration.jass.SpellStaminaIntegration";
+    private static final String BOW_OWNERSHIP =
+            "com.mahghuuuls.jawmsintegrations.integration.jass.SpellStaminaBowOwnership";
     private static final String MINIMUM_JAWMS = "1.2.0";
     private static final String MINIMUM_MANA_API = "1.7";
     private static final String MINIMUM_STAMINA_API = "1.2";
@@ -21,12 +25,16 @@ public final class SpellStaminaBootstrap {
     private SpellStaminaBootstrap() {}
 
     public static Result initialize(IntegrationCoordinator coordinator,
-                                    IntegrationConfigSnapshot config, JawmsCompatibility.Status jawms) {
-        if (coordinator.getStatus(ID).getState() != IntegrationState.READY) {
+                                    IntegrationConfigSnapshot config, JawmsCompatibility.Status jawms,
+                                    Consumer<LinkageError> contractLoss) {
+        IntegrationState state = coordinator.getStatus(ID).getState();
+        boolean clientOnly = state == IntegrationState.DISABLED
+                && FMLCommonHandler.instance().getSide().isClient();
+        if (state != IntegrationState.READY && !clientOnly) {
             return new Result(coordinator, null);
         }
-        if (!JawmsCompatibility.meetsMinimum(jawms.getModVersion(), MINIMUM_JAWMS)
-                || !JawmsCompatibility.meetsMinimum(jawms.getApiVersion(), MINIMUM_MANA_API)) {
+        if (!clientOnly && (!JawmsCompatibility.meetsMinimum(jawms.getModVersion(), MINIMUM_JAWMS)
+                || !JawmsCompatibility.meetsMinimum(jawms.getApiVersion(), MINIMUM_MANA_API))) {
             return new Result(coordinator.withUnsupported(ID,
                     "Requires JAWMS 1.2.0 or newer with casting API 1.7 or newer"), null);
         }
@@ -39,8 +47,13 @@ public final class SpellStaminaBootstrap {
                 return new Result(coordinator.withUnsupported(ID,
                         "Requires JASS API 1.2 or newer; detected " + version), null);
             }
+            if (clientOnly) {
+                Class.forName(BOW_OWNERSHIP, true, loader).getMethod("registerClientOnly").invoke(null);
+                return new Result(coordinator, null);
+            }
             SpellStaminaAccess access = (SpellStaminaAccess) Class.forName(ENTRY, true, loader)
-                    .getMethod("initialize", IntegrationConfigSnapshot.class).invoke(null, config);
+                    .getMethod("initialize", IntegrationConfigSnapshot.class, Consumer.class)
+                    .invoke(null, config, contractLoss);
             return new Result(coordinator.withActive(ID,
                     "JASS API " + version + "; wand casting and server bow ownership registered"), access);
         } catch (InvocationTargetException exception) {

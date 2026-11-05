@@ -1,6 +1,7 @@
 package com.mahghuuuls.jawmsintegrations.validation;
 
 import com.mahghuuuls.jass.api.JassApi;
+import com.mahghuuuls.jass.api.JassActions;
 import com.mahghuuuls.jass.api.StaminaChangeEvent;
 import com.mahghuuuls.jass.api.StaminaContribution;
 import com.mahghuuuls.jass.api.StaminaCostEvent;
@@ -21,14 +22,18 @@ import electroblob.wizardry.registry.WizardryItems;
 import electroblob.wizardry.spell.Spell;
 import electroblob.wizardry.util.SpellModifiers;
 import electroblob.wizardry.util.WandHelper;
+import io.netty.buffer.Unpooled;
 import net.minecraft.command.CommandBase;
 import net.minecraft.command.CommandException;
 import net.minecraft.command.ICommandSender;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
+import net.minecraft.init.Items;
 import net.minecraft.item.EnumAction;
 import net.minecraft.item.ItemStack;
+import net.minecraft.network.PacketBuffer;
+import net.minecraft.network.play.server.SPacketCustomPayload;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.EnumHand;
@@ -43,6 +48,7 @@ import net.minecraftforge.fml.common.event.FMLServerStartingEvent;
 import net.minecraftforge.fml.common.event.FMLServerStoppedEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.PlayerEvent;
+import net.minecraftforge.fml.common.gameevent.TickEvent;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -63,6 +69,8 @@ public final class SpellStaminaFixture implements ICastCostParticipant {
 
     private final Map<UUID, Trial> trials = new HashMap<>();
     private final Map<String, Spell> spells = new LinkedHashMap<>();
+    private EntityPlayer lastClientPlayer;
+    private String lastClientBowState;
 
     @Mod.EventHandler
     public void preInit(FMLPreInitializationEvent event) {
@@ -78,7 +86,7 @@ public final class SpellStaminaFixture implements ICastCostParticipant {
 
     @SubscribeEvent
     public void registerSpells(RegistryEvent.Register<Spell> event) {
-        for (String name : Arrays.asList("probe", "free", "charged", "channel")) {
+        for (String name : Arrays.asList("probe", "free", "charged", "channel", "bow_probe")) {
             Spell spell = new ProbeSpell(name, name.equals("channel"));
             spells.put(name, spell);
             event.getRegistry().register(spell);
@@ -167,7 +175,9 @@ public final class SpellStaminaFixture implements ICastCostParticipant {
     @SubscribeEvent
     public void pricing(StaminaCostEvent event) {
         Trial trial = trials.get(event.getPlayer().getUniqueID());
-        if (trial == null || !"jawmsintegrations".equals(event.getAction().getNamespace())) return;
+        if (trial == null) return;
+        if (JassActions.BOW.equals(event.getAction())) trial.nativeBowPrices++;
+        if (!"jawmsintegrations".equals(event.getAction().getNamespace())) return;
         trial.priceEvents++;
         if (trial.mode == Mode.REPRICE) event.setCost(40);
         if (trial.mode == Mode.FREE_PRICE) event.setCanceled(true);
@@ -176,7 +186,21 @@ public final class SpellStaminaFixture implements ICastCostParticipant {
     @SubscribeEvent
     public void payment(StaminaChangeEvent event) {
         Trial trial = trials.get(event.getPlayer().getUniqueID());
-        if (trial != null && "jawmsintegrations".equals(event.getCause().getNamespace())) trial.paymentEvents++;
+        if (trial == null) return;
+        if (JassActions.BOW.equals(event.getCause())) trial.nativeBowPayments++;
+        if ("jawmsintegrations".equals(event.getCause().getNamespace())) trial.paymentEvents++;
+    }
+
+    @SubscribeEvent
+    public void observeClientBowOwnership(TickEvent.PlayerTickEvent event) {
+        if (event.phase != TickEvent.Phase.END || !event.player.world.isRemote) return;
+        ItemStack stack = event.player.getHeldItemMainhand();
+        String state = stack.getItemUseAction() == EnumAction.BOW ? bowState(stack) : null;
+        if (state != null && (lastClientPlayer != event.player || !state.equals(lastClientBowState))) {
+            LOG.info("STAMINA_FIXTURE bow_policy side=client player={} {}", event.player.getName(), state);
+        }
+        lastClientPlayer = event.player;
+        lastClientBowState = state;
     }
 
     @SubscribeEvent
@@ -189,7 +213,7 @@ public final class SpellStaminaFixture implements ICastCostParticipant {
 
     private final class ProbeSpell extends Spell {
         ProbeSpell(String name, boolean continuous) {
-            super(ID, name, EnumAction.NONE, continuous);
+            super(ID, name, name.equals("bow_probe") ? EnumAction.BOW : EnumAction.NONE, continuous);
         }
 
         @Override
@@ -235,7 +259,7 @@ public final class SpellStaminaFixture implements ICastCostParticipant {
         @Override public int getRequiredPermissionLevel() { return 2; }
         @Override public String getUsage(ICommandSender sender) {
             return "/spellstamina-fixture setup <label> <spell|missile|scroll> <main|off> <stamina> <mana> <mode>"
-                    + " | snapshot | status | observe | throw | clear";
+                    + " | snapshot | status | observe | throw | clear | unsupported-bow-policy";
         }
 
         @Override
@@ -253,6 +277,12 @@ public final class SpellStaminaFixture implements ICastCostParticipant {
                 snapshot(player);
             } else if (args.length == 1 && args[0].equals("throw")) {
                 exerciseThrowingEffect(player);
+            } else if (args.length == 1 && args[0].equals("unsupported-bow-policy")) {
+                PacketBuffer wire = new PacketBuffer(Unpooled.buffer(3));
+                wire.writeByte(1).writeByte(2).writeByte(1);
+                player.connection.sendPacket(new SPacketCustomPayload("jawmsintegrations", wire));
+                LOG.info("STAMINA_FIXTURE bow_wire player={} discriminator=1 protocol=2 enabled=1",
+                        player.getName());
             } else if (args.length == 1 && args[0].equals("clear")) {
                 trials.remove(player.getUniqueID());
                 JassApi.markModifierCacheDirty(player);
@@ -296,6 +326,10 @@ public final class SpellStaminaFixture implements ICastCostParticipant {
             WandHelper.setCurrentCooldown(stack, 0);
         }
         player.setHeldItem(hand, stack);
+        if (spell == spells.get("bow_probe")) {
+            player.inventory.setInventorySlotContents(1, new ItemStack(Items.BOW));
+            player.inventory.setInventorySlotContents(2, new ItemStack(Items.ARROW, 16));
+        }
         player.getFoodStats().setFoodLevel(20);
         Trial trial = new Trial(label, mode, hand);
         trials.put(player.getUniqueID(), trial);
@@ -331,14 +365,24 @@ public final class SpellStaminaFixture implements ICastCostParticipant {
         Trial trial = trials.get(player.getUniqueID());
         if (trial == null) throw new CommandException("No active fixture trial");
         StaminaPublicState stamina = JassApi.getStaminaService().getState(player);
+        ItemStack held = player.getHeldItem(trial.hand);
         LOG.info("STAMINA_FIXTURE snapshot trial={} player={} mana={} stamina={} active={} heldCount={}"
                         + " effects={} finishEvents={} finishBodies={} scrollPosts={} prepares={} zeroManaPortions={}"
-                        + " receipts={} knownPaid={} priceEvents={} paymentEvents={}",
+                        + " receipts={} knownPaid={} priceEvents={} paymentEvents={} nativeBowPrices={} nativeBowPayments={}",
                 trial.label, player.getUniqueID(), ManaApi.getManaService().getCurrentMana(player),
                 stamina == null ? "unavailable" : stamina.getStamina(), player.isHandActive(),
-                player.getHeldItem(trial.hand).getCount(), trial.effects, trial.finishEvents, trial.finishBodies,
+                held.getCount(), trial.effects, trial.finishEvents, trial.finishBodies,
                 trial.scrollPosts, trial.prepares, trial.zeroManaPortions, trial.receipts, trial.paid,
-                trial.priceEvents, trial.paymentEvents);
+                trial.priceEvents, trial.paymentEvents, trial.nativeBowPrices, trial.nativeBowPayments);
+        if (held.getItemUseAction() == EnumAction.BOW) {
+            LOG.info("STAMINA_FIXTURE bow_policy side=server trial={} player={} {}",
+                    trial.label, player.getName(), bowState(held));
+        }
+    }
+
+    private static String bowState(ItemStack stack) {
+        return "item=" + stack.getItem().getRegistryName() + " owned=" + JassApi.isBowUseOwnedByAddon(stack)
+                + " native=" + JassApi.isJassBowDraw(stack);
     }
 
     private enum Mode {
@@ -346,6 +390,8 @@ public final class SpellStaminaFixture implements ICastCostParticipant {
     }
 
     private static final class Trial {
+        int nativeBowPrices;
+        int nativeBowPayments;
         final String label;
         final Mode mode;
         final EnumHand hand;

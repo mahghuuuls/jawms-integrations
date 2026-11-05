@@ -25,6 +25,8 @@ import com.mahghuuuls.jawmsintegrations.integration.crafttweaker.CraftTweakerReg
 import com.mahghuuuls.jawmsintegrations.network.IntegrationPresentationSync;
 import com.mahghuuuls.jawmsintegrations.network.IntegrationNetwork;
 import com.mahghuuuls.jawmsintegrations.proxy.CommonProxy;
+import net.minecraft.entity.player.EntityPlayerMP;
+import net.minecraft.server.MinecraftServer;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.FMLCommonHandler;
 import net.minecraftforge.fml.common.ModContainer;
@@ -57,7 +59,7 @@ public final class JawmsIntegrationsMod {
     public static CommonProxy PROXY;
 
     private IntegrationConfigSnapshot config;
-    private IntegrationCoordinator coordinator;
+    private volatile IntegrationCoordinator coordinator;
     private IntegrationDiagnosticsService diagnostics;
     private JawmsCompatibility.Status jawms;
     private FoodSourceAccess foodSource;
@@ -164,12 +166,13 @@ public final class JawmsIntegrationsMod {
         if (ancientState == IntegrationState.ACTIVE || ancientState == IntegrationState.DISABLED) {
             PROXY.activateAncientSpellcraftClient();
         }
-        FMLCommonHandler.instance().bus().register(new IntegrationPresentationSync(
-                coordinator.getStatus(IntegrationId.QUALITY_TOOLS).getState()
-                        == IntegrationState.ACTIVE));
-        SpellStaminaBootstrap.Result initialized = SpellStaminaBootstrap.initialize(coordinator, config, jawms);
+        SpellStaminaBootstrap.Result initialized = SpellStaminaBootstrap.initialize(
+                coordinator, config, jawms, this::onSpellStaminaContractLoss);
         coordinator = initialized.getCoordinator();
         spellStamina = initialized.getAccess();
+        FMLCommonHandler.instance().bus().register(new IntegrationPresentationSync(
+                coordinator.getStatus(IntegrationId.QUALITY_TOOLS).getState() == IntegrationState.ACTIVE,
+                () -> coordinator.getStatus(IntegrationId.SPELL_STAMINA).getState() == IntegrationState.ACTIVE));
         diagnostics = new IntegrationDiagnosticsService(jawms, config, coordinator, foodSource, spellStamina);
     }
 
@@ -189,6 +192,19 @@ public final class JawmsIntegrationsMod {
     public void serverStopped(FMLServerStoppedEvent event) {
         if (foodSource != null) foodSource.clearWarnings();
         if (spellStamina != null) spellStamina.serverStopped();
+    }
+
+    private void onSpellStaminaContractLoss(LinkageError cause) {
+        String detail = "Spell stamina provider contract lost: " + cause;
+        LOGGER.warn(detail, cause);
+        coordinator = coordinator.withFailure(IntegrationId.SPELL_STAMINA, detail);
+        diagnostics = new IntegrationDiagnosticsService(jawms, config, coordinator, foodSource, spellStamina);
+        MinecraftServer server = FMLCommonHandler.instance().getMinecraftServerInstance();
+        if (server != null) {
+            for (EntityPlayerMP player : server.getPlayerList().getPlayers()) {
+                IntegrationNetwork.sendBowOwnership(player, false);
+            }
+        }
     }
 
     private void emitQualityToolsReloadSummary() {
