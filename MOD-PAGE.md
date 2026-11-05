@@ -8,6 +8,7 @@ Currently includes integrations for:
 - [Ancient Spellcraft](https://www.curseforge.com/minecraft/mc-mods/ancient-spellcraft)
 - [CraftTweaker](https://www.curseforge.com/minecraft/mc-mods/crafttweaker)
 - [Just Another Food System](https://www.curseforge.com/minecraft/mc-mods/just-another-food-system)
+- [Just Another Stamina System](https://www.curseforge.com/minecraft/mc-mods/just-another-stamina-system)
 
 <span style="color:#d6a100">**AI usage disclaimer:** This mod was developed with AI-agent assistance using [this agent workflow](https://github.com/mahghuuuls/minecraft-1.12.2-mod-agent-workflow). The project owner reviewed the work during development.</span>
 
@@ -18,7 +19,7 @@ This project is not intended to be the only source of JAWMS integrations. It use
 
 ## [Quality Tools](https://www.curseforge.com/minecraft/mc-mods/quality-tools)
 
-Adds configurable JAWMS qualities to Electroblob Wizardry mage armor, including maximum mana, mana regeneration, Spell Efficiency, school-specific Spell Efficiency, and post-cast regeneration delay.
+Adds configurable JAWMS qualities to [Electroblob's Wizardry](https://www.curseforge.com/minecraft/mc-mods/electroblobs-wizardry) mage armor, including maximum mana, mana regeneration, Spell Efficiency, school-specific Spell Efficiency, and post-cast regeneration delay.
 
 ### Built-In Qualities
 
@@ -115,6 +116,12 @@ This example apple grants **+20 maximum mana** and a **10% shorter post-cast reg
   ]
 }
 ```
+
+## [Just Another Stamina System](https://www.curseforge.com/minecraft/mc-mods/just-another-stamina-system)
+
+Wizardry wand spells spend stamina alongside mana, including addon spells cast through a wand. Scrolls remain stamina-free.
+
+The default base costs are **12 stamina per successful single cast** and **8 stamina per second of continuous casting**. Normal stamina rules apply, and continuous spells stop when stamina runs out. You can tune the costs or turn off spell stamina in the config.
 
 ## Configuration And Installation
 

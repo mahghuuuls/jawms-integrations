@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.3.0
+
+### Added
+
+- Added optional Just Another Stamina System support for Wizardry wand casting, including addon spells cast through a wand. Scrolls are exempt.
+- Added configurable base prices of 12 stamina per successful single cast and 8 stamina per in-game second of continuous casting. Normal JASS exhaustion rules apply.
+
+### Compatibility
+
+- Spell stamina requires JAWMS 1.2.0 or newer and JASS 1.2.0 or newer. Other integrations retain the existing JAWMS requirement.
+
 ## 1.2.0
 
 ### Added

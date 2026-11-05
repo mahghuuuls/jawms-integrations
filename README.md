@@ -13,7 +13,7 @@ JAWMS Integrations adds optional compatibility between [Just Another Wizardry Ma
 - Standard Forge and Cleanroom runtimes for Minecraft 1.12.2.
 - JAWMS 1.1.0 or newer is required.
 - Use JAWMS 1.1.1 or newer on Cleanroom for its built-in MixinBooter compatibility.
-- Quality Tools, Ancient Spellcraft, CraftTweaker, and Just Another Food System are optional. Each integration's gameplay effects activate when its supported mod is installed and enabled.
+- Quality Tools, Ancient Spellcraft, CraftTweaker, Just Another Food System, and Just Another Stamina System are optional. Each integration's gameplay effects activate when its supported mod is installed and enabled.
 - Install JAWMS Integrations on both the client and server. Gameplay configuration and mana changes are server-authoritative.
 
 ## Quality Tools Integration
@@ -78,6 +78,14 @@ For percent modifiers, `10` means 10% and reductions are limited to 100%.
 Set `jafs.enabled` to `false` in `config/jawmsintegrations.cfg` and restart to turn off food mana effects while preserving the food definitions and timers.
 
 If your pack uses JAFS, consider setting `demonic_seal.enabled` to `false` in `config/jawms/jawms.cfg`. JAFS keeps hunger fixed, which can replenish the hunger that Demonic Seal spends to cover a mana shortfall.
+
+## Just Another Stamina System
+
+With JAWMS 1.2.0 or newer and [Just Another Stamina System](https://www.curseforge.com/minecraft/mc-mods/just-another-stamina-system) 1.2.0 or newer, Wizardry wand casts also use stamina. This includes addon spells cast through a Wizardry wand in either hand. Scrolls are exempt.
+
+The base prices are 12 stamina per successful single cast and 8 per in-game second of continuous casting. Normal JASS rules govern the final price, exhaustion, and overexertion. Continuous spells stop when stamina runs out.
+
+Use the `spell_stamina` section of `config/jawmsintegrations.cfg` to set `discreteCost` and `continuousCostPerSecond`. A price of zero keeps the normal JASS check for whether casting can start. Set `enabled` to `false` to turn off spell stamina entirely. Restart to apply changes. In multiplayer, the server settings apply.
 
 ## Configuration And Diagnostics
 
