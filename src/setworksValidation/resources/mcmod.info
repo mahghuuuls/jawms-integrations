@@ -1,0 +1,9 @@
+[
+  {
+    "modid": "setworksvalidation",
+    "name": "Setworks mana validation",
+    "version": "dev",
+    "mcversion": "1.12.2",
+    "description": "Disposable validation fixture for the Setworks mana adapter."
+  }
+]

@@ -143,10 +143,6 @@ public final class IntegrationCoordinator {
         return withUnavailable(integration, IntegrationState.UNSUPPORTED, detail);
     }
 
-    public IntegrationCoordinator withReadyDetail(IntegrationId integration, String detail) {
-        return withDetail(integration, IntegrationState.READY, detail);
-    }
-
     private IntegrationCoordinator withUnavailable(IntegrationId integration, IntegrationState state, String detail) {
         if (integration == null || detail == null || detail.trim().isEmpty()) {
             throw new IllegalArgumentException("Failure integration and detail must be provided");
@@ -173,19 +169,16 @@ public final class IntegrationCoordinator {
     }
 
     public IntegrationCoordinator withDisabledDetail(IntegrationId integration, String detail) {
-        return withDetail(integration, IntegrationState.DISABLED, detail);
-    }
-
-    private IntegrationCoordinator withDetail(IntegrationId integration, IntegrationState state, String detail) {
         if (integration == null || detail == null || detail.trim().isEmpty()) {
-            throw new IllegalArgumentException("Integration and detail must be provided");
+            throw new IllegalArgumentException("Disabled integration and detail must be provided");
         }
         IntegrationStatusView current = getStatus(integration);
-        if (current.getState() != state) {
-            throw new IllegalStateException("Expected " + state + " integration: " + integration);
+        if (current.getState() != IntegrationState.DISABLED) {
+            throw new IllegalStateException("Only a DISABLED integration can update its disabled detail: "
+                    + integration);
         }
         Map<IntegrationId, IntegrationStatusView> updated = new EnumMap<>(statuses);
-        updated.put(integration, new IntegrationStatusView(integration, state,
+        updated.put(integration, new IntegrationStatusView(integration, IntegrationState.DISABLED,
                 current.getDetectedVersion(), detail));
         return new IntegrationCoordinator(updated);
     }

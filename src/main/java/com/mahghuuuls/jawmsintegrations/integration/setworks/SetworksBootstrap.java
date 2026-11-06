@@ -6,6 +6,8 @@ import com.mahghuuuls.jawmsintegrations.integration.IntegrationId;
 import com.mahghuuuls.jawmsintegrations.integration.IntegrationState;
 import com.mahghuuuls.jawmsintegrations.integration.JawmsCompatibility;
 
+import java.util.function.Supplier;
+
 /** Keeps native definition registration independent of mana gameplay eligibility. */
 public final class SetworksBootstrap {
     private static final IntegrationId INTEGRATION = IntegrationId.SETWORKS;
@@ -15,33 +17,32 @@ public final class SetworksBootstrap {
     private SetworksBootstrap() {
     }
 
-    public static IntegrationCoordinator initialize(IntegrationCoordinator coordinator,
-                                                    JawmsCompatibility.Status jawms) {
+    public static Result initialize(IntegrationCoordinator coordinator, JawmsCompatibility.Status jawms) {
         // Resolve Setworks types only after the coordinator accepts the installed release.
         return initialize(coordinator, jawms, () -> SetworksManaEffect.register());
     }
 
-    static IntegrationCoordinator initialize(IntegrationCoordinator coordinator,
-                                             JawmsCompatibility.Status jawms,
-                                             Runnable registerAuthoring) {
+    static Result initialize(IntegrationCoordinator coordinator, JawmsCompatibility.Status jawms,
+                             Supplier<Authoring> registerAuthoring) {
         IntegrationState state = coordinator.getStatus(INTEGRATION).getState();
         if (state != IntegrationState.READY && state != IntegrationState.DISABLED) {
-            return coordinator;
+            return new Result(coordinator, null);
         }
+        Authoring authoring;
         try {
-            registerAuthoring.run();
+            authoring = registerAuthoring.get();
         } catch (LinkageError error) {
             String detail = "Compatible Setworks effect registration contract unavailable: " + error;
             JawmsIntegrationsMod.LOGGER.warn(detail);
-            return coordinator.withUnsupported(INTEGRATION, detail);
+            return new Result(coordinator.withUnsupported(INTEGRATION, detail), null);
         } catch (RuntimeException exception) {
             String detail = "Setworks effect registration failed: " + exception.getMessage();
             JawmsIntegrationsMod.LOGGER.error(detail, exception);
-            return coordinator.withFailure(INTEGRATION, detail);
+            return new Result(coordinator.withFailure(INTEGRATION, detail), null);
         }
         if (state == IntegrationState.DISABLED) {
-            return coordinator.withDisabledDetail(INTEGRATION,
-                    "Disabled by configuration. Native effect definitions still validate.");
+            return new Result(coordinator.withDisabledDetail(INTEGRATION,
+                    "Disabled by configuration. Native effect definitions still validate."), null);
         }
         if (!JawmsCompatibility.meetsMinimum(jawms.getModVersion(), MINIMUM_JAWMS)
                 || !JawmsCompatibility.meetsMinimum(jawms.getApiVersion(), MINIMUM_API)) {
@@ -50,9 +51,42 @@ public final class SetworksBootstrap {
                     + jawms.getModVersion() + " / API " + jawms.getApiVersion()
                     + ". Native effect definitions still validate.";
             JawmsIntegrationsMod.LOGGER.warn("Setworks integration UNSUPPORTED: {}", detail);
-            return coordinator.withUnsupported(INTEGRATION, detail);
+            return new Result(coordinator.withUnsupported(INTEGRATION, detail), null);
         }
-        return coordinator.withReadyDetail(INTEGRATION,
-                "Native mana effect registered. Mana gameplay is inactive.");
+        IntegrationCoordinator active = coordinator.withActive(INTEGRATION,
+                "Native effect and server mana readiness provider registered");
+        try {
+            return new Result(active, authoring.activate());
+        } catch (LinkageError missing) {
+            String detail = "Setworks grouping or JAWMS API 1.9 readiness contract unavailable: " + missing;
+            JawmsIntegrationsMod.LOGGER.warn(detail);
+            return new Result(coordinator.withUnsupported(INTEGRATION, detail), null);
+        } catch (RuntimeException failure) {
+            String detail = "Setworks mana activation failed: " + failure.getMessage();
+            JawmsIntegrationsMod.LOGGER.error(detail, failure);
+            return new Result(coordinator.withFailure(INTEGRATION, detail), null);
+        }
+    }
+
+    interface Authoring {
+        SetworksSourceAccess activate();
+    }
+
+    public static final class Result {
+        private final IntegrationCoordinator coordinator;
+        private final SetworksSourceAccess source;
+
+        private Result(IntegrationCoordinator coordinator, SetworksSourceAccess source) {
+            this.coordinator = coordinator;
+            this.source = source;
+        }
+
+        public IntegrationCoordinator getCoordinator() {
+            return coordinator;
+        }
+
+        public SetworksSourceAccess getSource() {
+            return source;
+        }
     }
 }

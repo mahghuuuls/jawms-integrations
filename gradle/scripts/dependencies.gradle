@@ -143,8 +143,8 @@ dependencies {
     runtimeOnly 'com.cleanroommc:osxnarratorblocker:1.0'
 
     // Required product dependencies. CurseMaven does not supply their dependency chains transitively.
-    compileOnly rfg.deobf(jawmsCoordinate)
-    testImplementation rfg.deobf(jawmsCoordinate)
+    compileOnly rfg.deobf(setworksJawmsCoordinate)
+    testImplementation rfg.deobf(setworksJawmsCoordinate)
     runtimeOnly rfg.deobf(jawmsRuntimeCoordinate)
     jawmsContract jawmsCoordinate
     implementation rfg.deobf('curse.maven:electroblobs-wizardry-265642:8320066')

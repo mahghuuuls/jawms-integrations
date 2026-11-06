@@ -12,6 +12,9 @@ sourceSets {
     spellStaminaValidation {
         compileClasspath += sourceSets.main.output + sourceSets.main.compileClasspath
     }
+    setworksValidation {
+        compileClasspath += sourceSets.main.output + sourceSets.main.compileClasspath
+    }
 }
 tasks.register('jafsValidationJar', Jar) {
     dependsOn tasks.named('jafsValidationClasses')
@@ -45,4 +48,33 @@ tasks.register('spellStaminaValidationJar', Jar) {
     archiveVersion.set('dev')
     destinationDirectory.set(layout.buildDirectory.dir('validation'))
     from sourceSets.spellStaminaValidation.output
+}
+
+tasks.named('compileSetworksValidationJava', JavaCompile).configure {
+    sourceCompatibility = targetCompatibility = 8
+    options.compilerArgs += ['-proc:none']
+}
+def setworksValidationJar = tasks.register('setworksValidationJar', Jar) {
+    dependsOn tasks.named('setworksValidationClasses')
+    archiveBaseName.set('jawms-integrations-setworks-validation')
+    archiveVersion.set('1.0')
+    archiveClassifier.set('dev')
+    destinationDirectory.set(layout.buildDirectory.dir('validation'))
+    from sourceSets.setworksValidation.output
+    manifest.attributes('MixinConfigs': 'mixins.setworksvalidation.json')
+}
+tasks.named('reobfSetworksValidationJar').configure {
+    destinationDirectory.set(layout.buildDirectory.dir('validation/packaged'))
+}
+if ((findProperty('enable_setworks_validation') ?: 'false').toString().toBoolean()) {
+    if (!(propertyString('integration_runtime_profile') in ['setworks', 'setworks-crafttweaker', 'all'])
+            || propertyBool('legacy_jawms_validation')) {
+        throw new GradleException('Setworks validation requires a Setworks profile with JAWMS API 1.9')
+    }
+    ['runClient', 'runServer'].each { taskName ->
+        tasks.named(taskName, JavaExec).configure {
+            dependsOn setworksValidationJar
+            classpath += files(setworksValidationJar.flatMap { it.archiveFile })
+        }
+    }
 }

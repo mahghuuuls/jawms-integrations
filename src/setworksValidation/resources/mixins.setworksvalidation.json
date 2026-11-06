@@ -1,0 +1,9 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "compatibilityLevel": "JAVA_8",
+  "package": "com.mahghuuuls.jawmsintegrations.validation.setworks.mixin",
+  "mixins": ["CallbackScope", "VerificationFault", "PublicationObserver"],
+  "client": ["ClientAcceptanceObserver"],
+  "injectors": {"defaultRequire": 1}
+}

@@ -7,16 +7,25 @@ import com.mahghuuuls.setworks.api.CombinationRule;
 import com.mahghuuuls.setworks.api.IEffectKind;
 import com.mahghuuuls.setworks.api.RegistrationResult;
 import com.mahghuuuls.setworks.api.SetworksApi;
+import com.mahghuuuls.setworks.api.WithdrawReason;
 import net.minecraft.entity.player.EntityPlayerMP;
 
 import java.math.BigDecimal;
 import java.util.Map;
 
-/** Native metadata for a pack-authored mana effect. */
+/** Native authoring and callbacks for a pack-authored mana effect. */
 final class SetworksManaEffect implements IEffectKind {
-    static void register() {
-        RegistrationResult result = SetworksApi.registerEffectKind(new SetworksManaEffect());
+    private Callbacks callbacks;
+
+    static SetworksBootstrap.Authoring register() {
+        SetworksManaEffect effect = new SetworksManaEffect();
+        RegistrationResult result = SetworksApi.registerEffectKind(effect);
         if (!result.isOk()) throw new IllegalStateException(result.message());
+        return () -> SetworksGameplay.activate(effect);
+    }
+
+    void install(Callbacks callbacks) {
+        this.callbacks = callbacks;
     }
 
     @Override
@@ -57,15 +66,25 @@ final class SetworksManaEffect implements IEffectKind {
 
     @Override
     public void apply(EntityPlayerMP player, String instanceId, Map<String, String> params) {
-        // The native definition can be registered with mana gameplay inactive.
+        if (callbacks != null) callbacks.apply(player, instanceId, params);
     }
 
     @Override
     public void withdraw(EntityPlayerMP player, String instanceId, Map<String, String> params) {
-        // An inert definition owns no applied contribution.
+        withdraw(player, instanceId, params, WithdrawReason.ENDED);
     }
 
-    private static Parameters parse(Map<String, String> params) {
+    @Override
+    public void withdraw(EntityPlayerMP player, String instanceId, Map<String, String> params, WithdrawReason reason) {
+        if (callbacks != null) callbacks.withdraw(player, instanceId, reason);
+    }
+
+    @Override
+    public void afterGroup(EntityPlayerMP player) {
+        if (callbacks != null) callbacks.afterGroup(player);
+    }
+
+    static Parameters parse(Map<String, String> params) {
         if (params == null || params.size() != 3 || params.get("stat") == null
                 || params.get("operation") == null || params.get("amount") == null) {
             throw new IllegalArgumentException("Expected exactly stat, operation and amount");
@@ -103,15 +122,21 @@ final class SetworksManaEffect implements IEffectKind {
         return new Parameters(stat, percent, amount);
     }
 
-    private static final class Parameters {
-        private final Stat stat;
-        private final boolean percent;
-        private final double amount;
+    static final class Parameters {
+        final Stat stat;
+        final boolean percent;
+        final double amount;
 
         private Parameters(Stat stat, boolean percent, double amount) {
             this.stat = stat;
             this.percent = percent;
             this.amount = amount;
         }
+    }
+
+    interface Callbacks {
+        void apply(EntityPlayerMP player, String instanceId, Map<String, String> params);
+        void withdraw(EntityPlayerMP player, String instanceId, WithdrawReason reason);
+        void afterGroup(EntityPlayerMP player);
     }
 }

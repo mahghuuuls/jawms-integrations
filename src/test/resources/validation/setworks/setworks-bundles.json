@@ -1,0 +1,184 @@
+{
+  "setworks_baseline": {
+    "description": "Prepare the disposable Setworks validation world",
+    "result": true,
+    "stopOnFailure": true,
+    "commands": [
+      "devtool session start setworks_forge",
+      "devtool session operator @s",
+      "gamerule doMobSpawning false",
+      "difficulty peaceful",
+      "gamemode survival @s",
+      "effect @s minecraft:instant_health 1 10 true",
+      "devtool inspect player @s",
+      "devtool inspect inventory @s",
+      "devtool mark SETWORKS_BASELINE",
+      "setworksfixture snapshot"
+    ]
+  },
+  "setworks_lifecycle_seed": {
+    "description": "Establish and save 110 mana under the active leather bonus",
+    "result": true,
+    "stopOnFailure": true,
+    "commands": [
+      "replaceitem entity @s slot.armor.head minecraft:leather_helmet 1 0",
+      {"delayTicks": 25, "command": "setworksfixture seed"},
+      "devtool mark SETWORKS_SEED_SAVED"
+    ]
+  },
+  "setworks_case_arm": {
+    "description": "Arm the held-peer suspension case for the next login",
+    "result": true,
+    "stopOnFailure": true,
+    "commands": ["setworksfixture arm suspended", "devtool mark SETWORKS_SUSPENSION_ARMED"]
+  },
+  "setworks_case_missing": {
+    "description": "Arm failure before the initial Setworks publication",
+    "result": true,
+    "stopOnFailure": true,
+    "commands": ["setworksfixture arm missing", "devtool mark SETWORKS_MISSING_ARMED"]
+  },
+  "setworks_case_sensitivity": {
+    "description": "Arm the isolated control run that suppresses suspension",
+    "result": true,
+    "stopOnFailure": true,
+    "commands": ["setworksfixture arm sensitivity", "devtool mark SETWORKS_CONTROL_ARMED"]
+  },
+  "setworks_case_in_flight": {
+    "description": "Arm a native group change during JAWMS evaluation",
+    "result": true,
+    "stopOnFailure": true,
+    "commands": ["setworksfixture arm in_flight", "devtool mark SETWORKS_IN_FLIGHT_ARMED"]
+  },
+  "setworks_case_empty_recovery": {
+    "description": "Arm recovery of a suspended slot with a verified empty group",
+    "result": true,
+    "stopOnFailure": true,
+    "commands": ["setworksfixture arm empty_recovery", "devtool mark SETWORKS_EMPTY_RECOVERY_ARMED"]
+  },
+  "setworks_case_transfer_restore": {
+    "description": "Arm fault during a transfer whose source context is restored",
+    "result": true,
+    "stopOnFailure": true,
+    "commands": ["setworksfixture arm transfer_restore", "devtool mark SETWORKS_TRANSFER_RESTORE_ARMED"]
+  },
+  "setworks_stack": {
+    "description": "Add the independent chest contribution",
+    "result": true,
+    "stopOnFailure": true,
+    "commands": [
+      "replaceitem entity @s slot.armor.chest minecraft:leather_chestplate",
+      {"delayTicks": 25, "command": "setworksfixture snapshot"}
+    ]
+  },
+  "setworks_replace": {
+    "description": "Replace the head bonus with a different +20 bonus in the same group",
+    "result": true,
+    "stopOnFailure": true,
+    "commands": [
+      "replaceitem entity @s slot.armor.head minecraft:iron_helmet",
+      {"delayTicks": 25, "command": "setworksfixture snapshot"}
+    ]
+  },
+  "setworks_remove_chest": {
+    "description": "Withdraw only the independent chest contribution",
+    "result": true,
+    "stopOnFailure": true,
+    "commands": [
+      "replaceitem entity @s slot.armor.chest minecraft:air",
+      {"delayTicks": 25, "command": "setworksfixture snapshot"}
+    ]
+  },
+  "setworks_remove_head": {
+    "description": "Withdraw the remaining head contribution",
+    "result": true,
+    "stopOnFailure": true,
+    "commands": [
+      "replaceitem entity @s slot.armor.head minecraft:air",
+      {"delayTicks": 25, "command": "setworksfixture snapshot"}
+    ]
+  },
+  "setworks_transfer": {
+    "description": "Transfer to the Nether with the verified equipment unchanged",
+    "result": true,
+    "stopOnFailure": true,
+    "commands": ["devtool mark SETWORKS_TRANSFER_START", "setworksfixture transfer nether"]
+  },
+  "setworks_cancelled_death": {
+    "description": "Exercise a cancelled native death without changing the equipped set",
+    "result": true,
+    "stopOnFailure": true,
+    "commands": ["devtool mark SETWORKS_CANCEL_DEATH", "setworksfixture death_check"]
+  },
+  "setworks_respawn_retained": {
+    "description": "Trigger a native death with the active helmet retained",
+    "result": true,
+    "stopOnFailure": true,
+    "commands": ["gamerule keepInventory true", "devtool mark SETWORKS_RETAINED_DEATH", "kill @s"]
+  },
+  "setworks_respawn_removed": {
+    "description": "Trigger a native death that removes the active helmet",
+    "result": true,
+    "stopOnFailure": true,
+    "commands": ["gamerule keepInventory false", "devtool mark SETWORKS_REMOVED_DEATH", "kill @s"]
+  },
+  "setworks_save_stop": {
+    "description": "Save and stop the isolated dedicated server",
+    "result": true,
+    "stopOnFailure": true,
+    "commands": ["devtool mark SETWORKS_SERVER_STOP", "save-all", "stop"]
+  },
+  "setworks_stale": {
+    "description": "Make the next active replacement fail verification and inspect the retained group",
+    "result": true,
+    "stopOnFailure": true,
+    "commands": [
+      "setworksfixture stale",
+      {"delayTicks": 25, "command": "jawmsintegrations status ${operator.name}"}
+    ]
+  },
+  "setworks_recover_empty": {
+    "description": "Withdraw the stale test input and publish a verified empty group",
+    "result": true,
+    "stopOnFailure": true,
+    "commands": [
+      "setworksfixture recover",
+      {"delayTicks": 25, "command": "setworksfixture snapshot"}
+    ]
+  },
+  "setworks_snapshot": {
+    "description": "Observe current mana and the read-only integration status",
+    "result": true,
+    "stopOnFailure": true,
+    "commands": [
+      "setworksfixture snapshot",
+      "jawmsintegrations status ${operator.name}",
+      "devtool inspect player @s",
+      "devtool inspect inventory @s",
+      "devtool mark SETWORKS_SNAPSHOT"
+    ]
+  },
+  "setworks_permissions": {
+    "description": "Compare operator and permission-zero status with unchanged mana",
+    "result": true,
+    "stopOnFailure": true,
+    "commands": [
+      "setworksfixture snapshot",
+      "setworksfixture permission",
+      "setworksfixture snapshot",
+      "devtool mark SETWORKS_PERMISSION"
+    ]
+  },
+  "setworks_reset": {
+    "description": "Clear the test armor slots and pending fixture arm",
+    "result": true,
+    "stopOnFailure": true,
+    "commands": [
+      "setworksfixture arm ordinary",
+      "replaceitem entity @s slot.armor.head minecraft:air",
+      "replaceitem entity @s slot.armor.chest minecraft:air",
+      {"delayTicks": 25, "command": "setworksfixture snapshot"},
+      "devtool mark SETWORKS_RESET"
+    ]
+  }
+}

@@ -17,6 +17,7 @@ import com.mahghuuuls.jawmsintegrations.integration.EarlyModMetadataScanner;
 import com.mahghuuuls.jawmsintegrations.integration.OptionalIntegrationEvidenceRegistry;
 import com.mahghuuuls.jawmsintegrations.integration.qualitytools.QualityToolsIntegration;
 import com.mahghuuuls.jawmsintegrations.integration.setworks.SetworksBootstrap;
+import com.mahghuuuls.jawmsintegrations.integration.setworks.SetworksSourceAccess;
 import com.mahghuuuls.jawmsintegrations.integration.ancientspellcraft.AncientSpellcraftIntegration;
 import com.mahghuuuls.jawmsintegrations.integration.ancientspellcraft.AncientReplacementPolicy;
 import com.mahghuuuls.jawmsintegrations.integration.ancientspellcraft.EverfullManaService;
@@ -65,6 +66,7 @@ public final class JawmsIntegrationsMod {
     private JawmsCompatibility.Status jawms;
     private FoodSourceAccess foodSource;
     private SpellStaminaAccess spellStamina;
+    private SetworksSourceAccess setworks;
 
     @Mod.EventHandler
     public void preInit(FMLPreInitializationEvent event) {
@@ -134,7 +136,7 @@ public final class JawmsIntegrationsMod {
                     detail -> {
                         coordinator = coordinator.withFailure(IntegrationId.JAFS, detail);
                         diagnostics = new IntegrationDiagnosticsService(jawms, config, coordinator, foodSource,
-                                spellStamina);
+                                spellStamina, setworks);
                         LOGGER.warn("JAFS integration FAILED: {}", detail);
                     });
             foodSource = initialized.getFoodSource();
@@ -171,11 +173,13 @@ public final class JawmsIntegrationsMod {
                 coordinator, config, jawms, this::onSpellStaminaContractLoss);
         coordinator = initialized.getCoordinator();
         spellStamina = initialized.getAccess();
-        coordinator = SetworksBootstrap.initialize(coordinator, jawms);
+        SetworksBootstrap.Result setworksResult = SetworksBootstrap.initialize(coordinator, jawms);
+        coordinator = setworksResult.getCoordinator();
+        setworks = setworksResult.getSource();
         FMLCommonHandler.instance().bus().register(new IntegrationPresentationSync(
                 coordinator.getStatus(IntegrationId.QUALITY_TOOLS).getState() == IntegrationState.ACTIVE,
                 () -> coordinator.getStatus(IntegrationId.SPELL_STAMINA).getState() == IntegrationState.ACTIVE));
-        diagnostics = new IntegrationDiagnosticsService(jawms, config, coordinator, foodSource, spellStamina);
+        diagnostics = new IntegrationDiagnosticsService(jawms, config, coordinator, foodSource, spellStamina, setworks);
     }
 
     @Mod.EventHandler
@@ -194,13 +198,14 @@ public final class JawmsIntegrationsMod {
     public void serverStopped(FMLServerStoppedEvent event) {
         if (foodSource != null) foodSource.clearWarnings();
         if (spellStamina != null) spellStamina.serverStopped();
+        if (setworks != null) setworks.serverStopped();
     }
 
     private void onSpellStaminaContractLoss(LinkageError cause) {
         String detail = "Spell stamina provider contract lost: " + cause;
         LOGGER.warn(detail, cause);
         coordinator = coordinator.withFailure(IntegrationId.SPELL_STAMINA, detail);
-        diagnostics = new IntegrationDiagnosticsService(jawms, config, coordinator, foodSource, spellStamina);
+        diagnostics = new IntegrationDiagnosticsService(jawms, config, coordinator, foodSource, spellStamina, setworks);
         MinecraftServer server = FMLCommonHandler.instance().getMinecraftServerInstance();
         if (server != null) {
             for (EntityPlayerMP player : server.getPlayerList().getPlayers()) {

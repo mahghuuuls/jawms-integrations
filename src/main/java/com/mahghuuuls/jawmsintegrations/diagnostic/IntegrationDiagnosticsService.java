@@ -15,6 +15,7 @@ import com.mahghuuuls.jawmsintegrations.integration.ancientspellcraft.DagorimFla
 import com.mahghuuuls.jawmsintegrations.integration.jafs.FoodSourceAccess;
 import com.mahghuuuls.jawmsintegrations.integration.stat.ManaStatProjection;
 import com.mahghuuuls.jawmsintegrations.integration.jass.SpellStaminaAccess;
+import com.mahghuuuls.jawmsintegrations.integration.setworks.SetworksSourceAccess;
 import net.minecraft.entity.player.EntityPlayer;
 
 import java.util.ArrayList;
@@ -28,6 +29,7 @@ public final class IntegrationDiagnosticsService {
     private final IntegrationCoordinator coordinator;
     private final FoodSourceAccess foodSource;
     private final SpellStaminaAccess spellStamina;
+    private final SetworksSourceAccess setworks;
 
     public IntegrationDiagnosticsService(JawmsCompatibility.Status jawms,
                                          IntegrationConfigSnapshot config,
@@ -47,11 +49,21 @@ public final class IntegrationDiagnosticsService {
                                          IntegrationCoordinator coordinator,
                                          FoodSourceAccess foodSource,
                                          SpellStaminaAccess spellStamina) {
+        this(jawms, config, coordinator, foodSource, spellStamina, null);
+    }
+
+    public IntegrationDiagnosticsService(JawmsCompatibility.Status jawms,
+                                         IntegrationConfigSnapshot config,
+                                         IntegrationCoordinator coordinator,
+                                         FoodSourceAccess foodSource,
+                                         SpellStaminaAccess spellStamina,
+                                         SetworksSourceAccess setworks) {
         this.jawms = jawms;
         this.config = config;
         this.coordinator = coordinator;
         this.foodSource = foodSource;
         this.spellStamina = spellStamina;
+        this.setworks = setworks;
     }
 
     public String startupSummary() {
@@ -110,6 +122,7 @@ public final class IntegrationDiagnosticsService {
         List<String> lines = new ArrayList<>();
         lines.addAll(foodStatus(player));
         lines.add(spellStaminaPlayerStatus(player));
+        lines.add(setworksPlayerStatus(player));
         ManaProfileExplanation profile;
         try {
             profile = ManaApi.explainManaProfile(player);
@@ -172,6 +185,20 @@ public final class IntegrationDiagnosticsService {
             return "Spell stamina: " + spellStamina.inspect(player);
         } catch (RuntimeException | LinkageError unavailable) {
             return "Spell stamina: unavailable (" + unavailable.getClass().getSimpleName() + ")";
+        }
+    }
+
+    private String setworksPlayerStatus(EntityPlayer player) {
+        IntegrationStatusView status = coordinator.getStatus(IntegrationId.SETWORKS);
+        if (status.getState() != IntegrationState.ACTIVE || setworks == null) {
+            return "Setworks source: inactive (" + status.getState() + ", " + status.getDetail() + ")";
+        }
+        try {
+            SetworksSourceAccess.PlayerStatus current = setworks.inspect(player);
+            return "Setworks source: " + current.getDetail() + (current.getApplied() == null
+                    ? "" : "; totals=" + formatContribution(current.getApplied()));
+        } catch (RuntimeException | LinkageError unavailable) {
+            return "Setworks source: unavailable (" + unavailable.getClass().getSimpleName() + ")";
         }
     }
 
