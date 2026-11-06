@@ -31,7 +31,7 @@ class Reader:
 
     def payload(self, kind, path=()):
         if 1 <= kind <= 6:
-            return self.number("bhilfd"[kind - 1])
+            return self.number("bhiqfd"[kind - 1])
         if kind in (7, 11, 12):
             return self.take(self.number("i") * {7: 1, 11: 4, 12: 8}[kind])
         if kind == 8:
