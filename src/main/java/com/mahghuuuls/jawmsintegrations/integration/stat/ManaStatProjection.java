@@ -1,4 +1,4 @@
-package com.mahghuuuls.jawmsintegrations.integration.jafs;
+package com.mahghuuuls.jawmsintegrations.integration.stat;
 
 import com.mahghuuuls.jawms.api.ManaContribution;
 import com.mahghuuuls.jawmsintegrations.Tags;
@@ -11,9 +11,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-/** The food catalog owns units, accepted operations and aggregate validation. */
-public final class FoodStatProjection {
-    private FoodStatProjection() {
+/** Shared stat catalog, scalar validation and contribution mapping. */
+public final class ManaStatProjection {
+    private ManaStatProjection() {
     }
 
     public enum Stat {
@@ -42,6 +42,13 @@ public final class FoodStatProjection {
 
         public String getId() {
             return Tags.MOD_ID + ":" + name;
+        }
+
+        public static Stat fromName(String name) {
+            for (Stat stat : values()) {
+                if (stat.name.equals(name)) return stat;
+            }
+            return null;
         }
 
         public boolean supportsPercent() {
@@ -164,12 +171,12 @@ public final class FoodStatProjection {
     }
 
     public static Result project(TotalsSource source) {
-        Objects.requireNonNull(source, "Food totals source");
+        Objects.requireNonNull(source, "Mana totals source");
         Map<Stat, Totals> raw = new EnumMap<>(Stat.class);
         List<Problem> problems = new ArrayList<>();
         ManaContribution.Builder builder = ManaContribution.builder();
         for (Stat stat : Stat.values()) {
-            Totals totals = Objects.requireNonNull(source.read(stat), "Food property total");
+            Totals totals = Objects.requireNonNull(source.read(stat), "Mana stat total");
             raw.put(stat, totals);
             double flat = accepted(stat, false, totals.flat, problems);
             double percent = accepted(stat, true, totals.percent, problems);
@@ -196,7 +203,7 @@ public final class FoodStatProjection {
                     }
                     break;
                 default:
-                    throw new IllegalStateException("Unhandled food stat " + stat);
+                    throw new IllegalStateException("Unhandled mana stat " + stat);
             }
         }
         return new Result(builder.build(), raw, problems);
@@ -204,22 +211,27 @@ public final class FoodStatProjection {
 
     private static double accepted(Stat stat, boolean percent, double amount,
                                    List<Problem> problems) {
-        Reason reason = null;
-        if (!Double.isFinite(amount)) reason = Reason.NON_FINITE;
-        else if (percent && !stat.supportsPercent() && amount != 0.0D) {
-            reason = Reason.UNSUPPORTED_OPERATION;
-        } else if (amount < stat.minimum(percent)) reason = Reason.BELOW_MINIMUM;
-        else if (stat == Stat.MAX_MANA && !percent) {
-            if (amount != Math.rint(amount)) reason = Reason.FRACTIONAL_MAXIMUM;
-            else if (amount < Integer.MIN_VALUE || amount > Integer.MAX_VALUE) {
-                reason = Reason.MAXIMUM_OUT_OF_RANGE;
-            }
-        }
+        // The unused percent field is still present in the aggregate source shape.
+        Reason reason = percent && !stat.supportsPercent() && amount == 0.0D
+                ? null : invalidAmount(stat, percent, amount);
         if (reason != null) {
             problems.add(new Problem(stat, percent, reason, amount));
             return 0.0D;
         }
         return amount == 0.0D ? 0.0D : amount;
+    }
+
+    public static Reason invalidAmount(Stat stat, boolean percent, double amount) {
+        if (!Double.isFinite(amount)) return Reason.NON_FINITE;
+        if (percent && !stat.supportsPercent()) return Reason.UNSUPPORTED_OPERATION;
+        if (amount < stat.minimum(percent)) return Reason.BELOW_MINIMUM;
+        if (stat == Stat.MAX_MANA && !percent) {
+            if (amount != Math.rint(amount)) return Reason.FRACTIONAL_MAXIMUM;
+            if (amount < Integer.MIN_VALUE || amount > Integer.MAX_VALUE) {
+                return Reason.MAXIMUM_OUT_OF_RANGE;
+            }
+        }
+        return null;
     }
 }
 

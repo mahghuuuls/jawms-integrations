@@ -16,6 +16,7 @@ import com.mahghuuuls.jawmsintegrations.integration.jass.SpellStaminaBootstrap;
 import com.mahghuuuls.jawmsintegrations.integration.EarlyModMetadataScanner;
 import com.mahghuuuls.jawmsintegrations.integration.OptionalIntegrationEvidenceRegistry;
 import com.mahghuuuls.jawmsintegrations.integration.qualitytools.QualityToolsIntegration;
+import com.mahghuuuls.jawmsintegrations.integration.setworks.SetworksBootstrap;
 import com.mahghuuuls.jawmsintegrations.integration.ancientspellcraft.AncientSpellcraftIntegration;
 import com.mahghuuuls.jawmsintegrations.integration.ancientspellcraft.AncientReplacementPolicy;
 import com.mahghuuuls.jawmsintegrations.integration.ancientspellcraft.EverfullManaService;
@@ -170,6 +171,7 @@ public final class JawmsIntegrationsMod {
                 coordinator, config, jawms, this::onSpellStaminaContractLoss);
         coordinator = initialized.getCoordinator();
         spellStamina = initialized.getAccess();
+        coordinator = SetworksBootstrap.initialize(coordinator, jawms);
         FMLCommonHandler.instance().bus().register(new IntegrationPresentationSync(
                 coordinator.getStatus(IntegrationId.QUALITY_TOOLS).getState() == IntegrationState.ACTIVE,
                 () -> coordinator.getStatus(IntegrationId.SPELL_STAMINA).getState() == IntegrationState.ACTIVE));

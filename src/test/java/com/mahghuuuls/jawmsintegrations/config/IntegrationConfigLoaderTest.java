@@ -41,6 +41,7 @@ class IntegrationConfigLoaderTest {
         assertTrue(snapshot.getCraftTweaker().isEnabled());
         assertTrue(snapshot.getJafs().isEnabled());
         assertTrue(snapshot.getSpellStamina().isEnabled());
+        assertTrue(snapshot.getSetworks().isEnabled());
         assertEquals(12.0D, snapshot.getSpellStamina().getDiscreteCost());
         assertEquals(8.0D, snapshot.getSpellStamina().getContinuousCostPerSecond());
         assertTrue(snapshot.getAncientSpellcraft().getLesserManaRing().isEnabled());
@@ -87,7 +88,27 @@ class IntegrationConfigLoaderTest {
         assertTrue(generated.contains("crafttweaker"));
         assertTrue(generated.contains("jafs"));
         assertTrue(generated.contains("spell_stamina"));
+        assertTrue(generated.contains("setworks"));
         assertFalse(generated.toLowerCase().contains("ars_magica"));
+    }
+
+    @Test
+    void disablingSetworksLeavesOtherModulesEnabled() throws Exception {
+        Path configPath = temporaryDirectory.resolve("disabled-setworks.cfg");
+        Field minecraftHome = FMLInjectionData.class.getDeclaredField("minecraftHome");
+        minecraftHome.setAccessible(true);
+        Object originalHome = minecraftHome.get(null);
+        try {
+            minecraftHome.set(null, temporaryDirectory.toFile());
+            Files.write(configPath, "setworks {\n B:enabled=false\n}\n".getBytes(StandardCharsets.UTF_8));
+            IntegrationConfigSnapshot snapshot = IntegrationConfigLoader.load(configPath.toFile()).getSnapshot();
+            assertFalse(snapshot.getSetworks().isEnabled());
+            assertTrue(snapshot.getJafs().isEnabled());
+            assertTrue(snapshot.getSpellStamina().isEnabled());
+            assertTrue(snapshot.getCraftTweaker().isEnabled());
+        } finally {
+            minecraftHome.set(null, originalHome);
+        }
     }
 
     @Test

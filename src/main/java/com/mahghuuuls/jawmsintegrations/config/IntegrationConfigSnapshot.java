@@ -12,6 +12,7 @@ public final class IntegrationConfigSnapshot {
     private final IntegrationToggleConfig craftTweaker;
     private final IntegrationToggleConfig jafs;
     private final SpellStaminaConfig spellStamina;
+    private final IntegrationToggleConfig setworks;
     private final DiagnosticsConfig diagnostics;
 
     public IntegrationConfigSnapshot(QualityToolsConfig qualityTools,
@@ -35,8 +36,19 @@ public final class IntegrationConfigSnapshot {
                                      IntegrationToggleConfig jafs,
                                      SpellStaminaConfig spellStamina,
                                      DiagnosticsConfig diagnostics) {
+        this(qualityTools, ancientSpellcraft, craftTweaker, jafs, spellStamina,
+                new IntegrationToggleConfig(true), diagnostics);
+    }
+
+    public IntegrationConfigSnapshot(QualityToolsConfig qualityTools,
+                                     AncientSpellcraftConfig ancientSpellcraft,
+                                     IntegrationToggleConfig craftTweaker,
+                                     IntegrationToggleConfig jafs,
+                                     SpellStaminaConfig spellStamina,
+                                     IntegrationToggleConfig setworks,
+                                     DiagnosticsConfig diagnostics) {
         if (qualityTools == null || ancientSpellcraft == null || craftTweaker == null || jafs == null
-                || spellStamina == null || diagnostics == null) {
+                || spellStamina == null || setworks == null || diagnostics == null) {
             throw new IllegalArgumentException("Configuration sections must not be null");
         }
         this.qualityTools = qualityTools;
@@ -44,6 +56,7 @@ public final class IntegrationConfigSnapshot {
         this.craftTweaker = craftTweaker;
         this.jafs = jafs;
         this.spellStamina = spellStamina;
+        this.setworks = setworks;
         this.diagnostics = diagnostics;
     }
 
@@ -78,6 +91,10 @@ public final class IntegrationConfigSnapshot {
 
     public SpellStaminaConfig getSpellStamina() {
         return spellStamina;
+    }
+
+    public IntegrationToggleConfig getSetworks() {
+        return setworks;
     }
 
     public static final class SpellStaminaConfig {

@@ -8,7 +8,7 @@ import com.mahghuuuls.jawms.api.ManaApi;
 import com.mahghuuuls.jawms.api.ManaContribution;
 import com.mahghuuuls.jawms.api.ManaContributionExplanation;
 import com.mahghuuuls.jawms.api.ManaProfileExplanation;
-import com.mahghuuuls.jawmsintegrations.integration.jafs.FoodStatProjection;
+import com.mahghuuuls.jawmsintegrations.integration.stat.ManaStatProjection;
 import net.minecraft.command.CommandBase;
 import net.minecraft.command.CommandException;
 import net.minecraft.command.ICommandSender;
@@ -82,9 +82,9 @@ public final class JafsTimingProbe {
             EntityPlayerMP player = server.getPlayerList().getPlayerByUUID(entry.getKey());
             if (player == null) { iterator.remove(); continue; }
             try {
-                FoodStatProjection.Result current = FoodStatProjection.project(stat -> {
+                ManaStatProjection.Result current = ManaStatProjection.project(stat -> {
                     PropertyValue value = JafsApi.getFoodService().getPropertyValue(player, stat.getId());
-                    return new FoodStatProjection.Totals(value.flat(), value.percent());
+                    return new ManaStatProjection.Totals(value.flat(), value.percent());
                 });
                 ManaProfileExplanation profile = ManaApi.explainManaProfile(player);
                 ManaContribution accepted = ManaContribution.EMPTY;

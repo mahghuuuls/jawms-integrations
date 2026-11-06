@@ -1,5 +1,7 @@
 package com.mahghuuuls.jawmsintegrations.integration.jafs;
 
+import com.mahghuuuls.jawmsintegrations.integration.stat.ManaStatProjection;
+
 import com.mahghuuuls.jafs.api.IFoodService;
 import com.mahghuuuls.jafs.api.IPropertyApplier;
 import com.mahghuuuls.jafs.api.JafsApi;
@@ -37,7 +39,7 @@ public final class JafsIntegration implements IContextualManaModifierProvider, F
     private final Consumer<String> warnings;
     private final Consumer<String> failures;
     // Finite stat/operation/reason fingerprints per online player, never food snapshots.
-    private final Map<UUID, Set<FoodStatProjection.Problem>> warned = new HashMap<>();
+    private final Map<UUID, Set<ManaStatProjection.Problem>> warned = new HashMap<>();
     private final Set<UUID> warnedUnavailable = new HashSet<>();
     private volatile boolean enabled;
 
@@ -88,7 +90,7 @@ public final class JafsIntegration implements IContextualManaModifierProvider, F
 
     static List<PropertySpec> propertySpecs() {
         List<PropertySpec> result = new ArrayList<>();
-        for (FoodStatProjection.Stat stat : FoodStatProjection.Stat.values()) {
+        for (ManaStatProjection.Stat stat : ManaStatProjection.Stat.values()) {
             PropertySpec.Builder spec = PropertySpec.builder(stat.getId()).unit(stat.unit()).color("blue")
                     .operation(PropertyOperation.FLAT, stat.minimum(false), Double.MAX_VALUE);
             if (stat.supportsPercent()) {
@@ -105,7 +107,7 @@ public final class JafsIntegration implements IContextualManaModifierProvider, F
                 || (player.world != null && player.world.isRemote)) {
             return ManaContribution.EMPTY;
         }
-        FoodStatProjection.Result result;
+        ManaStatProjection.Result result;
         try {
             result = inspect(player);
         } catch (LinkageError exception) {
@@ -120,9 +122,9 @@ public final class JafsIntegration implements IContextualManaModifierProvider, F
             }
             return ManaContribution.EMPTY;
         }
-        Set<FoodStatProjection.Problem> playerWarnings = warned.computeIfAbsent(
+        Set<ManaStatProjection.Problem> playerWarnings = warned.computeIfAbsent(
                 player.getUniqueID(), ignored -> new HashSet<>());
-        for (FoodStatProjection.Problem problem : result.getProblems()) {
+        for (ManaStatProjection.Problem problem : result.getProblems()) {
             if (playerWarnings.add(problem)) warnings.accept("JAFS food field omitted for "
                     + player.getUniqueID() + ": " + problem);
         }
@@ -130,15 +132,15 @@ public final class JafsIntegration implements IContextualManaModifierProvider, F
     }
 
     @Override
-    public FoodStatProjection.Result inspect(EntityPlayer player) {
+    public ManaStatProjection.Result inspect(EntityPlayer player) {
         if (!enabled || !(player instanceof EntityPlayerMP)
                 || player.world != null && player.world.isRemote) {
             throw new IllegalStateException("JAFS source requires an active server-player module");
         }
-        return FoodStatProjection.project(stat -> {
+        return ManaStatProjection.project(stat -> {
             PropertyValue value = foods.getPropertyValue((EntityPlayerMP) player, stat.getId());
             if (value == null) throw new IllegalStateException("JAFS returned no property total");
-            return new FoodStatProjection.Totals(value.flat(), value.percent());
+            return new ManaStatProjection.Totals(value.flat(), value.percent());
         });
     }
 

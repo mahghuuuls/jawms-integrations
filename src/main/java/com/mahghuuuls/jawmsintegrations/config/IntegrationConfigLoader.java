@@ -19,6 +19,7 @@ public final class IntegrationConfigLoader {
     private static final String CRAFTTWEAKER = "crafttweaker";
     private static final String JAFS = "jafs";
     private static final String SPELL_STAMINA = "spell_stamina";
+    private static final String SETWORKS = "setworks";
     private static final String DIAGNOSTICS = "diagnostics";
 
     private IntegrationConfigLoader() {
@@ -102,6 +103,12 @@ public final class IntegrationConfigLoader {
                         + "Food definitions remain pack-authored. Requires restart.",
                 warnings
         );
+        boolean setworksEnabled = readBoolean(
+                configuration, SETWORKS, "enabled", true,
+                "Enables mana effects from active set bonuses. Effect definitions still validate while disabled. "
+                        + "Set definitions remain pack-authored. Requires restart.",
+                warnings
+        );
         boolean diagnosticsEnabled = readBoolean(
                 configuration,
                 DIAGNOSTICS,
@@ -146,6 +153,7 @@ public final class IntegrationConfigLoader {
                 new IntegrationConfigSnapshot.IntegrationToggleConfig(craftTweakerEnabled),
                 new IntegrationConfigSnapshot.IntegrationToggleConfig(jafsEnabled),
                 spellStamina,
+                new IntegrationConfigSnapshot.IntegrationToggleConfig(setworksEnabled),
                 new IntegrationConfigSnapshot.DiagnosticsConfig(diagnosticsEnabled)
         );
         return new LoadResult(snapshot, warnings);

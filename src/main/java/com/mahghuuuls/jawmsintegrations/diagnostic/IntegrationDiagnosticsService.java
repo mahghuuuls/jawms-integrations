@@ -13,7 +13,7 @@ import com.mahghuuuls.jawmsintegrations.integration.IntegrationStatusView;
 import com.mahghuuuls.jawmsintegrations.integration.JawmsCompatibility;
 import com.mahghuuuls.jawmsintegrations.integration.ancientspellcraft.DagorimFlaskService;
 import com.mahghuuuls.jawmsintegrations.integration.jafs.FoodSourceAccess;
-import com.mahghuuuls.jawmsintegrations.integration.jafs.FoodStatProjection;
+import com.mahghuuuls.jawmsintegrations.integration.stat.ManaStatProjection;
 import com.mahghuuuls.jawmsintegrations.integration.jass.SpellStaminaAccess;
 import net.minecraft.entity.player.EntityPlayer;
 
@@ -92,6 +92,7 @@ public final class IntegrationDiagnosticsService {
                 + ", Ancient replacements=" + ancientReplacementSummary()
                 + ", CraftTweaker=" + enabled(config.getCraftTweaker().isEnabled())
                 + ", JAFS=" + enabled(config.getJafs().isEnabled())
+                + ", Setworks=" + enabled(config.getSetworks().isEnabled())
                 + ", startup diagnostics=" + enabled(config.getDiagnostics().isEnabled()));
         lines.add(spellStaminaSettings());
         if (config.getDiagnostics().isEnabled()) {
@@ -183,7 +184,7 @@ public final class IntegrationDiagnosticsService {
         }
         try {
             if (foodSource == null) throw new IllegalStateException("source access not installed");
-            FoodStatProjection.Result source = foodSource.inspect(player);
+            ManaStatProjection.Result source = foodSource.inspect(player);
             boolean nonzero = source.getSourceTotals().values().stream()
                     .anyMatch(value -> value.getFlat() != 0.0D || value.getPercent() != 0.0D);
             lines.add("JAFS current source for " + player.getName() + ": "
@@ -191,15 +192,15 @@ public final class IntegrationDiagnosticsService {
                     : nonzero ? "VALID" : "ZERO (no authored active contribution)")
                     + "; projected=" + formatContribution(source.getContribution())
                     + "; independent of the last accepted JAWMS profile below");
-            for (java.util.Map.Entry<FoodStatProjection.Stat, FoodStatProjection.Totals> entry
+            for (java.util.Map.Entry<ManaStatProjection.Stat, ManaStatProjection.Totals> entry
                     : source.getSourceTotals().entrySet()) {
-                FoodStatProjection.Totals total = entry.getValue();
+                ManaStatProjection.Totals total = entry.getValue();
                 if (total.getFlat() != 0.0D || total.getPercent() != 0.0D) {
                     lines.add("- native " + entry.getKey().getId() + ": flat=" + total.getFlat()
                             + ", percent=" + total.getPercent());
                 }
             }
-            for (FoodStatProjection.Problem problem : source.getProblems()) {
+            for (ManaStatProjection.Problem problem : source.getProblems()) {
                 lines.add("- omitted " + problem);
             }
         } catch (RuntimeException | LinkageError unavailable) {

@@ -42,7 +42,7 @@ class IntegrationCoordinatorTest {
     void allAbsentOptionalModsRemainIndependentInactiveStates() {
         IntegrationCoordinator coordinator = initialize(
                 IntegrationConfigSnapshot.defaults(), new HashMap<>(), allAbsent());
-        assertEquals(5, coordinator.getStatuses().size());
+        assertEquals(6, coordinator.getStatuses().size());
         for (IntegrationId integration : IntegrationId.values()) {
             assertEquals(IntegrationState.ABSENT, coordinator.getStatus(integration).getState());
         }
@@ -258,6 +258,7 @@ class IntegrationCoordinatorTest {
             case CRAFTTWEAKER: return "1.12-4.2.0.0";
             case JAFS: return "2.0.0";
             case SPELL_STAMINA: return "2.0.0";
+            case SETWORKS: return "2.0.0";
             default: throw new IllegalStateException("Unhandled integration " + integration);
         }
     }

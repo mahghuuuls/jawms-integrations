@@ -70,6 +70,16 @@ configurations {
         canBeResolved = true
         transitive = false
     }
+    setworksContract {
+        canBeConsumed = false
+        canBeResolved = true
+        transitive = false
+    }
+    setworksJawmsContract {
+        canBeConsumed = false
+        canBeResolved = true
+        transitive = false
+    }
     ancientSpellcraftRuntimeMods {
         canBeConsumed = false
         canBeResolved = true
@@ -89,7 +99,8 @@ configurations {
 
 def integrationRuntimeProfile = propertyString('integration_runtime_profile').toLowerCase(Locale.ROOT)
 def supportedIntegrationRuntimeProfiles = [
-        'none', 'qualitytools', 'ancientspellcraft', 'crafttweaker', 'jafs', 'jass', 'both', 'all'
+        'none', 'qualitytools', 'ancientspellcraft', 'crafttweaker', 'jafs', 'jass',
+        'setworks', 'setworks-crafttweaker', 'both', 'all'
 ]
 if (!supportedIntegrationRuntimeProfiles.contains(integrationRuntimeProfile)) {
     throw new GradleException("Unsupported integration_runtime_profile '${integrationRuntimeProfile}'. "
@@ -98,15 +109,18 @@ if (!supportedIntegrationRuntimeProfiles.contains(integrationRuntimeProfile)) {
 
 def qualityToolsRuntimeEnabled = integrationRuntimeProfile in ['qualitytools', 'both', 'all']
 def ancientSpellcraftRuntimeEnabled = integrationRuntimeProfile in ['ancientspellcraft', 'both', 'all']
-def craftTweakerRuntimeEnabled = integrationRuntimeProfile in ['crafttweaker', 'all']
+def craftTweakerRuntimeEnabled = integrationRuntimeProfile in ['crafttweaker', 'setworks-crafttweaker', 'all']
 def jafsRuntimeEnabled = integrationRuntimeProfile in ['jafs', 'all']
 def jassRuntimeEnabled = integrationRuntimeProfile in ['jass', 'all']
+def setworksRuntimeEnabled = integrationRuntimeProfile in ['setworks', 'setworks-crafttweaker', 'all']
 def jafsCoordinate = 'curse.maven:just-another-food-system-1758738:9283113'
 def jassCoordinate = 'curse.maven:just-another-stamina-system-1740560:9438894'
+def setworksCoordinate = 'curse.maven:setworks-1768283:9434914'
 def jawmsCoordinate = 'curse.maven:just-another-wizardry-mana-system-1643697:9427782'
+def setworksJawmsCoordinate = 'curse.maven:just-another-wizardry-mana-system-1643697:9462496'
 def jawmsRuntimeCoordinate = propertyBool('legacy_jawms_validation')
         ? 'curse.maven:just-another-wizardry-mana-system-1643697:8703384'
-        : jawmsCoordinate
+        : (setworksRuntimeEnabled ? setworksJawmsCoordinate : jawmsCoordinate)
 
 def verifiedDevelopmentTool = { String label, String pathProperty, String checksumProperty ->
     def toolJar = file(propertyString(pathProperty))
@@ -188,6 +202,15 @@ dependencies {
         optionalPackagedRuntimeMods jassCoordinate
     }
 
+    compileOnly rfg.deobf(setworksCoordinate)
+    testImplementation rfg.deobf(setworksCoordinate)
+    setworksContract setworksCoordinate
+    setworksJawmsContract setworksJawmsCoordinate
+    if (setworksRuntimeEnabled) {
+        runtimeOnly rfg.deobf(setworksCoordinate)
+        optionalPackagedRuntimeMods setworksCoordinate
+    }
+
     if (propertyBool('enable_agent_test_toolkit')) {
         runtimeOnly rfg.deobf(files(verifiedDevelopmentTool('Agent Test Toolkit',
                 'agent_test_toolkit_path', 'agent_test_toolkit_sha256')))
@@ -251,6 +274,8 @@ if (obfuscationAttribute == null) {
  configurations.craftTweakerContract,
  configurations.jafsContract,
  configurations.jassContract,
+ configurations.setworksContract,
+ configurations.setworksJawmsContract,
  configurations.optionalPackagedRuntimeMods,
  configurations.ancientSpellcraftPackagedRuntimeMods].each { configuration ->
     configuration.attributes {
@@ -276,6 +301,29 @@ tasks.register('verifyJafsContractArtifact') {
     }
 }
 tasks.named('check').configure { dependsOn tasks.named('verifyJafsContractArtifact') }
+
+tasks.register('verifySetworksContractArtifacts') {
+    group = 'jawms integrations verification'
+    description = 'Verifies the exact released Setworks and JAWMS inputs for the Setworks profiles.'
+    def contracts = [setworks_contract_sha256: configurations.setworksContract,
+                     setworks_jawms_contract_sha256: configurations.setworksJawmsContract]
+    contracts.each { checksumProperty, configuration ->
+        inputs.files configuration
+        inputs.property checksumProperty, propertyString(checksumProperty)
+    }
+    doLast {
+        contracts.each { checksumProperty, configuration ->
+            def artifact = configuration.singleFile
+            def actual = java.security.MessageDigest.getInstance('SHA-256')
+                    .digest(artifact.bytes).encodeHex().toString().toUpperCase(Locale.ROOT)
+            if (actual != propertyString(checksumProperty).toUpperCase(Locale.ROOT)) {
+                throw new GradleException("Setworks contract SHA-256 mismatch: ${artifact.name}, found ${actual}")
+            }
+            logger.lifecycle("Verified exact Setworks profile input ${artifact.name}")
+        }
+    }
+}
+tasks.named('check').configure { dependsOn tasks.named('verifySetworksContractArtifacts') }
 
 // Read declared identities so a renamed optional JAR cannot mask its presence.
 def declaredModIds = { File artifact ->
@@ -303,6 +351,7 @@ def managedArtifactRules = [
         craftTweaker: [id: 'crafttweaker', names: ['crafttweaker']],
         jafs: [id: 'jafs', names: ['jafs-', 'jafs.', 'just-another-food-system']],
         jass: [id: 'jass', names: ['jass-', 'just-another-stamina-system']],
+        setworks: [id: 'setworks', names: ['setworks-']],
         toolkit: [id: 'agenttesttoolkit', names: ['agenttesttoolkit']],
         developerTools: [id: 'jawms_devtools', names: ['jawms-devtools']],
         jawms: [id: 'jawms', names: ['jawms-', 'just-another-wizardry']],
@@ -336,6 +385,7 @@ def runtimeMismatches = { Map counts, boolean requireComplete, boolean packaged 
             craftTweaker: ['CraftTweaker', craftTweakerRuntimeEnabled],
             jafs: ['JAFS', jafsRuntimeEnabled],
             jass: ['JASS', jassRuntimeEnabled],
+            setworks: ['Setworks', setworksRuntimeEnabled],
             toolkit: ['Agent Test Toolkit', propertyBool('enable_agent_test_toolkit')],
             developerTools: ['JAWMS Developer Tools', propertyBool('enable_jawms_developer_tools')],
             jawms: ['JAWMS', true],

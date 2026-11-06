@@ -8,7 +8,7 @@ import com.mahghuuuls.jawmsintegrations.integration.IntegrationState;
 import com.mahghuuuls.jawmsintegrations.integration.JawmsCompatibility;
 import com.mahghuuuls.jawmsintegrations.integration.OptionalIntegrationEvidenceRegistry;
 import com.mahghuuuls.jawmsintegrations.integration.jafs.FoodSourceAccess;
-import com.mahghuuuls.jawmsintegrations.integration.jafs.FoodStatProjection;
+import com.mahghuuuls.jawmsintegrations.integration.stat.ManaStatProjection;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -34,7 +34,7 @@ class IntegrationDiagnosticsServiceTest {
         coordinator = coordinator.withDisabledDetail(IntegrationId.JAFS,
                 "Property metadata available; mana effects disabled; no food contribution applied");
         FoodSourceAccess forbidden = new FoodSourceAccess() {
-            @Override public FoodStatProjection.Result inspect(EntityPlayer player) {
+            @Override public ManaStatProjection.Result inspect(EntityPlayer player) {
                 throw new AssertionError("Disabled diagnostics queried native player foods");
             }
             @Override public void clearWarnings() { throw new AssertionError("Read-only diagnostics cleared warnings"); }
@@ -72,20 +72,24 @@ class IntegrationDiagnosticsServiceTest {
         assertTrue(startup.contains("Ancient Spellcraft=ABSENT"));
         assertTrue(startup.contains("CraftTweaker=ABSENT"));
         assertTrue(startup.contains("Spell stamina=ABSENT"));
+        assertTrue(startup.contains("Setworks=ABSENT"));
         assertTrue(startup.contains("built-in qualities=enabled(12/12)"));
         assertTrue(startup.contains("Ancient replacements=inactive(state=ABSENT)"));
-        assertEquals(8, overall.size());
+        assertEquals(9, overall.size());
         assertTrue(overall.get(1).contains("Quality Tools: ABSENT"));
         assertTrue(overall.get(2).contains("Ancient Spellcraft: ABSENT"));
         assertTrue(overall.get(3).contains("CraftTweaker: ABSENT"));
         assertTrue(overall.get(4).contains("Just Another Food System: ABSENT"));
         assertTrue(overall.get(5).contains("Spell stamina: ABSENT"));
-        assertTrue(overall.get(6).contains("startup diagnostics=disabled"));
-        assertTrue(overall.get(6).contains("built-in qualities=enabled(12/12)"));
-        assertTrue(overall.get(6).contains("Ancient replacements=inactive(state=ABSENT)"));
-        assertTrue(overall.get(6).contains("CraftTweaker=enabled"));
-        assertTrue(overall.get(6).contains("JAFS=enabled"));
-        assertTrue(overall.get(7).contains("configured, inactive"));
+        assertTrue(overall.get(6).contains("Setworks: ABSENT"));
+        String settings = overall.get(7);
+        assertTrue(settings.contains("startup diagnostics=disabled"));
+        assertTrue(settings.contains("built-in qualities=enabled(12/12)"));
+        assertTrue(settings.contains("Ancient replacements=inactive(state=ABSENT)"));
+        assertTrue(settings.contains("CraftTweaker=enabled"));
+        assertTrue(settings.contains("JAFS=enabled"));
+        assertTrue(settings.contains("Setworks=enabled"));
+        assertTrue(overall.get(8).contains("configured, inactive"));
         assertEquals("Quality Tools reload summary: built-in qualities=enabled(12/12)",
                 diagnostics.qualityToolsReloadSummary());
     }
@@ -146,13 +150,13 @@ class IntegrationDiagnosticsServiceTest {
                 ignored -> OptionalIntegrationEvidenceRegistry.Evidence.supported("1.0.0"));
         IntegrationCoordinator active = ready.withActive(IntegrationId.JAFS, "registered");
         AtomicInteger calls = new AtomicInteger();
-        FoodStatProjection.Totals[] maximum = {FoodStatProjection.Totals.ZERO};
+        ManaStatProjection.Totals[] maximum = {ManaStatProjection.Totals.ZERO};
         FoodSourceAccess source = new FoodSourceAccess() {
-            @Override public FoodStatProjection.Result inspect(EntityPlayer player) {
+            @Override public ManaStatProjection.Result inspect(EntityPlayer player) {
                 calls.incrementAndGet();
                 if (maximum[0] == null) throw new IllegalStateException("not available");
-                return FoodStatProjection.project(stat -> stat == FoodStatProjection.Stat.MAX_MANA
-                        ? maximum[0] : FoodStatProjection.Totals.ZERO);
+                return ManaStatProjection.project(stat -> stat == ManaStatProjection.Stat.MAX_MANA
+                        ? maximum[0] : ManaStatProjection.Totals.ZERO);
             }
             @Override public void clearWarnings() { throw new AssertionError("Inspection cleared warnings"); }
         };
@@ -164,13 +168,13 @@ class IntegrationDiagnosticsServiceTest {
         IntegrationDiagnosticsService view = new IntegrationDiagnosticsService(
                 JawmsCompatibility.verify("1.1.0", CompatibleApi.class), config, active, source);
         assertTrue(view.foodStatus(player).get(0).contains("ZERO"));
-        maximum[0] = new FoodStatProjection.Totals(0.5, 10);
+        maximum[0] = new ManaStatProjection.Totals(0.5, 10);
         List<String> invalid = view.foodStatus(player);
         assertTrue(invalid.get(0).contains("INVALID FIELDS OMITTED"));
         assertTrue(invalid.get(0).contains("maximumManaIncrease=10.0"));
         assertTrue(invalid.stream().anyMatch(line -> line.contains("FRACTIONAL_MAXIMUM")));
         assertTrue(invalid.stream().anyMatch(line -> line.contains("flat=0.5, percent=10.0")));
-        maximum[0] = new FoodStatProjection.Totals(8, 0);
+        maximum[0] = new ManaStatProjection.Totals(8, 0);
         assertTrue(view.foodStatus(player).get(0).contains("VALID"));
         maximum[0] = null;
         assertTrue(view.foodStatus(player).get(0).contains("unavailable (IllegalStateException)"));

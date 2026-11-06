@@ -1,5 +1,7 @@
 package com.mahghuuuls.jawmsintegrations.integration.jafs;
 
+import com.mahghuuuls.jawmsintegrations.integration.stat.ManaStatProjection;
+
 import com.mahghuuuls.jawmsintegrations.config.IntegrationConfigSnapshot;
 import com.mahghuuuls.jawmsintegrations.integration.IntegrationCoordinator;
 import com.mahghuuuls.jawmsintegrations.integration.IntegrationId;
@@ -103,7 +105,7 @@ final class JafsOptionalBoundaryTest {
         IntegrationCoordinator ready = coordinator(true, "1.0.0",
                 OptionalIntegrationEvidenceRegistry.Evidence.supported("1.0.0"));
         FoodSourceAccess source = new FoodSourceAccess() {
-            @Override public FoodStatProjection.Result inspect(net.minecraft.entity.player.EntityPlayer player) {
+            @Override public ManaStatProjection.Result inspect(net.minecraft.entity.player.EntityPlayer player) {
                 throw new AssertionError("Initialization queried player state");
             }
             @Override public void clearWarnings() { throw new AssertionError("Initialization cleared warnings"); }
