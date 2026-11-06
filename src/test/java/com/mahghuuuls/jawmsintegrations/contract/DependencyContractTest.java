@@ -25,7 +25,7 @@ final class DependencyContractTest {
     @Test
     void jawmsReleaseMatchesRequiredApiFoundation() throws IOException {
         Path jar = requiredJar(JAWMS_JAR);
-        assertEquals("239D05A9DF5C0FCF473A8CDCEDC6D8AF6607F59C668ABA55DA9008BC7AA04592",
+        assertEquals("A43B145FA4DB156B02CBD54F0D5DE0B4360ADF4B27F3BCEA3C90C4A44AF7316F",
                 sha256(jar));
         JarContract.assertField(jar,
                 "com/mahghuuuls/jawms/api/ManaApiVersion", "CURRENT", "Ljava/lang/String;");

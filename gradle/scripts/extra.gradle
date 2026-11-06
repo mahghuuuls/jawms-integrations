@@ -67,8 +67,7 @@ tasks.named('reobfSetworksValidationJar').configure {
     destinationDirectory.set(layout.buildDirectory.dir('validation/packaged'))
 }
 if ((findProperty('enable_setworks_validation') ?: 'false').toString().toBoolean()) {
-    if (!(propertyString('integration_runtime_profile') in ['setworks', 'setworks-crafttweaker', 'all'])
-            || propertyBool('legacy_jawms_validation')) {
+    if (!(propertyString('integration_runtime_profile') in ['setworks', 'setworks-crafttweaker', 'all'])) {
         throw new GradleException('Setworks validation requires a Setworks profile with JAWMS API 1.9')
     }
     ['runClient', 'runServer'].each { taskName ->

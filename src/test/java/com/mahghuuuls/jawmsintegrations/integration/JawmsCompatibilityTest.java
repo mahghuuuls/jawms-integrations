@@ -9,10 +9,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class JawmsCompatibilityTest {
 
     @Test
-    void acceptsReleasedModAndApiVersions() {
-        JawmsCompatibility.Status status = JawmsCompatibility.verify("1.1.0", CompatibleApi.class);
+    void acceptsMinimumModAndCoreApiVersions() {
+        JawmsCompatibility.Status status = JawmsCompatibility.verify("1.4.1", CompatibleApi.class);
 
-        assertEquals("1.1.0", status.getModVersion());
+        assertEquals("1.4.1", status.getModVersion());
         assertEquals("1.6", status.getApiVersion());
     }
 
@@ -27,15 +27,15 @@ class JawmsCompatibilityTest {
     @Test
     void rejectsMissingOrIncompatibleContractsWithRequiredVersionsInMessage() {
         IllegalStateException missing = assertThrows(IllegalStateException.class,
-                () -> JawmsCompatibility.verify(null, CompatibleApi.class));
+                () -> JawmsCompatibility.verifyInstalled(null));
         IllegalStateException oldMod = assertThrows(IllegalStateException.class,
-                () -> JawmsCompatibility.verify("1.0.0", CompatibleApi.class));
+                () -> JawmsCompatibility.verifyInstalled("1.4.0"));
         IllegalStateException oldApi = assertThrows(IllegalStateException.class,
-                () -> JawmsCompatibility.verify("1.1.0", IncompatibleApi.class));
+                () -> JawmsCompatibility.verify("1.4.1", IncompatibleApi.class));
 
-        assertTrue(missing.getMessage().contains("JAWMS 1.1.0"));
+        assertTrue(missing.getMessage().contains("JAWMS 1.4.1"));
         assertTrue(missing.getMessage().contains("API 1.6"));
-        assertTrue(oldMod.getMessage().contains("'1.0.0'"));
+        assertTrue(oldMod.getMessage().contains("'1.4.0'"));
         assertTrue(oldApi.getMessage().contains("'1.5'"));
     }
 

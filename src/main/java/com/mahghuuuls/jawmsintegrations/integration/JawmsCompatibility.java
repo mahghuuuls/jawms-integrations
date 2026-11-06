@@ -5,7 +5,7 @@ import java.lang.reflect.Field;
 /** Verifies the required released JAWMS mod and API contracts before optional work begins. */
 public final class JawmsCompatibility {
 
-    public static final String REQUIRED_MOD_VERSION = "1.1.0";
+    public static final String REQUIRED_MOD_VERSION = "1.4.1";
     public static final String REQUIRED_API_VERSION = "1.6";
 
     private JawmsCompatibility() {

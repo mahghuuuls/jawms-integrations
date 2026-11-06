@@ -22,7 +22,7 @@ final class SetworksBootstrapTest {
         for (String installed : new String[]{null, "1.0.0"}) {
             IntegrationCoordinator coordinator = coordinator(installed, true);
             IntegrationCoordinator result = SetworksBootstrap.initialize(coordinator,
-                    JawmsCompatibility.verify("1.3.0", Api18.class),
+                    JawmsCompatibility.verify("1.4.1", Api19.class),
                     () -> fail("Unavailable Setworks must not attempt authoring")).getCoordinator();
             assertSame(coordinator, result);
             assertEquals(installed == null ? IntegrationState.ABSENT : IntegrationState.UNSUPPORTED,
@@ -31,7 +31,7 @@ final class SetworksBootstrapTest {
     }
 
     @Test
-    void authoringSurvivesDisabledAndLegacyJawmsAndActivatesOnlyOnCompatiblePair() {
+    void authoringSurvivesDisabledAndMissingGameplayApiAndActivatesOnCompatiblePair() {
         AtomicInteger calls = new AtomicInteger();
         AtomicInteger activations = new AtomicInteger();
         SetworksSourceAccess source = new SetworksSourceAccess() {
@@ -45,16 +45,16 @@ final class SetworksBootstrapTest {
                 return source;
             };
         };
-        JawmsCompatibility.Status legacy = JawmsCompatibility.verify("1.3.0", Api18.class);
+        JawmsCompatibility.Status missingGameplayApi = JawmsCompatibility.verify("1.4.1", Api18.class);
         JawmsCompatibility.Status supported = JawmsCompatibility.verify("1.4.1", Api19.class);
-        IntegrationStatusView disabled = SetworksBootstrap.initialize(coordinator("1.1.0", false), legacy,
+        IntegrationStatusView disabled = SetworksBootstrap.initialize(coordinator("1.1.0", false), supported,
                 registration).getCoordinator().getStatus(IntegrationId.SETWORKS);
         assertEquals(IntegrationState.DISABLED, disabled.getState());
         assertTrue(disabled.getDetail().contains("still validate"));
-        IntegrationStatusView unsupported = SetworksBootstrap.initialize(coordinator("1.1.0", true), legacy,
+        IntegrationStatusView unsupported = SetworksBootstrap.initialize(coordinator("1.1.0", true), missingGameplayApi,
                 registration).getCoordinator().getStatus(IntegrationId.SETWORKS);
         assertEquals(IntegrationState.UNSUPPORTED, unsupported.getState());
-        assertTrue(unsupported.getDetail().contains("1.3.0 / API 1.8"));
+        assertTrue(unsupported.getDetail().contains("1.4.1 / API 1.8"));
         assertTrue(unsupported.getDetail().contains("suspension and recovery"));
         assertEquals(0, activations.get());
         SetworksBootstrap.Result active = SetworksBootstrap.initialize(
@@ -63,24 +63,6 @@ final class SetworksBootstrapTest {
         assertSame(source, active.getSource());
         assertEquals(1, activations.get());
         assertEquals(3, calls.get());
-    }
-
-    @Test
-    void api19OnJawms140RegistersOnlyInertAuthoring() {
-        AtomicInteger registrations = new AtomicInteger();
-        JawmsCompatibility.Status jawms = JawmsCompatibility.verify("1.4.0", Api19.class);
-        SetworksBootstrap.Result result = SetworksBootstrap.initialize(coordinator("1.1.0", true), jawms, () -> {
-            registrations.incrementAndGet();
-            return () -> fail("JAWMS 1.4.0 must not activate Setworks gameplay");
-        });
-
-        IntegrationStatusView status = result.getCoordinator().getStatus(IntegrationId.SETWORKS);
-        assertEquals(IntegrationState.UNSUPPORTED, status.getState());
-        assertTrue(status.getDetail().contains("require JAWMS 1.4.1 or newer"));
-        assertTrue(status.getDetail().contains("Detected JAWMS 1.4.0 / API 1.9"));
-        assertTrue(status.getDetail().contains("definitions still validate"));
-        assertEquals(1, registrations.get());
-        assertNull(result.getSource());
     }
 
     @Test

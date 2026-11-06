@@ -31,7 +31,7 @@ class IntegrationStatusCommandTest {
                 integration -> OptionalIntegrationEvidenceRegistry.Evidence.absent()
         );
         IntegrationDiagnosticsService diagnostics = new IntegrationDiagnosticsService(
-                JawmsCompatibility.verify("1.1.0", CompatibleApi.class),
+                JawmsCompatibility.verify("1.4.1", CompatibleApi.class),
                 config,
                 coordinator
         );
@@ -63,13 +63,13 @@ class IntegrationStatusCommandTest {
         IntegrationCoordinator coordinator = IntegrationCoordinator.initialize(config,
                 modId -> "1.0.0", integration -> OptionalIntegrationEvidenceRegistry.Evidence.supported("1.0.0"));
         AtomicReference<IntegrationDiagnosticsService> current = new AtomicReference<>(
-                new IntegrationDiagnosticsService(JawmsCompatibility.verify("1.1.0", CompatibleApi.class),
+                new IntegrationDiagnosticsService(JawmsCompatibility.verify("1.4.1", CompatibleApi.class),
                         config, coordinator));
         IntegrationStatusCommand command = new IntegrationStatusCommand(current::get);
         PermissionSender sender = new PermissionSender(true);
         command.execute(null, sender, new String[]{"status"});
         assertTrue(sender.lines.stream().anyMatch(line -> line.contains("Just Another Food System: READY")));
-        current.set(new IntegrationDiagnosticsService(JawmsCompatibility.verify("1.1.0", CompatibleApi.class),
+        current.set(new IntegrationDiagnosticsService(JawmsCompatibility.verify("1.4.1", CompatibleApi.class),
                 config, coordinator.withFailure(IntegrationId.JAFS, "runtime linkage failure")));
         sender.lines.clear();
         command.execute(null, sender, new String[]{"status"});

@@ -33,7 +33,7 @@ final class ReadOnlyPlayerStatusTest {
         IntegrationCoordinator coordinator = IntegrationCoordinator.initialize(config, ignored -> null,
                 ignored -> OptionalIntegrationEvidenceRegistry.Evidence.absent());
         IntegrationDiagnosticsService status = new IntegrationDiagnosticsService(
-                JawmsCompatibility.verify("1.1.0", CompatibleApi.class), config, coordinator);
+                JawmsCompatibility.verify("1.4.1", CompatibleApi.class), config, coordinator);
 
         List<String> first = status.playerStatus(player);
         List<String> second = status.playerStatus(player);

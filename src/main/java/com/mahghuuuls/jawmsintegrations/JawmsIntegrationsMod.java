@@ -47,7 +47,7 @@ import org.apache.logging.log4j.Logger;
         name = Tags.MOD_NAME,
         version = Tags.VERSION,
         acceptedMinecraftVersions = "[1.12.2]",
-        dependencies = "required-after:jawms@[1.1.0,);before:crafttweaker"
+        dependencies = "required:jawms@[" + JawmsCompatibility.REQUIRED_MOD_VERSION + ",)"
 )
 public final class JawmsIntegrationsMod {
 

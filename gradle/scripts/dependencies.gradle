@@ -116,11 +116,7 @@ def setworksRuntimeEnabled = integrationRuntimeProfile in ['setworks', 'setworks
 def jafsCoordinate = 'curse.maven:just-another-food-system-1758738:9283113'
 def jassCoordinate = 'curse.maven:just-another-stamina-system-1740560:9438894'
 def setworksCoordinate = 'curse.maven:setworks-1768283:9434914'
-def jawmsCoordinate = 'curse.maven:just-another-wizardry-mana-system-1643697:9427782'
-def setworksJawmsCoordinate = 'curse.maven:just-another-wizardry-mana-system-1643697:9468619'
-def jawmsRuntimeCoordinate = propertyBool('legacy_jawms_validation')
-        ? 'curse.maven:just-another-wizardry-mana-system-1643697:8703384'
-        : (setworksRuntimeEnabled ? setworksJawmsCoordinate : jawmsCoordinate)
+def jawmsCoordinate = 'curse.maven:just-another-wizardry-mana-system-1643697:9468619'
 
 def verifiedDevelopmentTool = { String label, String pathProperty, String checksumProperty ->
     def toolJar = file(propertyString(pathProperty))
@@ -143,9 +139,9 @@ dependencies {
     runtimeOnly 'com.cleanroommc:osxnarratorblocker:1.0'
 
     // Required product dependencies. CurseMaven does not supply their dependency chains transitively.
-    compileOnly rfg.deobf(setworksJawmsCoordinate)
-    testImplementation rfg.deobf(setworksJawmsCoordinate)
-    runtimeOnly rfg.deobf(jawmsRuntimeCoordinate)
+    compileOnly rfg.deobf(jawmsCoordinate)
+    testImplementation rfg.deobf(jawmsCoordinate)
+    runtimeOnly rfg.deobf(jawmsCoordinate)
     jawmsContract jawmsCoordinate
     implementation rfg.deobf('curse.maven:electroblobs-wizardry-265642:8320066')
     wizardryContract 'curse.maven:electroblobs-wizardry-265642:8320066'
@@ -205,7 +201,7 @@ dependencies {
     compileOnly rfg.deobf(setworksCoordinate)
     testImplementation rfg.deobf(setworksCoordinate)
     setworksContract setworksCoordinate
-    setworksJawmsContract setworksJawmsCoordinate
+    setworksJawmsContract jawmsCoordinate
     if (setworksRuntimeEnabled) {
         runtimeOnly rfg.deobf(setworksCoordinate)
         optionalPackagedRuntimeMods setworksCoordinate
