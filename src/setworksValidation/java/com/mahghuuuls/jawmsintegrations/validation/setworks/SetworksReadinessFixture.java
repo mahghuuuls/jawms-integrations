@@ -56,7 +56,7 @@ import java.util.Map;
 
 /** Disposable integration fixture. All mana mutation is confined to setup or an explicit refusal check. */
 @Mod(modid = SetworksReadinessFixture.ID, name = "Setworks mana validation", version = "dev",
-        dependencies = "required-after:jawms@[1.4.0,);required-after:setworks@[1.1.0,);required-after:jawmsintegrations")
+        dependencies = "required-after:jawms@[1.4.1,);required-after:setworks@[1.1.0,);required-after:jawmsintegrations")
 public final class SetworksReadinessFixture {
     public static final String ID = "setworksvalidation";
     public static final Logger LOG = LogManager.getLogger(ID);

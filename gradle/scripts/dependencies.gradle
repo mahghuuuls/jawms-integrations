@@ -117,7 +117,7 @@ def jafsCoordinate = 'curse.maven:just-another-food-system-1758738:9283113'
 def jassCoordinate = 'curse.maven:just-another-stamina-system-1740560:9438894'
 def setworksCoordinate = 'curse.maven:setworks-1768283:9434914'
 def jawmsCoordinate = 'curse.maven:just-another-wizardry-mana-system-1643697:9427782'
-def setworksJawmsCoordinate = 'curse.maven:just-another-wizardry-mana-system-1643697:9462496'
+def setworksJawmsCoordinate = 'curse.maven:just-another-wizardry-mana-system-1643697:9468619'
 def jawmsRuntimeCoordinate = propertyBool('legacy_jawms_validation')
         ? 'curse.maven:just-another-wizardry-mana-system-1643697:8703384'
         : (setworksRuntimeEnabled ? setworksJawmsCoordinate : jawmsCoordinate)

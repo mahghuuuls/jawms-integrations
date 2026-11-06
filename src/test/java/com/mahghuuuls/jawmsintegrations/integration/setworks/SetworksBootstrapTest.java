@@ -46,7 +46,7 @@ final class SetworksBootstrapTest {
             };
         };
         JawmsCompatibility.Status legacy = JawmsCompatibility.verify("1.3.0", Api18.class);
-        JawmsCompatibility.Status supported = JawmsCompatibility.verify("1.4.0", Api19.class);
+        JawmsCompatibility.Status supported = JawmsCompatibility.verify("1.4.1", Api19.class);
         IntegrationStatusView disabled = SetworksBootstrap.initialize(coordinator("1.1.0", false), legacy,
                 registration).getCoordinator().getStatus(IntegrationId.SETWORKS);
         assertEquals(IntegrationState.DISABLED, disabled.getState());
@@ -66,9 +66,27 @@ final class SetworksBootstrapTest {
     }
 
     @Test
+    void api19OnJawms140RegistersOnlyInertAuthoring() {
+        AtomicInteger registrations = new AtomicInteger();
+        JawmsCompatibility.Status jawms = JawmsCompatibility.verify("1.4.0", Api19.class);
+        SetworksBootstrap.Result result = SetworksBootstrap.initialize(coordinator("1.1.0", true), jawms, () -> {
+            registrations.incrementAndGet();
+            return () -> fail("JAWMS 1.4.0 must not activate Setworks gameplay");
+        });
+
+        IntegrationStatusView status = result.getCoordinator().getStatus(IntegrationId.SETWORKS);
+        assertEquals(IntegrationState.UNSUPPORTED, status.getState());
+        assertTrue(status.getDetail().contains("require JAWMS 1.4.1 or newer"));
+        assertTrue(status.getDetail().contains("Detected JAWMS 1.4.0 / API 1.9"));
+        assertTrue(status.getDetail().contains("definitions still validate"));
+        assertEquals(1, registrations.get());
+        assertNull(result.getSource());
+    }
+
+    @Test
     void missingAuthoringContractAndRejectedRegistrationFailClosed() {
         IntegrationCoordinator coordinator = coordinator("1.1.0", true);
-        JawmsCompatibility.Status jawms = JawmsCompatibility.verify("1.4.0", Api19.class);
+        JawmsCompatibility.Status jawms = JawmsCompatibility.verify("1.4.1", Api19.class);
         assertEquals(IntegrationState.UNSUPPORTED, SetworksBootstrap.initialize(coordinator, jawms,
                 () -> { throw new NoSuchMethodError("registerEffectKind"); })
                 .getCoordinator().getStatus(IntegrationId.SETWORKS).getState());

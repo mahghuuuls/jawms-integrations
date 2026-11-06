@@ -11,7 +11,7 @@ import java.util.function.Supplier;
 /** Keeps native definition registration independent of mana gameplay eligibility. */
 public final class SetworksBootstrap {
     private static final IntegrationId INTEGRATION = IntegrationId.SETWORKS;
-    private static final String MINIMUM_JAWMS = "1.4.0";
+    private static final String MINIMUM_JAWMS = "1.4.1";
     private static final String MINIMUM_API = "1.9";
 
     private SetworksBootstrap() {
@@ -47,7 +47,8 @@ public final class SetworksBootstrap {
         if (!JawmsCompatibility.meetsMinimum(jawms.getModVersion(), MINIMUM_JAWMS)
                 || !JawmsCompatibility.meetsMinimum(jawms.getApiVersion(), MINIMUM_API)) {
             String detail = "Mana effects require JAWMS " + MINIMUM_JAWMS + " or newer and API "
-                    + MINIMUM_API + " readiness with suspension and recovery. Detected JAWMS "
+                    + MINIMUM_API + " readiness with suspension and recovery, plus safe accepted-profile explanations."
+                    + " Detected JAWMS "
                     + jawms.getModVersion() + " / API " + jawms.getApiVersion()
                     + ". Native effect definitions still validate.";
             JawmsIntegrationsMod.LOGGER.warn("Setworks integration UNSUPPORTED: {}", detail);
