@@ -9,6 +9,7 @@ Currently includes integrations for:
 - [CraftTweaker](https://www.curseforge.com/minecraft/mc-mods/crafttweaker)
 - [Just Another Food System](https://www.curseforge.com/minecraft/mc-mods/just-another-food-system)
 - [Just Another Stamina System](https://www.curseforge.com/minecraft/mc-mods/just-another-stamina-system)
+- [Setworks](https://www.curseforge.com/minecraft/mc-mods/setworks)
 
 <span style="color:#d6a100">**AI usage disclaimer:** This mod was developed with AI-agent assistance using [this agent workflow](https://github.com/mahghuuuls/minecraft-1.12.2-mod-agent-workflow). The project owner reviewed the work during development.</span>
 
@@ -123,10 +124,14 @@ Wizardry wand spells spend stamina alongside mana, including addon spells cast t
 
 The default base costs are **12 stamina per successful single cast** and **8 stamina per second of continuous casting**. Normal stamina rules apply, and continuous spells stop when stamina runs out. You can tune the costs or turn off spell stamina in the config.
 
+## Setworks
+
+Pack authors can give equipment set bonuses the same mana stats available through Quality Tools. The stats apply while the set bonus is active. Packs supply the set definitions. The integration requires Setworks 1.1.0 or newer, and you can turn off its mana effects independently in the config. [Setworks authoring example](https://github.com/mahghuuuls/jawms-integrations#setworks-integration)
+
 ## Configuration And Installation
 
 The generated `jawmsintegrations.cfg` can enable or tune each installed integration. Changes require a restart.
 
-JAWMS is required. Use JAWMS 1.1.1 or newer on Cleanroom. Install the addon on both the client and server.
+Integrations 1.4.0 requires JAWMS 1.4.1 or newer. Install the addon on both the client and server.
 
 [Source code](https://github.com/mahghuuuls/jawms-integrations)

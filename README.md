@@ -11,9 +11,8 @@ JAWMS Integrations adds optional compatibility between [Just Another Wizardry Ma
 ## Runtime Scope
 
 - Standard Forge and Cleanroom runtimes for Minecraft 1.12.2.
-- JAWMS 1.1.0 or newer is required.
-- Use JAWMS 1.1.1 or newer on Cleanroom for its built-in MixinBooter compatibility.
-- Quality Tools, Ancient Spellcraft, CraftTweaker, Just Another Food System, and Just Another Stamina System are optional. Each integration's gameplay effects activate when its supported mod is installed and enabled.
+- Integrations 1.4.0 requires JAWMS 1.4.1 or newer.
+- Quality Tools, Ancient Spellcraft, CraftTweaker, Just Another Food System, Just Another Stamina System, and Setworks are optional. Each integration's gameplay effects activate when its supported mod is installed and enabled.
 - Install JAWMS Integrations on both the client and server. Gameplay configuration and mana changes are server-authoritative.
 
 ## Quality Tools Integration
@@ -81,11 +80,34 @@ If your pack uses JAFS, consider setting `demonic_seal.enabled` to `false` in `c
 
 ## Just Another Stamina System
 
-With JAWMS 1.2.0 or newer and [Just Another Stamina System](https://www.curseforge.com/minecraft/mc-mods/just-another-stamina-system) 1.2.0 or newer, Wizardry wand casts also use stamina. This includes addon spells cast through a Wizardry wand in either hand. Scrolls are exempt.
+With [Just Another Stamina System](https://www.curseforge.com/minecraft/mc-mods/just-another-stamina-system) 1.2.0 or newer, Wizardry wand casts also use stamina. This includes addon spells cast through a Wizardry wand in either hand. Scrolls are exempt.
 
 The base prices are 12 stamina per successful single cast and 8 per in-game second of continuous casting. Normal JASS rules govern the final price, exhaustion, and overexertion. Continuous spells stop when stamina runs out.
 
 Use the `spell_stamina` section of `config/jawmsintegrations.cfg` to set `discreteCost` and `continuousCostPerSecond`. A price of zero keeps the normal JASS check for whether casting can start. Set `enabled` to `false` to turn off spell stamina entirely. Restart to apply changes. In multiplayer, the server settings apply.
+
+## Setworks Integration
+
+With [Setworks](https://www.curseforge.com/minecraft/mc-mods/setworks) 1.1.0 or newer, pack authors can add `jawmsintegrations:mana` to their set bonuses. The bonus applies its mana stats while Setworks keeps it active. Set definitions are supplied by the pack.
+
+This CraftTweaker script defines a leather helmet set bonus that adds 20 maximum mana. Put it in the pack's `scripts/` directory and restart.
+
+```zenscript
+#loader setworks
+import mods.setworks.Setworks;
+
+Setworks.set("example:mana_set")
+    .name("Mana Set")
+    .piece("hood", "head", <minecraft:leather_helmet>);
+
+Setworks.bonus("example:mana_set")
+    .requires("example:mana_set", 1)
+    .effect("jawmsintegrations:mana", {stat: "max_mana", operation: "flat", amount: "20"});
+```
+
+Pack authors using the Setworks Java API can supply the same effect ID and string parameters. Use the JAFS property suffixes above as Setworks stat names, with the same operations and units. For `mana_regen_delay`, negative amounts shorten the delay and positive amounts lengthen it. Setworks handles invalid definitions under its own validation settings.
+
+Set `setworks.enabled` to `false` in `config/jawmsintegrations.cfg` and restart to turn off mana effects while keeping compatible definitions valid. Packs that use this effect need Setworks 1.1.0 or newer, since older versions can reject an unknown effect under strict validation.
 
 ## Configuration And Diagnostics
 

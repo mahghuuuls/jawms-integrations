@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.4.0
+
+### Added
+
+- Optional Setworks support for pack-authored set bonuses. Active bonuses can modify maximum mana, mana regeneration, post-cast regeneration delay and Spell Efficiency using the same stats as Quality Tools.
+- The `setworks.enabled` setting disables mana effects while keeping compatible authored definitions valid. Operator status shows the Setworks integration state and applied contribution.
+
+### Compatibility
+
+- JAWMS 1.4.1 or newer is required for all installations.
+- Setworks mana effects require optional Setworks 1.1.0 or newer. Packs supply their own set definitions.
+
 ## 1.3.0
 
 ### Added
