@@ -31,6 +31,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -51,6 +52,7 @@ public final class StatusworksGameplay implements StatusworksSourceAccess {
     private final boolean diagnostics;
     private final Map<UUID, Context> players = new HashMap<>();
     private final Set<Context> pending = new LinkedHashSet<>();
+    private final List<EntityPlayer> replacements = new ArrayList<>();
     private ManaReadinessProvider provider;
     private long rulesRevision = ConfiguredFlaskSnapshot.UNKNOWN_REVISION;
 
@@ -79,7 +81,8 @@ public final class StatusworksGameplay implements StatusworksSourceAccess {
 
     @SubscribeEvent
     public void respawn(PlayerEvent.PlayerRespawnEvent event) {
-        schedule(event.player);
+        // Forge fires this before the connection points to the replacement, including on End return.
+        replacements.add(event.player);
     }
 
     @SubscribeEvent
@@ -95,7 +98,10 @@ public final class StatusworksGameplay implements StatusworksSourceAccess {
 
     @SubscribeEvent(priority = EventPriority.LOWEST)
     public void serverTick(TickEvent.ServerTickEvent event) {
-        if (event.phase != TickEvent.Phase.END || players.isEmpty()) return;
+        if (event.phase != TickEvent.Phase.END) return;
+        for (EntityPlayer player : replacements) schedule(player);
+        replacements.clear();
+        if (players.isEmpty()) return;
         // JAWMS can replace a slot on the same player during a rules reload without a native change signal.
         long revision = ManaApi.getConfiguredFlaskSnapshot().getRevision();
         if (revision != ConfiguredFlaskSnapshot.UNKNOWN_REVISION && revision != rulesRevision) {
@@ -304,6 +310,7 @@ public final class StatusworksGameplay implements StatusworksSourceAccess {
 
     @Override
     public void serverStopped() {
+        replacements.clear();
         pending.clear();
         players.clear();
         rulesRevision = ConfiguredFlaskSnapshot.UNKNOWN_REVISION;
