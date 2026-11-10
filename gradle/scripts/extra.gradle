@@ -15,6 +15,9 @@ sourceSets {
     setworksValidation {
         compileClasspath += sourceSets.main.output + sourceSets.main.compileClasspath
     }
+    statusworksValidation {
+        compileClasspath += sourceSets.main.compileClasspath
+    }
 }
 tasks.register('jafsValidationJar', Jar) {
     dependsOn tasks.named('jafsValidationClasses')
@@ -74,6 +77,26 @@ if ((findProperty('enable_setworks_validation') ?: 'false').toString().toBoolean
         tasks.named(taskName, JavaExec).configure {
             dependsOn setworksValidationJar
             classpath += files(setworksValidationJar.flatMap { it.archiveFile })
+        }
+    }
+}
+
+def statusworksValidationJar = tasks.register('statusworksValidationJar', Jar) {
+    dependsOn tasks.named('statusworksValidationClasses')
+    archiveBaseName.set('jawmsint-authoring-validation')
+    archiveVersion.set('dev')
+    destinationDirectory.set(layout.buildDirectory.dir('validation'))
+    from sourceSets.statusworksValidation.output
+}
+if ((findProperty('enable_statusworks_validation') ?: 'false').toString().toBoolean()) {
+    if (!(propertyString('integration_runtime_profile') in ['none', 'statusworks', 'statusworks-legacy',
+            'statusworks-crafttweaker'])) {
+        throw new GradleException('Statusworks authoring validation requires an isolated admission profile')
+    }
+    ['runClient', 'runServer'].each { taskName ->
+        tasks.named(taskName, JavaExec).configure {
+            dependsOn statusworksValidationJar
+            classpath += files(statusworksValidationJar.flatMap { it.archiveFile })
         }
     }
 }

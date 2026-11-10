@@ -322,7 +322,7 @@ compileTestJava {
 }
 
 test {
-    inputs.files(configurations.jawmsContract, configurations.jassContract)
+    inputs.files(configurations.jawmsContract, configurations.jassContract, configurations.statusworksContract)
     useJUnitPlatform()
     javaLauncher.set(javaToolchains.launcherFor {
         languageVersion = JavaLanguageVersion.of(8)
@@ -339,6 +339,8 @@ test {
                 configurations.jawmsContract.singleFile.absolutePath
         systemProperty 'jawmsintegrations.contract.jassJar',
                 configurations.jassContract.singleFile.absolutePath
+        systemProperty 'jawmsintegrations.contract.statusworksJar',
+                configurations.statusworksContract.singleFile.absolutePath
         systemProperty 'jawmsintegrations.contract.wizardryJar',
                 configurations.wizardryContract.singleFile.absolutePath
         systemProperty 'jawmsintegrations.contract.qualityToolsJar',

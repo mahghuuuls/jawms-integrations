@@ -17,6 +17,7 @@ final class DependencyContractTest {
 
     private static final String JAWMS_JAR = "jawmsintegrations.contract.jawmsJar";
     private static final String JASS_JAR = "jawmsintegrations.contract.jassJar";
+    private static final String STATUSWORKS_JAR = "jawmsintegrations.contract.statusworksJar";
     private static final String WIZARDRY_JAR = "jawmsintegrations.contract.wizardryJar";
     private static final String QUALITY_TOOLS_JAR = "jawmsintegrations.contract.qualityToolsJar";
     private static final String ANCIENT_SPELLCRAFT_JAR = "jawmsintegrations.contract.ancientSpellcraftJar";
@@ -25,7 +26,7 @@ final class DependencyContractTest {
     @Test
     void jawmsReleaseMatchesRequiredApiFoundation() throws IOException {
         Path jar = requiredJar(JAWMS_JAR);
-        assertEquals("A43B145FA4DB156B02CBD54F0D5DE0B4360ADF4B27F3BCEA3C90C4A44AF7316F",
+        assertEquals("6B4A5EE13E40F9C44BEBD0AC25533087D6E80F106BFD936EA1CA379F98047DDE",
                 sha256(jar));
         JarContract.assertField(jar,
                 "com/mahghuuuls/jawms/api/ManaApiVersion", "CURRENT", "Ljava/lang/String;");
@@ -64,6 +65,17 @@ final class DependencyContractTest {
                 "consumeMana",
                 "(Lnet/minecraft/entity/player/EntityPlayer;ILnet/minecraft/util/ResourceLocation;)"
                         + "Lcom/mahghuuuls/jawms/api/ManaMutationResult;", 0);
+    }
+
+    @Test
+    void statusworksReleaseMatchesTheNativeAuthoringAndGameplayPin() throws IOException {
+        Path jar = requiredJar(STATUSWORKS_JAR);
+        assertEquals("72429CAEA6092EF365AFD60071CD61ED33C090EDFC6BD8938EE0AA33FFD949C0", sha256(jar));
+        JarContract.assertMethod(jar, "com/mahghuuuls/statusworks/api/StatusworksApi",
+                "registerContributionType", "(Lcom/mahghuuuls/statusworks/api/contribution/ContributionType;)"
+                        + "Lcom/mahghuuuls/statusworks/api/RegistrationResult;");
+        JarContract.assertField(jar, "com/mahghuuuls/statusworks/api/contribution/GroupAvailability",
+                "PENDING", "Lcom/mahghuuuls/statusworks/api/contribution/GroupAvailability;");
     }
 
     @Test

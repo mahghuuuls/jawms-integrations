@@ -19,7 +19,8 @@ public enum IntegrationId {
     ),
     JAFS("Just Another Food System", "jafs", "1.0.0", "1.0.0"),
     SPELL_STAMINA("Spell stamina", "jass", "1.2.0", "1.2.0"),
-    SETWORKS("Setworks", "setworks", "1.1.0", "1.1.0");
+    SETWORKS("Setworks", "setworks", "1.1.0", "1.1.0"),
+    STATUSWORKS("Statusworks", "statusworks", "1.3.0", "1.3.0");
 
     private final String displayName;
     private final String modId;
@@ -93,6 +94,7 @@ public enum IntegrationId {
             case JAFS:
             case SPELL_STAMINA:
             case SETWORKS:
+            case STATUSWORKS:
                 break;
             default:
                 throw new IllegalStateException("Unhandled integration " + this);

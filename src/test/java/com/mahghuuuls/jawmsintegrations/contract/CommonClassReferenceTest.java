@@ -36,7 +36,6 @@ class CommonClassReferenceTest {
 
         try (Stream<Path> files = Files.walk(root)) {
             files.filter(path -> path.toString().endsWith(".class"))
-                    .filter(CommonClassReferenceTest::isSharedClass)
                     .forEach(path -> inspect(path, violations));
         }
 
@@ -56,10 +55,22 @@ class CommonClassReferenceTest {
     private static void inspect(Path path, List<String> violations) {
         try {
             String constants = new String(Files.readAllBytes(path), StandardCharsets.ISO_8859_1);
-            for (String forbidden : FORBIDDEN) {
-                if (constants.contains(forbidden)) {
-                    violations.add(path.getFileName() + " -> " + forbidden);
+            if (isSharedClass(path)) {
+                for (String forbidden : FORBIDDEN) {
+                    if (constants.contains(forbidden)) {
+                        violations.add(path.getFileName() + " -> " + forbidden);
+                    }
                 }
+            }
+            String normalized = path.toString().replace('\\', '/');
+            boolean gameplayContract = normalized.endsWith("/integration/statusworks/StatusworksGameplayContract.class");
+            boolean nativeAuthoring = normalized.endsWith("/integration/statusworks/StatusworksAuthoring.class")
+                    || normalized.endsWith("/integration/statusworks/StatusworksAuthoring$InertType.class");
+            if (!gameplayContract && !nativeAuthoring && constants.contains("com/mahghuuuls/statusworks/")) {
+                violations.add(path.getFileName() + " -> Statusworks API");
+            }
+            if (!gameplayContract && constants.contains("com/mahghuuuls/jawms/api/ManaFirstAcceptanceVerifier")) {
+                violations.add(path.getFileName() + " -> JAWMS first acceptance API");
             }
         } catch (Exception exception) {
             throw new IllegalStateException("Could not inspect " + path, exception);

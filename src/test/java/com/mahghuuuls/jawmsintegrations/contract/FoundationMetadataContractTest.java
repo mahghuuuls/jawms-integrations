@@ -60,7 +60,7 @@ final class FoundationMetadataContractTest {
             DependencyParser.DependencyInfo annotation = new DependencyParser(modId, side)
                     .parseDependencies(dependencies);
             assertEquals(1, annotation.requirements.size());
-            assertEquals("jawms@[1.4.1,)", annotation.requirements.iterator().next().toString());
+            assertEquals("jawms@[1.5.0,)", annotation.requirements.iterator().next().toString());
             assertTrue(annotation.dependencies.isEmpty(), "The annotation must not add an after edge");
             assertTrue(annotation.dependants.isEmpty(), "The annotation must not add a before edge");
         }
@@ -73,9 +73,9 @@ final class FoundationMetadataContractTest {
             assertTrue(metadata.useDependencyInformation);
             assertEquals(1, metadata.requiredMods.size());
             ArtifactVersion requiredJawms = metadata.requiredMods.iterator().next();
-            assertEquals("jawms@[1.4.1,)", requiredJawms.toString());
-            assertFalse(requiredJawms.containsVersion(new DefaultArtifactVersion("jawms", "1.4.0")));
-            assertTrue(requiredJawms.containsVersion(new DefaultArtifactVersion("jawms", "1.4.1")));
+            assertEquals("jawms@[1.5.0,)", requiredJawms.toString());
+            assertFalse(requiredJawms.containsVersion(new DefaultArtifactVersion("jawms", "1.4.1")));
+            assertTrue(requiredJawms.containsVersion(new DefaultArtifactVersion("jawms", "1.5.0")));
             assertTrue(requiredJawms.containsVersion(new DefaultArtifactVersion("jawms", "2.0.0")));
             assertTrue(metadata.dependencies.isEmpty(), "mcmod.info must not add an after edge");
             assertTrue(metadata.dependants.isEmpty(), "mcmod.info must not add a before edge");
@@ -83,6 +83,7 @@ final class FoundationMetadataContractTest {
             assertTrue(metadata.description.contains("Ancient Spellcraft"));
             assertTrue(metadata.description.contains("CraftTweaker"));
             assertTrue(metadata.description.contains("Just Another Food System"));
+            assertTrue(metadata.description.contains("Statusworks"));
             assertFalse(metadata.description.toLowerCase().contains("ars magica"));
         }
     }

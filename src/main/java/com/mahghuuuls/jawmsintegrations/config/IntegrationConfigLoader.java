@@ -20,6 +20,7 @@ public final class IntegrationConfigLoader {
     private static final String JAFS = "jafs";
     private static final String SPELL_STAMINA = "spell_stamina";
     private static final String SETWORKS = "setworks";
+    private static final String STATUSWORKS = "statusworks";
     private static final String DIAGNOSTICS = "diagnostics";
 
     private IntegrationConfigLoader() {
@@ -109,6 +110,12 @@ public final class IntegrationConfigLoader {
                         + "Set definitions remain pack-authored. Requires restart.",
                 warnings
         );
+        boolean statusworksEnabled = readBoolean(
+                configuration, STATUSWORKS, "enabled", true,
+                "Enables mana effects from active Statusworks statuses and pools. Compatible contribution "
+                        + "types remain available for authoring while disabled. Requires restart.",
+                warnings
+        );
         boolean diagnosticsEnabled = readBoolean(
                 configuration,
                 DIAGNOSTICS,
@@ -154,6 +161,7 @@ public final class IntegrationConfigLoader {
                 new IntegrationConfigSnapshot.IntegrationToggleConfig(jafsEnabled),
                 spellStamina,
                 new IntegrationConfigSnapshot.IntegrationToggleConfig(setworksEnabled),
+                new IntegrationConfigSnapshot.IntegrationToggleConfig(statusworksEnabled),
                 new IntegrationConfigSnapshot.DiagnosticsConfig(diagnosticsEnabled)
         );
         return new LoadResult(snapshot, warnings);

@@ -10,9 +10,9 @@ class JawmsCompatibilityTest {
 
     @Test
     void acceptsMinimumModAndCoreApiVersions() {
-        JawmsCompatibility.Status status = JawmsCompatibility.verify("1.4.1", CompatibleApi.class);
+        JawmsCompatibility.Status status = JawmsCompatibility.verify("1.5.0", CompatibleApi.class);
 
-        assertEquals("1.4.1", status.getModVersion());
+        assertEquals("1.5.0", status.getModVersion());
         assertEquals("1.6", status.getApiVersion());
     }
 
@@ -29,13 +29,13 @@ class JawmsCompatibilityTest {
         IllegalStateException missing = assertThrows(IllegalStateException.class,
                 () -> JawmsCompatibility.verifyInstalled(null));
         IllegalStateException oldMod = assertThrows(IllegalStateException.class,
-                () -> JawmsCompatibility.verifyInstalled("1.4.0"));
+                () -> JawmsCompatibility.verifyInstalled("1.4.1"));
         IllegalStateException oldApi = assertThrows(IllegalStateException.class,
-                () -> JawmsCompatibility.verify("1.4.1", IncompatibleApi.class));
+                () -> JawmsCompatibility.verify("1.5.0", IncompatibleApi.class));
 
-        assertTrue(missing.getMessage().contains("JAWMS 1.4.1"));
+        assertTrue(missing.getMessage().contains("JAWMS 1.5.0"));
         assertTrue(missing.getMessage().contains("API 1.6"));
-        assertTrue(oldMod.getMessage().contains("'1.4.0'"));
+        assertTrue(oldMod.getMessage().contains("'1.4.1'"));
         assertTrue(oldApi.getMessage().contains("'1.5'"));
     }
 

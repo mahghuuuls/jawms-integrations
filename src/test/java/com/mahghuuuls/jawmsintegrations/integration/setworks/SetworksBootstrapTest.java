@@ -22,7 +22,7 @@ final class SetworksBootstrapTest {
         for (String installed : new String[]{null, "1.0.0"}) {
             IntegrationCoordinator coordinator = coordinator(installed, true);
             IntegrationCoordinator result = SetworksBootstrap.initialize(coordinator,
-                    JawmsCompatibility.verify("1.4.1", Api19.class),
+                    JawmsCompatibility.verify("1.5.0", Api19.class),
                     () -> fail("Unavailable Setworks must not attempt authoring")).getCoordinator();
             assertSame(coordinator, result);
             assertEquals(installed == null ? IntegrationState.ABSENT : IntegrationState.UNSUPPORTED,
@@ -45,8 +45,8 @@ final class SetworksBootstrapTest {
                 return source;
             };
         };
-        JawmsCompatibility.Status missingGameplayApi = JawmsCompatibility.verify("1.4.1", Api18.class);
-        JawmsCompatibility.Status supported = JawmsCompatibility.verify("1.4.1", Api19.class);
+        JawmsCompatibility.Status missingGameplayApi = JawmsCompatibility.verify("1.5.0", Api18.class);
+        JawmsCompatibility.Status supported = JawmsCompatibility.verify("1.5.0", Api19.class);
         IntegrationStatusView disabled = SetworksBootstrap.initialize(coordinator("1.1.0", false), supported,
                 registration).getCoordinator().getStatus(IntegrationId.SETWORKS);
         assertEquals(IntegrationState.DISABLED, disabled.getState());
@@ -54,7 +54,7 @@ final class SetworksBootstrapTest {
         IntegrationStatusView unsupported = SetworksBootstrap.initialize(coordinator("1.1.0", true), missingGameplayApi,
                 registration).getCoordinator().getStatus(IntegrationId.SETWORKS);
         assertEquals(IntegrationState.UNSUPPORTED, unsupported.getState());
-        assertTrue(unsupported.getDetail().contains("1.4.1 / API 1.8"));
+        assertTrue(unsupported.getDetail().contains("1.5.0 / API 1.8"));
         assertTrue(unsupported.getDetail().contains("suspension and recovery"));
         assertEquals(0, activations.get());
         SetworksBootstrap.Result active = SetworksBootstrap.initialize(
@@ -68,7 +68,7 @@ final class SetworksBootstrapTest {
     @Test
     void missingAuthoringContractAndRejectedRegistrationFailClosed() {
         IntegrationCoordinator coordinator = coordinator("1.1.0", true);
-        JawmsCompatibility.Status jawms = JawmsCompatibility.verify("1.4.1", Api19.class);
+        JawmsCompatibility.Status jawms = JawmsCompatibility.verify("1.5.0", Api19.class);
         assertEquals(IntegrationState.UNSUPPORTED, SetworksBootstrap.initialize(coordinator, jawms,
                 () -> { throw new NoSuchMethodError("registerEffectKind"); })
                 .getCoordinator().getStatus(IntegrationId.SETWORKS).getState());

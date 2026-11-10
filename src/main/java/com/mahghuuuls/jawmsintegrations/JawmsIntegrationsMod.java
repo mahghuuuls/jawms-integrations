@@ -18,6 +18,7 @@ import com.mahghuuuls.jawmsintegrations.integration.OptionalIntegrationEvidenceR
 import com.mahghuuuls.jawmsintegrations.integration.qualitytools.QualityToolsIntegration;
 import com.mahghuuuls.jawmsintegrations.integration.setworks.SetworksBootstrap;
 import com.mahghuuuls.jawmsintegrations.integration.setworks.SetworksSourceAccess;
+import com.mahghuuuls.jawmsintegrations.integration.statusworks.StatusworksBootstrap;
 import com.mahghuuuls.jawmsintegrations.integration.ancientspellcraft.AncientSpellcraftIntegration;
 import com.mahghuuuls.jawmsintegrations.integration.ancientspellcraft.AncientReplacementPolicy;
 import com.mahghuuuls.jawmsintegrations.integration.ancientspellcraft.EverfullManaService;
@@ -176,6 +177,7 @@ public final class JawmsIntegrationsMod {
         SetworksBootstrap.Result setworksResult = SetworksBootstrap.initialize(coordinator, jawms);
         coordinator = setworksResult.getCoordinator();
         setworks = setworksResult.getSource();
+        coordinator = StatusworksBootstrap.initialize(coordinator, jawms);
         FMLCommonHandler.instance().bus().register(new IntegrationPresentationSync(
                 coordinator.getStatus(IntegrationId.QUALITY_TOOLS).getState() == IntegrationState.ACTIVE,
                 () -> coordinator.getStatus(IntegrationId.SPELL_STAMINA).getState() == IntegrationState.ACTIVE));

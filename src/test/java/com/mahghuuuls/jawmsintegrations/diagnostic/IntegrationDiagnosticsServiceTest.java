@@ -40,7 +40,7 @@ class IntegrationDiagnosticsServiceTest {
             @Override public void clearWarnings() { throw new AssertionError("Read-only diagnostics cleared warnings"); }
         };
         IntegrationDiagnosticsService view = new IntegrationDiagnosticsService(
-                JawmsCompatibility.verify("1.4.1", CompatibleApi.class), config, coordinator, forbidden);
+                JawmsCompatibility.verify("1.5.0", CompatibleApi.class), config, coordinator, forbidden);
         for (int i = 0; i < 3; i++) {
             assertTrue(view.foodStatus(null).get(0).contains("DISABLED"));
             assertTrue(view.foodStatus(null).get(0).contains("metadata available"));
@@ -59,7 +59,7 @@ class IntegrationDiagnosticsServiceTest {
                 integration -> OptionalIntegrationEvidenceRegistry.Evidence.absent()
         );
         IntegrationDiagnosticsService diagnostics = new IntegrationDiagnosticsService(
-                JawmsCompatibility.verify("1.4.1", CompatibleApi.class),
+                JawmsCompatibility.verify("1.5.0", CompatibleApi.class),
                 config,
                 coordinator
         );
@@ -67,29 +67,32 @@ class IntegrationDiagnosticsServiceTest {
         String startup = diagnostics.startupSummary();
         List<String> overall = diagnostics.overallStatus();
 
-        assertTrue(startup.contains("JAWMS 1.4.1/API 1.6"));
+        assertTrue(startup.contains("JAWMS 1.5.0/API 1.6"));
         assertTrue(startup.contains("Quality Tools=ABSENT"));
         assertTrue(startup.contains("Ancient Spellcraft=ABSENT"));
         assertTrue(startup.contains("CraftTweaker=ABSENT"));
         assertTrue(startup.contains("Spell stamina=ABSENT"));
         assertTrue(startup.contains("Setworks=ABSENT"));
+        assertTrue(startup.contains("Statusworks=ABSENT"));
         assertTrue(startup.contains("built-in qualities=enabled(12/12)"));
         assertTrue(startup.contains("Ancient replacements=inactive(state=ABSENT)"));
-        assertEquals(9, overall.size());
+        assertEquals(10, overall.size());
         assertTrue(overall.get(1).contains("Quality Tools: ABSENT"));
         assertTrue(overall.get(2).contains("Ancient Spellcraft: ABSENT"));
         assertTrue(overall.get(3).contains("CraftTweaker: ABSENT"));
         assertTrue(overall.get(4).contains("Just Another Food System: ABSENT"));
         assertTrue(overall.get(5).contains("Spell stamina: ABSENT"));
         assertTrue(overall.get(6).contains("Setworks: ABSENT"));
-        String settings = overall.get(7);
+        assertTrue(overall.get(7).contains("Statusworks: ABSENT"));
+        String settings = overall.get(8);
         assertTrue(settings.contains("startup diagnostics=disabled"));
         assertTrue(settings.contains("built-in qualities=enabled(12/12)"));
         assertTrue(settings.contains("Ancient replacements=inactive(state=ABSENT)"));
         assertTrue(settings.contains("CraftTweaker=enabled"));
         assertTrue(settings.contains("JAFS=enabled"));
         assertTrue(settings.contains("Setworks=enabled"));
-        assertTrue(overall.get(8).contains("configured, inactive"));
+        assertTrue(settings.contains("Statusworks=enabled"));
+        assertTrue(overall.get(9).contains("configured, inactive"));
         assertEquals("Quality Tools reload summary: built-in qualities=enabled(12/12)",
                 diagnostics.qualityToolsReloadSummary());
     }
@@ -111,7 +114,7 @@ class IntegrationDiagnosticsServiceTest {
                         integration.getMinimumMetadataVersion())
         );
         IntegrationDiagnosticsService diagnostics = new IntegrationDiagnosticsService(
-                JawmsCompatibility.verify("1.4.1", CompatibleApi.class), config, coordinator);
+                JawmsCompatibility.verify("1.5.0", CompatibleApi.class), config, coordinator);
 
         String startup = diagnostics.startupSummary();
         List<String> overall = diagnostics.overallStatus();
@@ -166,7 +169,7 @@ class IntegrationDiagnosticsServiceTest {
         EntityPlayer player = (EntityPlayer) unsafe.getMethod("allocateInstance", Class.class)
                 .invoke(field.get(null), NamedPlayer.class);
         IntegrationDiagnosticsService view = new IntegrationDiagnosticsService(
-                JawmsCompatibility.verify("1.4.1", CompatibleApi.class), config, active, source);
+                JawmsCompatibility.verify("1.5.0", CompatibleApi.class), config, active, source);
         assertTrue(view.foodStatus(player).get(0).contains("ZERO"));
         maximum[0] = new ManaStatProjection.Totals(0.5, 10);
         List<String> invalid = view.foodStatus(player);
@@ -180,7 +183,7 @@ class IntegrationDiagnosticsServiceTest {
         assertTrue(view.foodStatus(player).get(0).contains("unavailable (IllegalStateException)"));
         assertEquals(4, calls.get());
         IntegrationDiagnosticsService inactive = new IntegrationDiagnosticsService(
-                JawmsCompatibility.verify("1.4.1", CompatibleApi.class), config, ready, source);
+                JawmsCompatibility.verify("1.5.0", CompatibleApi.class), config, ready, source);
         assertTrue(inactive.foodStatus(player).get(0).contains("inactive"));
         assertEquals(4, calls.get(), "Inactive modules must not query optional API state");
     }

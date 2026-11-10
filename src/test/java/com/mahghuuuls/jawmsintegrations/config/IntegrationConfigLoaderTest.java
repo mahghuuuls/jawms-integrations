@@ -42,6 +42,7 @@ class IntegrationConfigLoaderTest {
         assertTrue(snapshot.getJafs().isEnabled());
         assertTrue(snapshot.getSpellStamina().isEnabled());
         assertTrue(snapshot.getSetworks().isEnabled());
+        assertTrue(snapshot.getStatusworks().isEnabled());
         assertEquals(12.0D, snapshot.getSpellStamina().getDiscreteCost());
         assertEquals(8.0D, snapshot.getSpellStamina().getContinuousCostPerSecond());
         assertTrue(snapshot.getAncientSpellcraft().getLesserManaRing().isEnabled());
@@ -77,7 +78,7 @@ class IntegrationConfigLoaderTest {
         Object originalHome = minecraftHome.get(null);
         try {
             minecraftHome.set(null, temporaryDirectory.toFile());
-            IntegrationConfigLoader.load(configPath.toFile());
+            assertTrue(IntegrationConfigLoader.load(configPath.toFile()).getSnapshot().getStatusworks().isEnabled());
         } finally {
             minecraftHome.set(null, originalHome);
         }
@@ -89,6 +90,7 @@ class IntegrationConfigLoaderTest {
         assertTrue(generated.contains("jafs"));
         assertTrue(generated.contains("spell_stamina"));
         assertTrue(generated.contains("setworks"));
+        assertTrue(generated.contains("statusworks"));
         assertFalse(generated.toLowerCase().contains("ars_magica"));
     }
 
@@ -105,6 +107,13 @@ class IntegrationConfigLoaderTest {
             assertFalse(snapshot.getSetworks().isEnabled());
             assertTrue(snapshot.getJafs().isEnabled());
             assertTrue(snapshot.getSpellStamina().isEnabled());
+            assertTrue(snapshot.getCraftTweaker().isEnabled());
+            assertTrue(snapshot.getStatusworks().isEnabled());
+
+            Files.write(configPath, "statusworks {\n B:enabled=false\n}\n".getBytes(StandardCharsets.UTF_8));
+            snapshot = IntegrationConfigLoader.load(configPath.toFile()).getSnapshot();
+            assertFalse(snapshot.getStatusworks().isEnabled());
+            assertTrue(snapshot.getSetworks().isEnabled());
             assertTrue(snapshot.getCraftTweaker().isEnabled());
         } finally {
             minecraftHome.set(null, originalHome);

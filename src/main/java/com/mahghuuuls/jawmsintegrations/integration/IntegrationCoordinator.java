@@ -53,8 +53,9 @@ public final class IntegrationCoordinator {
             return new IntegrationStatusView(integration, IntegrationState.ABSENT, null,
                     "Optional dependency is not installed");
         }
-        if (integration == IntegrationId.SPELL_STAMINA || integration == IntegrationId.SETWORKS) {
-            String dependency = integration == IntegrationId.SPELL_STAMINA ? "JASS" : "Setworks";
+        if (integration == IntegrationId.SPELL_STAMINA || integration == IntegrationId.SETWORKS
+                || integration == IntegrationId.STATUSWORKS) {
+            String dependency = integration == IntegrationId.SPELL_STAMINA ? "JASS" : integration.getDisplayName();
             if (!integration.meetsMinimumMetadataVersion(detectedVersion)) {
                 return new IntegrationStatusView(integration, IntegrationState.UNSUPPORTED, detectedVersion,
                         "Requires " + dependency + " " + integration.getMinimumVersion() + " or newer");
@@ -118,6 +119,8 @@ public final class IntegrationCoordinator {
                 return config.getSpellStamina().isEnabled();
             case SETWORKS:
                 return config.getSetworks().isEnabled();
+            case STATUSWORKS:
+                return config.getStatusworks().isEnabled();
             default:
                 throw new IllegalStateException("Unhandled integration " + integration);
         }
@@ -136,16 +139,16 @@ public final class IntegrationCoordinator {
     }
 
     public IntegrationCoordinator withFailure(IntegrationId integration, String detail) {
-        return withUnavailable(integration, IntegrationState.FAILED, detail);
+        return withState(integration, IntegrationState.FAILED, detail);
     }
 
     public IntegrationCoordinator withUnsupported(IntegrationId integration, String detail) {
-        return withUnavailable(integration, IntegrationState.UNSUPPORTED, detail);
+        return withState(integration, IntegrationState.UNSUPPORTED, detail);
     }
 
-    private IntegrationCoordinator withUnavailable(IntegrationId integration, IntegrationState state, String detail) {
+    private IntegrationCoordinator withState(IntegrationId integration, IntegrationState state, String detail) {
         if (integration == null || detail == null || detail.trim().isEmpty()) {
-            throw new IllegalArgumentException("Failure integration and detail must be provided");
+            throw new IllegalArgumentException("Integration and detail must be provided");
         }
         Map<IntegrationId, IntegrationStatusView> failed = new EnumMap<>(statuses);
         IntegrationStatusView current = getStatus(integration);
@@ -172,15 +175,15 @@ public final class IntegrationCoordinator {
         if (integration == null || detail == null || detail.trim().isEmpty()) {
             throw new IllegalArgumentException("Disabled integration and detail must be provided");
         }
-        IntegrationStatusView current = getStatus(integration);
-        if (current.getState() != IntegrationState.DISABLED) {
+        if (getStatus(integration).getState() != IntegrationState.DISABLED) {
             throw new IllegalStateException("Only a DISABLED integration can update its disabled detail: "
                     + integration);
         }
-        Map<IntegrationId, IntegrationStatusView> updated = new EnumMap<>(statuses);
-        updated.put(integration, new IntegrationStatusView(integration, IntegrationState.DISABLED,
-                current.getDetectedVersion(), detail));
-        return new IntegrationCoordinator(updated);
+        return withDetail(integration, detail);
+    }
+
+    public IntegrationCoordinator withDetail(IntegrationId integration, String detail) {
+        return withState(integration, getStatus(integration).getState(), detail);
     }
 
     @FunctionalInterface

@@ -105,6 +105,7 @@ public final class IntegrationDiagnosticsService {
                 + ", CraftTweaker=" + enabled(config.getCraftTweaker().isEnabled())
                 + ", JAFS=" + enabled(config.getJafs().isEnabled())
                 + ", Setworks=" + enabled(config.getSetworks().isEnabled())
+                + ", Statusworks=" + enabled(config.getStatusworks().isEnabled())
                 + ", startup diagnostics=" + enabled(config.getDiagnostics().isEnabled()));
         lines.add(spellStaminaSettings());
         if (config.getDiagnostics().isEnabled()) {
@@ -123,6 +124,8 @@ public final class IntegrationDiagnosticsService {
         lines.addAll(foodStatus(player));
         lines.add(spellStaminaPlayerStatus(player));
         lines.add(setworksPlayerStatus(player));
+        IntegrationStatusView statusworks = coordinator.getStatus(IntegrationId.STATUSWORKS);
+        lines.add("Statusworks source: inactive (" + statusworks.getState() + ", " + statusworks.getDetail() + ")");
         ManaProfileExplanation profile;
         try {
             profile = ManaApi.explainManaProfile(player);
