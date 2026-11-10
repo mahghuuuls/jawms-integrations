@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.5.0
+
+### Added
+
+- Optional Statusworks support for pack-authored player statuses and pools. Their contributions can modify maximum mana, mana regeneration, post-cast regeneration delay, and global or school-specific Spell Efficiency.
+- The `statusworks.enabled` setting turns off mana effects after restart while keeping compatible definitions valid. The operator status command shows the Statusworks integration state and accepted mana contribution.
+- Added a [Statusworks authoring guide](docs/STATUSWORKS.md) with Java and CraftTweaker examples.
+
+### Compatibility
+
+- JAWMS 1.5.0 or newer is required on both the client and server.
+- The optional mana integration requires Statusworks 1.3.0 or newer. Packs supply their own status and pool definitions.
+
 ## 1.4.0
 
 ### Added

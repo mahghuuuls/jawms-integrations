@@ -1,137 +1,37 @@
-Adds optional compatibility between [Just Another Wizardry Mana System](https://www.curseforge.com/minecraft/mc-mods/just-another-wizardry-mana-system) and other mods. Each integration activates only when its mod is installed and can be disabled independently.
-
-### Included Integrations
-
-Currently includes integrations for:
-
-- [Quality Tools](https://www.curseforge.com/minecraft/mc-mods/quality-tools)
-- [Ancient Spellcraft](https://www.curseforge.com/minecraft/mc-mods/ancient-spellcraft)
-- [CraftTweaker](https://www.curseforge.com/minecraft/mc-mods/crafttweaker)
-- [Just Another Food System](https://www.curseforge.com/minecraft/mc-mods/just-another-food-system)
-- [Just Another Stamina System](https://www.curseforge.com/minecraft/mc-mods/just-another-stamina-system)
-- [Setworks](https://www.curseforge.com/minecraft/mc-mods/setworks)
+Adds optional integrations for [Just Another Wizardry Mana System](https://www.curseforge.com/minecraft/mc-mods/just-another-wizardry-mana-system). Equipment, food, set bonuses, statuses, and pools can affect mana. Wand spells can spend stamina.
 
 <span style="color:#d6a100">**AI usage disclaimer:** This mod was developed with AI-agent assistance using [this agent workflow](https://github.com/mahghuuuls/minecraft-1.12.2-mod-agent-workflow). The project owner reviewed the work during development.</span>
 
-
-### For Mod Developers
-
-This project is not intended to be the only source of JAWMS integrations. It uses the same public JAWMS API available to developers creating their own addons.
+Compatible integrations are enabled by default. Food, set bonuses, statuses, and pools need definitions from your pack.
 
 ## [Quality Tools](https://www.curseforge.com/minecraft/mc-mods/quality-tools)
 
-Adds configurable JAWMS qualities to [Electroblob's Wizardry](https://www.curseforge.com/minecraft/mc-mods/electroblobs-wizardry) mage armor, including maximum mana, mana regeneration, Spell Efficiency, school-specific Spell Efficiency, and post-cast regeneration delay.
-
-### Built-In Qualities
-
-These positive qualities can appear on official Electroblob Wizardry mage armor by default:
-
-- **Manawoven:** Increases maximum mana by 5%.
-- **Meditative:** Increases mana regeneration by 5%.
-- **Efficient Casting:** Adds 5 Spell Efficiency, improving mana-cost efficiency for spells from every school.
-- **Swift Recovery:** Reduces the delay before mana begins regenerating after casting by 10%.
-- **Magic Focus:** Adds 8 Magic Spell Efficiency, improving mana-cost efficiency for Magic spells.
-- **Fire Focus:** Adds 8 Fire Spell Efficiency, improving mana-cost efficiency for Fire spells.
-- **Ice Focus:** Adds 8 Ice Spell Efficiency, improving mana-cost efficiency for Ice spells.
-- **Lightning Focus:** Adds 8 Lightning Spell Efficiency, improving mana-cost efficiency for Lightning spells.
-- **Necromancy Focus:** Adds 8 Necromancy Spell Efficiency, improving mana-cost efficiency for Necromancy spells.
-- **Earth Focus:** Adds 8 Earth Spell Efficiency, improving mana-cost efficiency for Earth spells.
-- **Sorcery Focus:** Adds 8 Sorcery Spell Efficiency, improving mana-cost efficiency for Sorcery spells.
-- **Healing Focus:** Adds 8 Healing Spell Efficiency, improving mana-cost efficiency for Healing spells.
-
-### For Modpack Creators
-
-Modpack authors can create additional Quality Tools qualities using JAWMS attributes. Add the following names to the `attributes` array of a quality in the Quality Tools configuration:
-
-- `jawmsintegrations.max_mana_flat`: flat maximum mana. The amount must be a whole number.
-- `jawmsintegrations.max_mana_percent`: percentage maximum mana.
-- `jawmsintegrations.mana_regen_flat`: flat mana regeneration.
-- `jawmsintegrations.mana_regen_percent`: percentage mana regeneration.
-- `jawmsintegrations.spell_efficiency`: global Spell Efficiency.
-- `jawmsintegrations.spell_efficiency_magic`: Magic Spell Efficiency.
-- `jawmsintegrations.spell_efficiency_fire`: Fire Spell Efficiency.
-- `jawmsintegrations.spell_efficiency_ice`: Ice Spell Efficiency.
-- `jawmsintegrations.spell_efficiency_lightning`: Lightning Spell Efficiency.
-- `jawmsintegrations.spell_efficiency_necromancy`: Necromancy Spell Efficiency.
-- `jawmsintegrations.spell_efficiency_earth`: Earth Spell Efficiency.
-- `jawmsintegrations.spell_efficiency_sorcery`: Sorcery Spell Efficiency.
-- `jawmsintegrations.spell_efficiency_healing`: Healing Spell Efficiency.
-- `jawmsintegrations.mana_regen_delay_reduction_flat`: flat post-cast mana-regeneration-delay reduction in seconds.
-- `jawmsintegrations.mana_regen_delay_reduction_percent`: percentage post-cast mana-regeneration-delay reduction.
-
-Use attribute operation `0`. Positive mana and regeneration values are bonuses, while negative values are penalties. Positive delay-reduction values shorten the delay, while negative values lengthen it. Spell Efficiency values cannot be negative, and percentage delay reduction cannot exceed 100.
-
-For example, this gives a quality a +10% maximum-mana modifier:
-
-```json
-"attributes": [
-  {
-    "name": "jawmsintegrations.max_mana_percent",
-    "amount": 10,
-    "operation": 0
-  }
-]
-```
+Official [Electroblob's Wizardry](https://www.curseforge.com/minecraft/mc-mods/electroblobs-wizardry) mage armor can roll qualities that increase maximum mana, mana regeneration, or Spell Efficiency, or shorten the post-cast regeneration delay. [Quality defaults and custom attributes](https://github.com/mahghuuuls/jawms-integrations#quality-tools-integration)
 
 ## [Ancient Spellcraft](https://www.curseforge.com/minecraft/mc-mods/ancient-spellcraft)
 
-Reworks selected mana-related baubles to use JAWMS mana. This includes:
-
-- Lesser and Greater Mana Rings, which add flat maximum mana.
-- Majestic Mana Charm, which adds percentage maximum mana.
-- Crystal Ring, which adds Spell Efficiency.
-- Everfull Flask of Mana, which stores and regenerates mana for offhand use.
-- Ring of Dagorim, which can consume ordinary mana flasks when the wearer is low on mana.
+The Lesser Ring of Mana, Greater Ring of Mana, and Majestic Mana Charm increase maximum mana. The Crystal Ring adds Spell Efficiency. The Everfull Flask of Mana recharges while carried and restores mana from the offhand. The Ring of Dagorim can use ordinary mana flasks when the wearer is low on mana.
 
 ## [CraftTweaker](https://www.curseforge.com/minecraft/mc-mods/crafttweaker)
 
-Adds a server-authoritative ZenScript API for reading coherent JAWMS mana state, setting or restoring mana, exact consumption, bounded draining, and starting the current post-cast regeneration delay.
+Pack scripts can read and change mana or start the post-cast regeneration delay. [CraftTweaker scripting guide](https://github.com/mahghuuuls/jawms-integrations/blob/main/docs/CRAFTTWEAKER.md)
 
 ## [Just Another Food System](https://www.curseforge.com/minecraft/mc-mods/just-another-food-system)
 
-Pack makers can give foods bonuses to maximum mana, mana regeneration, Spell Efficiency, and the delay before mana starts regenerating after a cast. Bonuses last while the food is active. The pack maker chooses which foods grant them and how much each food gives.
-
-### For Modpack Creators
-
-In `config/jafs/foods.json`, add JAWMS properties to a food definition's `modifiers` array. Each modifier takes a `property` ID, an `operation`, and an `amount`. Prefix each property below with `jawmsintegrations:`.
-
-- **Maximum mana (`max_mana`).** Use `flat` for whole mana or `percent` for a percentage change.
-- **Mana regeneration (`mana_regen`).** Use `flat` for mana per second or `percent` for a percentage change.
-- **Post-cast regeneration delay (`mana_regen_delay`).** Use `flat` for seconds or `percent` for a percentage change. Negative values shorten the delay and positive values lengthen it.
-- **Spell Efficiency (`spell_efficiency`).** Use `flat` for non-negative points across all schools.
-- **School Spell Efficiency.** Use `flat` for non-negative points with `spell_efficiency_magic`, `spell_efficiency_fire`, `spell_efficiency_ice`, `spell_efficiency_lightning`, `spell_efficiency_necromancy`, `spell_efficiency_earth`, `spell_efficiency_sorcery`, or `spell_efficiency_healing`.
-
-For `percent`, an amount of `10` means 10%. Percentage reductions can go down to `-100`. Positive amounts increase maximum mana or regeneration, and negative amounts reduce them.
-
-This example apple grants **+20 maximum mana** and a **10% shorter post-cast regeneration delay** for **five minutes**. Add the object to your existing food list, or add its modifiers to the apple definition you already use.
-
-```json
-{
-  "id": "mana_apple",
-  "match": [{"item": "minecraft:apple", "meta": 0}],
-  "fullDuration": 300,
-  "priority": 0,
-  "modifiers": [
-    {"property": "jawmsintegrations:max_mana", "operation": "flat", "amount": 20},
-    {"property": "jawmsintegrations:mana_regen_delay", "operation": "percent", "amount": -10}
-  ]
-}
-```
+Pack-defined foods can change maximum mana, regeneration, Spell Efficiency, and post-cast regeneration delay while active. [Food authoring and Demonic Seal compatibility](https://github.com/mahghuuuls/jawms-integrations#just-another-food-system)
 
 ## [Just Another Stamina System](https://www.curseforge.com/minecraft/mc-mods/just-another-stamina-system)
 
-Wizardry wand spells spend stamina alongside mana, including addon spells cast through a wand. Scrolls remain stamina-free.
+With version 1.2.0 or newer, Wizardry wand spells use stamina alongside mana, including addon spells cast through a wand. Scrolls remain stamina-free. The base costs are 12 stamina per successful single cast and 8 per second of continuous casting. Normal stamina rules apply, and continuous spells stop when stamina runs out.
 
-The default base costs are **12 stamina per successful single cast** and **8 stamina per second of continuous casting**. Normal stamina rules apply, and continuous spells stop when stamina runs out. You can tune the costs or turn off spell stamina in the config.
+## [Setworks](https://www.curseforge.com/minecraft/mc-mods/setworks)
 
-## Setworks
+Pack-defined equipment set bonuses can change maximum mana, mana regeneration, post-cast regeneration delay, and Spell Efficiency while active. Mana effects require Setworks 1.1.0 or newer. [Setworks authoring example](https://github.com/mahghuuuls/jawms-integrations#setworks-integration)
 
-Pack authors can give equipment set bonuses the same mana stats available through Quality Tools. The stats apply while the set bonus is active. Packs supply the set definitions. The integration requires Setworks 1.1.0 or newer, and you can turn off its mana effects independently in the config. [Setworks authoring example](https://github.com/mahghuuuls/jawms-integrations#setworks-integration)
+## [Statusworks](https://www.curseforge.com/minecraft/mc-mods/statusworks)
 
-## Configuration And Installation
+Pack-defined player statuses and pools can change maximum mana, mana regeneration, post-cast regeneration delay, and Spell Efficiency while their contributions apply. Mana effects require Statusworks 1.3.0 or newer. [Statusworks Java and CraftTweaker examples](https://github.com/mahghuuuls/jawms-integrations/blob/main/docs/STATUSWORKS.md)
 
-The generated `jawmsintegrations.cfg` can enable or tune each installed integration. Changes require a restart.
+## Configuration and Installation
 
-Integrations 1.4.0 requires JAWMS 1.4.1 or newer. Install the addon on both the client and server.
-
-[Source code](https://github.com/mahghuuuls/jawms-integrations)
+Install the addon and JAWMS 1.5.0 or newer on both the client and server. In multiplayer, gameplay follows the server's `config/jawmsintegrations.cfg`. Changes require a restart. [Runtime compatibility](https://github.com/mahghuuuls/jawms-integrations#runtime-scope) [Configuration reference](https://github.com/mahghuuuls/jawms-integrations#configuration-and-diagnostics)

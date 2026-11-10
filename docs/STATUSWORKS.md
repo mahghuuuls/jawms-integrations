@@ -34,7 +34,7 @@ Mana effects are for real server players with status or pool contributions. Mark
 
 ## Java
 
-In a pack addon's startup registration, use the normal Statusworks builders. Declare a dependency on Statusworks in that addon and use a namespace you own. The Statusworks API validates definitions when loading completes.
+In a pack addon's startup registration, use the normal Statusworks builders. Compile against the Statusworks API and use a namespace you own. If your addon always registers definitions using these contribution IDs, declare both Statusworks and JAWMS Integrations as runtime dependencies. The Statusworks API validates definitions when loading completes.
 
 ```java
 import com.mahghuuuls.statusworks.api.StatusworksApi;
