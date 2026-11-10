@@ -1,0 +1,132 @@
+plugins {
+    id 'java'
+    id 'com.gtnewhorizons.retrofuturagradle' version '2.0.3'
+}
+
+java.toolchain {
+    languageVersion.set(JavaLanguageVersion.of(8))
+    vendor.set(JvmVendorSpec.AZUL)
+}
+
+minecraft {
+    mcVersion.set('1.12.2')
+    mcpMappingChannel.set('stable')
+    mcpMappingVersion.set('39')
+    username.set('Mahghuuuls')
+    extraRunJvmArguments.add('-Djawms.debugManaReadiness=true')
+    extraRunJvmArguments.add('-DstatusworksProof.enabled=true')
+}
+
+repositories {
+    maven { url 'https://maven.cleanroommc.com' }
+    exclusiveContent {
+        forRepository { maven { url 'https://curse.cleanroommc.com' } }
+        filter { includeGroup 'curse.maven' }
+    }
+}
+
+def pinned = [
+    'curse.maven:just-another-wizardry-mana-system-1643697:9529869':
+        '6B4A5EE13E40F9C44BEBD0AC25533087D6E80F106BFD936EA1CA379F98047DDE',
+    'curse.maven:statusworks-1769992:9534358':
+        '72429CAEA6092EF365AFD60071CD61ED33C090EDFC6BD8938EE0AA33FFD949C0',
+    'curse.maven:electroblobs-wizardry-265642:8320066':
+        '8A7F94DBCCAC622FEBFF5111F3B3C2BA439E1D2B2C743F2A5C31FDFCD92D241C'
+]
+configurations {
+    proofPins {
+        canBeConsumed = false
+        transitive = false
+    }
+}
+def toolkit = file('../mods/agenttesttoolkit-1.6.0.jar')
+def obfuscation = configurations.proofPins.attributes.keySet().find {
+    it.name == 'com.gtnewhorizons.retrofuturagradle.obfuscation'
+}
+configurations.proofPins.attributes {
+    attribute obfuscation, objects.named(obfuscation.type, 'no-minecraft')
+    attribute Attribute.of('rfgDeobfuscatorTransformed', Boolean), false
+}
+dependencies {
+    pinned.each { coordinate, digest ->
+        implementation rfg.deobf(coordinate)
+        proofPins coordinate
+    }
+    runtimeOnly rfg.deobf('curse.maven:baubles-227083:2518667')
+    runtimeOnly 'com.cleanroommc:strip-latest-forge-requirements:1.0'
+    implementation(modUtils.enableMixins('zone.rong:mixinbooter:11.13', 'unused.proof.refmap.json')) {
+        transitive = false
+    }
+    runtimeOnly files(toolkit)
+}
+
+def verifyProofPins = tasks.register('verifyProofPins') {
+    inputs.files(configurations.proofPins, toolkit)
+    doLast {
+        def sha256 = { File jar ->
+            java.security.MessageDigest.getInstance('SHA-256').digest(jar.bytes).encodeHex().toString().toUpperCase(Locale.ROOT)
+        }
+        configurations.proofPins.resolvedConfiguration.resolvedArtifacts.each { artifact ->
+            def coordinate = artifact.moduleVersion.id.toString()
+            def actual = sha256(artifact.file)
+            if (actual != pinned[coordinate]) {
+                throw new GradleException("Proof dependency checksum mismatch: ${coordinate}, ${artifact.file.name}, expected ${pinned[coordinate]}, found ${actual}")
+            }
+            logger.lifecycle("Verified ${coordinate} SHA-256 ${pinned[coordinate]}")
+        }
+        def toolkitDigest = 'DC23D8C23F03EEC18417CCA99C870D3AF75E8D29C3EBD4CA45C57B9DBA44789C'
+        if (!toolkit.isFile() || sha256(toolkit) != toolkitDigest) {
+            throw new GradleException('Proof requires the verified Agent Test Toolkit 1.6.0 JAR in dev/mods.')
+        }
+        logger.lifecycle("Verified Agent Test Toolkit 1.6.0 SHA-256 ${toolkitDigest}")
+    }
+}
+tasks.named('compileJava') { dependsOn verifyProofPins }
+
+def runRoot = providers.gradleProperty('proofRunRoot')
+def fixtureJar = tasks.named('jar', Jar)
+def verifyProofRuntime = tasks.register('verifyProofRuntime') {
+    dependsOn verifyProofPins, fixtureJar
+    doLast {
+        def expected = pinned.keySet().collect { coordinate ->
+            def parts = coordinate.split(':')
+            "${parts[1]}-${parts[2]}-deobf.jar".toString()
+        } + [toolkit.name, 'mixinbooter-11.13.jar', fixtureJar.get().archiveFile.get().asFile.name]
+        ['runClient', 'runServer'].each { taskName ->
+            def launchJars = tasks.named(taskName, JavaExec).get().classpath.files.findAll { it.isFile() }
+            expected.each { name ->
+                def jars = launchJars.findAll { it.name == name }
+                if (jars.size() != 1) {
+                    throw new GradleException("Expected exactly one ${name} on ${taskName} classpath")
+                }
+                def jar = jars[0]
+                def hash = java.security.MessageDigest.getInstance('SHA-256').digest(jar.bytes).encodeHex()
+                logger.lifecycle("Proof ${taskName} ${hash} ${jar}")
+            }
+            if (launchJars.any { it.name.startsWith('jawms-integrations-') }) {
+                throw new GradleException("Production Integrations is on the proof classpath: ${taskName}")
+            }
+        }
+    }
+}
+['runClient': 'client', 'runServer': 'server'].each { taskName, side ->
+    tasks.named(taskName, JavaExec).configure {
+        classpath = classpath.minus(sourceSets.main.output).plus(files(fixtureJar.flatMap { it.archiveFile }))
+        dependsOn verifyProofRuntime
+        if (side == 'server') {
+            standardInput = System.in
+        }
+        doFirst {
+            if (!runRoot.isPresent()) {
+                throw new GradleException('Set -PproofRunRoot to the prepared disposable campaign directory.')
+            }
+            workingDir file("${runRoot.get()}/${side}")
+            if (!workingDir.isDirectory()) {
+                throw new GradleException("Missing prepared proof game directory: ${workingDir}")
+            }
+            if (!fileTree(new File(workingDir, 'mods')).matching { include '**/*.jar' }.isEmpty()) {
+                throw new GradleException("Unexpected mods-folder JAR in proof game directory: ${workingDir}")
+            }
+        }
+    }
+}

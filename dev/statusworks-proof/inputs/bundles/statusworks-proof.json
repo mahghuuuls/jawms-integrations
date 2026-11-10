@@ -1,0 +1,40 @@
+{
+  "proof_begin": {
+    "description": "Start the isolated native proof session",
+    "stopOnFailure": true,
+    "commands": [
+      "devtool session start statusworks_native_proof",
+      "devtool session operator @s",
+      "devtool environment",
+      "devtool mark PROOF_BOOTSTRAP"
+    ]
+  },
+  "proof_healthy": {
+    "stopOnFailure": true,
+    "commands": ["devtool mark PROOF_HEALTHY", "statusproof healthy", "devtool client reconnect"]
+  },
+  "proof_false_early": {
+    "stopOnFailure": true,
+    "commands": ["devtool mark PROOF_FALSE_EARLY", "statusproof false_early", "devtool client reconnect"]
+  },
+  "proof_throw_early": {
+    "stopOnFailure": true,
+    "commands": ["devtool mark PROOF_THROW_EARLY", "statusproof throw_early", "devtool client reconnect"]
+  },
+  "proof_false_late": {
+    "stopOnFailure": true,
+    "commands": ["devtool mark PROOF_FALSE_LATE", "statusproof false_late", "devtool client reconnect"]
+  },
+  "proof_throw_late": {
+    "stopOnFailure": true,
+    "commands": ["devtool mark PROOF_THROW_LATE", "statusproof throw_late", "devtool client reconnect"]
+  },
+  "proof_deferred": {
+    "stopOnFailure": true,
+    "commands": ["devtool mark PROOF_DEFERRED", "statusproof deferred", "devtool client reconnect"]
+  },
+  "proof_end": {
+    "stopOnFailure": true,
+    "commands": ["devtool mark PROOF_TEARDOWN", "devtool save", "devtool client quit"]
+  }
+}
