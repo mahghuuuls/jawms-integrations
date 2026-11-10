@@ -8,6 +8,7 @@ import net.minecraft.entity.EntityLivingBase;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Function;
 
 /** Native definition targets using the base API shared by supported authoring releases. */
 final class StatusworksAuthoring {
@@ -15,8 +16,12 @@ final class StatusworksAuthoring {
     }
 
     static void register() {
+        registerTypes(InertType::new);
+    }
+
+    static void registerTypes(Function<String, ContributionType> factory) {
         for (String id : typeIds()) {
-            RegistrationResult result = StatusworksApi.registerContributionType(new InertType(id));
+            RegistrationResult result = StatusworksApi.registerContributionType(factory.apply(id));
             if (!result.isAccepted()) {
                 throw new IllegalStateException(id + ": " + result.error());
             }
@@ -26,15 +31,14 @@ final class StatusworksAuthoring {
     static List<String> typeIds() {
         List<String> ids = new ArrayList<>();
         for (Stat stat : Stat.values()) {
-            String id = stat.getId();
-            if (stat.supportsPercent()) {
-                ids.add(id + "_flat");
-                ids.add(id + "_percent");
-            } else {
-                ids.add(id);
-            }
+            ids.add(id(stat, false));
+            if (stat.supportsPercent()) ids.add(id(stat, true));
         }
         return ids;
+    }
+
+    static String id(Stat stat, boolean percent) {
+        return stat.getId() + (stat.supportsPercent() ? (percent ? "_percent" : "_flat") : "");
     }
 
     private static final class InertType implements ContributionType {

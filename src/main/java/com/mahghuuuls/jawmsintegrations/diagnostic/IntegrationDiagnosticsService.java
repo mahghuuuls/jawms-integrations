@@ -16,6 +16,7 @@ import com.mahghuuuls.jawmsintegrations.integration.jafs.FoodSourceAccess;
 import com.mahghuuuls.jawmsintegrations.integration.stat.ManaStatProjection;
 import com.mahghuuuls.jawmsintegrations.integration.jass.SpellStaminaAccess;
 import com.mahghuuuls.jawmsintegrations.integration.setworks.SetworksSourceAccess;
+import com.mahghuuuls.jawmsintegrations.integration.statusworks.StatusworksSourceAccess;
 import net.minecraft.entity.player.EntityPlayer;
 
 import java.util.ArrayList;
@@ -30,6 +31,7 @@ public final class IntegrationDiagnosticsService {
     private final FoodSourceAccess foodSource;
     private final SpellStaminaAccess spellStamina;
     private final SetworksSourceAccess setworks;
+    private final StatusworksSourceAccess statusworks;
 
     public IntegrationDiagnosticsService(JawmsCompatibility.Status jawms,
                                          IntegrationConfigSnapshot config,
@@ -58,12 +60,23 @@ public final class IntegrationDiagnosticsService {
                                          FoodSourceAccess foodSource,
                                          SpellStaminaAccess spellStamina,
                                          SetworksSourceAccess setworks) {
+        this(jawms, config, coordinator, foodSource, spellStamina, setworks, null);
+    }
+
+    public IntegrationDiagnosticsService(JawmsCompatibility.Status jawms,
+                                         IntegrationConfigSnapshot config,
+                                         IntegrationCoordinator coordinator,
+                                         FoodSourceAccess foodSource,
+                                         SpellStaminaAccess spellStamina,
+                                         SetworksSourceAccess setworks,
+                                         StatusworksSourceAccess statusworks) {
         this.jawms = jawms;
         this.config = config;
         this.coordinator = coordinator;
         this.foodSource = foodSource;
         this.spellStamina = spellStamina;
         this.setworks = setworks;
+        this.statusworks = statusworks;
     }
 
     public String startupSummary() {
@@ -124,8 +137,7 @@ public final class IntegrationDiagnosticsService {
         lines.addAll(foodStatus(player));
         lines.add(spellStaminaPlayerStatus(player));
         lines.add(setworksPlayerStatus(player));
-        IntegrationStatusView statusworks = coordinator.getStatus(IntegrationId.STATUSWORKS);
-        lines.add("Statusworks source: inactive (" + statusworks.getState() + ", " + statusworks.getDetail() + ")");
+        lines.add(statusworksPlayerStatus(player));
         ManaProfileExplanation profile;
         try {
             profile = ManaApi.explainManaProfile(player);
@@ -202,6 +214,21 @@ public final class IntegrationDiagnosticsService {
                     ? "" : "; totals=" + formatContribution(current.getApplied()));
         } catch (RuntimeException | LinkageError unavailable) {
             return "Setworks source: unavailable (" + unavailable.getClass().getSimpleName() + ")";
+        }
+    }
+
+    private String statusworksPlayerStatus(EntityPlayer player) {
+        IntegrationStatusView status = coordinator.getStatus(IntegrationId.STATUSWORKS);
+        if (status.getState() != IntegrationState.ACTIVE || statusworks == null) {
+            return "Statusworks source: inactive (" + status.getState() + ", " + status.getDetail() + ")";
+        }
+        try {
+            StatusworksSourceAccess.PlayerStatus current = statusworks.inspect(player);
+            return "Statusworks source: " + current.detail
+                    + (current.expected == null ? "" : "; expected=" + formatContribution(current.expected))
+                    + (current.applied == null ? "" : "; accepted=" + formatContribution(current.applied));
+        } catch (RuntimeException | LinkageError unavailable) {
+            return "Statusworks source: unavailable (" + unavailable.getClass().getSimpleName() + ")";
         }
     }
 

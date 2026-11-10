@@ -18,6 +18,11 @@ sourceSets {
     statusworksValidation {
         compileClasspath += sourceSets.main.compileClasspath
     }
+    statusworksReplay {
+        java.srcDirs('dev/statusworks-proof/src/main/java', 'dev/statusworks-proof/src/productionReplay/java')
+        resources.srcDirs('dev/statusworks-proof/src/main/resources', 'dev/statusworks-proof/src/productionReplay/resources')
+        compileClasspath += sourceSets.main.compileClasspath
+    }
 }
 tasks.register('jafsValidationJar', Jar) {
     dependsOn tasks.named('jafsValidationClasses')
@@ -81,22 +86,53 @@ if ((findProperty('enable_setworks_validation') ?: 'false').toString().toBoolean
     }
 }
 
+tasks.named('compileStatusworksValidationJava', JavaCompile).configure {
+    source file('dev/statusworks-proof/src/main/java/example/statusworksproof/mixin/AcceptedManaObserver.java')
+    options.compilerArgs += ['-proc:none']
+}
 def statusworksValidationJar = tasks.register('statusworksValidationJar', Jar) {
     dependsOn tasks.named('statusworksValidationClasses')
     archiveBaseName.set('jawmsint-authoring-validation')
     archiveVersion.set('dev')
     destinationDirectory.set(layout.buildDirectory.dir('validation'))
     from sourceSets.statusworksValidation.output
+    from file('dev/statusworks-proof/src/main/resources/mixins.statusworks-proof.json')
+    manifest.attributes('MixinConfigs': 'mixins.statusworks-proof.json')
 }
 if ((findProperty('enable_statusworks_validation') ?: 'false').toString().toBoolean()) {
     if (!(propertyString('integration_runtime_profile') in ['none', 'statusworks', 'statusworks-legacy',
-            'statusworks-crafttweaker'])) {
-        throw new GradleException('Statusworks authoring validation requires an isolated admission profile')
+            'statusworks-crafttweaker', 'statusworks-setworks'])) {
+        throw new GradleException('Statusworks authoring validation requires an isolated Statusworks profile')
     }
     ['runClient', 'runServer'].each { taskName ->
         tasks.named(taskName, JavaExec).configure {
             dependsOn statusworksValidationJar
             classpath += files(statusworksValidationJar.flatMap { it.archiveFile })
+        }
+    }
+}
+
+tasks.named('compileStatusworksReplayJava', JavaCompile).configure {
+    sourceCompatibility = targetCompatibility = 8
+    options.compilerArgs += ['-proc:none']
+}
+def statusworksReplayJar = tasks.register('statusworksReplayJar', Jar) {
+    dependsOn tasks.named('statusworksReplayClasses')
+    archiveBaseName.set('jawmsint-statusworks-replay')
+    archiveVersion.set('dev')
+    destinationDirectory.set(layout.buildDirectory.dir('validation'))
+    from sourceSets.statusworksReplay.output
+    manifest.attributes('MixinConfigs': 'mixins.statusworks-proof.json,mixins.statusworks-replay.json')
+}
+if ((findProperty('enable_statusworks_replay') ?: 'false').toString().toBoolean()) {
+    if (propertyString('integration_runtime_profile') != 'statusworks') {
+        throw new GradleException('Statusworks production replay requires the isolated Statusworks profile')
+    }
+    ['runClient', 'runServer'].each { taskName ->
+        tasks.named(taskName, JavaExec).configure {
+            dependsOn statusworksReplayJar
+            classpath += files(statusworksReplayJar.flatMap { it.archiveFile })
+            jvmArgs '-DstatusworksProof.enabled=true', '-DstatusworksProof.productionReplay=true'
         }
     }
 }

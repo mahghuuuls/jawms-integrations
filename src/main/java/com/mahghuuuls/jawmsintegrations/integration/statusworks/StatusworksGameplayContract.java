@@ -1,12 +1,16 @@
 package com.mahghuuuls.jawmsintegrations.integration.statusworks;
 
+import com.mahghuuuls.jawms.api.ConfiguredFlaskSnapshot;
 import com.mahghuuuls.jawms.api.ManaApi;
 import com.mahghuuuls.jawms.api.ManaContribution;
+import com.mahghuuuls.jawms.api.ManaContributionDisposition;
+import com.mahghuuuls.jawms.api.ManaContributionExplanation;
 import com.mahghuuuls.jawms.api.ManaContributionPublicationResult;
 import com.mahghuuuls.jawms.api.ManaContributionPublicationStatus;
 import com.mahghuuuls.jawms.api.ManaFirstAcceptanceVerifier;
 import com.mahghuuuls.jawms.api.ManaProfileExplanation;
 import com.mahghuuuls.jawms.api.ManaProfileGeneration;
+import com.mahghuuuls.jawms.api.ManaProfileReadiness;
 import com.mahghuuuls.jawms.api.ManaReadinessProvider;
 import com.mahghuuuls.statusworks.api.ContributionService;
 import com.mahghuuuls.statusworks.api.StatusworksApi;
@@ -21,6 +25,7 @@ import net.minecraft.util.ResourceLocation;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalLong;
@@ -30,8 +35,13 @@ final class StatusworksGameplayContract {
     private StatusworksGameplayContract() {
     }
 
+    static void verifyBound() throws ReflectiveOperationException {
+        verify();
+        if (StatusworksApi.contributions() == null) throw new NoSuchMethodException("Bound contribution service");
+    }
+
     static void verify() throws ReflectiveOperationException {
-        if (!ContributionGroupType.class.isInterface()
+        if (!ContributionGroupType.class.isInterface() || !ContributionService.class.isInterface()
                 || !ContributionType.class.isAssignableFrom(ContributionGroupType.class)
                 || !ManaFirstAcceptanceVerifier.class.isInterface()) {
             throw new NoSuchMethodException("Compatible contribution group and readiness verifier interfaces");
@@ -52,13 +62,23 @@ final class StatusworksGameplayContract {
                 false);
         requireMethod(ManaContributionPublicationResult.class, "getRevision", OptionalLong.class, false);
         requireConstants(ManaContributionPublicationStatus.class, "INITIAL_RECORDED", "SUSPENDED", "UPDATE_RECORDED",
-                "ALREADY_ACCEPTED");
+                "ALREADY_ACCEPTED", "BUSY", "STALE_GENERATION");
+        requireConstants(ManaProfileReadiness.class, "LEGACY", "READY", "PENDING", "UNAVAILABLE");
+        requireMethod(ManaProfileExplanation.class, "getContributions", List.class, false);
+        requireMethod(ManaContributionExplanation.class, "getSourceId", ResourceLocation.class, false);
+        requireMethod(ManaContributionExplanation.class, "getDisposition", ManaContributionDisposition.class, false);
+        requireMethod(ManaContributionExplanation.class, "hasAcceptedContribution", boolean.class, false);
+        requireMethod(ManaContributionExplanation.class, "getAcceptedContribution", ManaContribution.class, false);
+        requireConstants(ManaContributionDisposition.class, "EMPTY", "DISABLED");
+        requireMethod(ConfiguredFlaskSnapshot.class, "getRevision", long.class, false);
     }
 
     static void verifyManaApi(Class<?> api) throws NoSuchMethodException {
         requireMethod(api, "registerReadinessProvider", ManaReadinessProvider.class, true,
                 ResourceLocation.class, ManaFirstAcceptanceVerifier.class);
         requireMethod(api, "explainManaProfile", ManaProfileExplanation.class, true, EntityPlayer.class);
+        requireMethod(api, "getProfileReadiness", ManaProfileReadiness.class, true, EntityPlayer.class);
+        requireMethod(api, "getConfiguredFlaskSnapshot", ConfiguredFlaskSnapshot.class, true);
     }
 
     static void verifyReadinessProvider(Class<?> provider) throws NoSuchMethodException {

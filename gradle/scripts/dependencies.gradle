@@ -106,6 +106,7 @@ def integrationRuntimeProfile = propertyString('integration_runtime_profile').to
 def supportedIntegrationRuntimeProfiles = [
         'none', 'qualitytools', 'ancientspellcraft', 'crafttweaker', 'jafs', 'jass',
         'setworks', 'setworks-crafttweaker', 'statusworks', 'statusworks-legacy', 'statusworks-crafttweaker',
+        'statusworks-setworks',
         'both', 'all'
 ]
 if (!supportedIntegrationRuntimeProfiles.contains(integrationRuntimeProfile)) {
@@ -116,13 +117,13 @@ if (!supportedIntegrationRuntimeProfiles.contains(integrationRuntimeProfile)) {
 def qualityToolsRuntimeEnabled = integrationRuntimeProfile in ['qualitytools', 'both', 'all']
 def ancientSpellcraftRuntimeEnabled = integrationRuntimeProfile in ['ancientspellcraft', 'both', 'all']
 def craftTweakerRuntimeEnabled = integrationRuntimeProfile in [
-        'crafttweaker', 'setworks-crafttweaker', 'statusworks-crafttweaker', 'all'
+        'crafttweaker', 'setworks-crafttweaker', 'statusworks-crafttweaker', 'statusworks-setworks', 'all'
 ]
 def jafsRuntimeEnabled = integrationRuntimeProfile in ['jafs', 'all']
 def jassRuntimeEnabled = integrationRuntimeProfile in ['jass', 'all']
-def setworksRuntimeEnabled = integrationRuntimeProfile in ['setworks', 'setworks-crafttweaker', 'all']
+def setworksRuntimeEnabled = integrationRuntimeProfile in ['setworks', 'setworks-crafttweaker', 'statusworks-setworks', 'all']
 def statusworksRuntimeEnabled = integrationRuntimeProfile in [
-        'statusworks', 'statusworks-legacy', 'statusworks-crafttweaker', 'all'
+        'statusworks', 'statusworks-legacy', 'statusworks-crafttweaker', 'statusworks-setworks', 'all'
 ]
 def jafsCoordinate = 'curse.maven:just-another-food-system-1758738:9283113'
 def jassCoordinate = 'curse.maven:just-another-stamina-system-1740560:9438894'

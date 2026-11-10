@@ -64,12 +64,17 @@ class CommonClassReferenceTest {
             }
             String normalized = path.toString().replace('\\', '/');
             boolean gameplayContract = normalized.endsWith("/integration/statusworks/StatusworksGameplayContract.class");
+            boolean gameplayAdapter = normalized.endsWith("/integration/statusworks/StatusworksGameplay.class")
+                    || normalized.contains("/integration/statusworks/StatusworksGameplay$");
+            boolean nativeProjection = normalized.endsWith("/integration/statusworks/StatusworksProjection.class");
             boolean nativeAuthoring = normalized.endsWith("/integration/statusworks/StatusworksAuthoring.class")
                     || normalized.endsWith("/integration/statusworks/StatusworksAuthoring$InertType.class");
-            if (!gameplayContract && !nativeAuthoring && constants.contains("com/mahghuuuls/statusworks/")) {
+            if (!gameplayContract && !gameplayAdapter && !nativeProjection && !nativeAuthoring
+                    && constants.contains("com/mahghuuuls/statusworks/")) {
                 violations.add(path.getFileName() + " -> Statusworks API");
             }
-            if (!gameplayContract && constants.contains("com/mahghuuuls/jawms/api/ManaFirstAcceptanceVerifier")) {
+            if (!gameplayContract && !gameplayAdapter
+                    && constants.contains("com/mahghuuuls/jawms/api/ManaFirstAcceptanceVerifier")) {
                 violations.add(path.getFileName() + " -> JAWMS first acceptance API");
             }
         } catch (Exception exception) {

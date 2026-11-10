@@ -70,7 +70,8 @@ final class StatusworksAdmissionTest {
     void absentDependencyDoesNotResolveEitherOptionalPath() {
         IntegrationCoordinator absent = coordinator(null, true);
         assertSame(absent, StatusworksBootstrap.initialize(absent, api(Api110.class),
-                StatusworksAdmissionTest::unexpectedOptionalPath, StatusworksAdmissionTest::unexpectedOptionalPath));
+                StatusworksAdmissionTest::unexpectedOptionalPath, StatusworksAdmissionTest::unexpectedOptionalPath,
+                StatusworksAdmissionTest::unexpectedActivation).coordinator);
     }
 
     @Test
@@ -91,11 +92,12 @@ final class StatusworksAdmissionTest {
         AtomicInteger authoringCalls = new AtomicInteger();
         IntegrationStatusView status = status(StatusworksBootstrap.initialize(coordinator("1.3.0", true),
                 api(Api110.class), authoringCalls::incrementAndGet, () -> {
-                    assertEquals(1, authoringCalls.get());
+                    assertEquals(0, authoringCalls.get());
                     throw new NoSuchMethodException("update");
-                }));
+                }, StatusworksAdmissionTest::unexpectedActivation).coordinator);
         assertEquals(IntegrationState.UNSUPPORTED, status.getState());
         assertTrue(status.getDetail().contains("Native contribution types are registered"));
+        assertEquals(1, authoringCalls.get());
     }
 
     @Test
@@ -118,7 +120,8 @@ final class StatusworksAdmissionTest {
     private static IntegrationCoordinator initializeAuthoringOnly(String version, boolean enabled, Class<?> apiVersion,
                                                                   AtomicInteger authoringCalls) {
         return StatusworksBootstrap.initialize(coordinator(version, enabled), api(apiVersion),
-                authoringCalls::incrementAndGet, StatusworksAdmissionTest::unexpectedOptionalPath);
+                authoringCalls::incrementAndGet, StatusworksAdmissionTest::unexpectedOptionalPath,
+                StatusworksAdmissionTest::unexpectedActivation).coordinator;
     }
 
     private static IntegrationCoordinator coordinator(String version, boolean enabled) {
@@ -141,6 +144,10 @@ final class StatusworksAdmissionTest {
 
     private static void unexpectedOptionalPath() {
         throw new AssertionError("Ineligible optional path was invoked");
+    }
+
+    private static StatusworksSourceAccess unexpectedActivation() {
+        throw new AssertionError("Ineligible gameplay was activated");
     }
 
     public static final class Api19 {
